@@ -5,21 +5,33 @@ class SupportTicketRepository {
   final SupabaseClient _client = Supabase.instance.client;
 
   Future<List<SupportTicket>> getUserTickets(String userId) async {
-    final data = await _client
-        .from('support_tickets')
-        .select()
-        .eq('user_id', userId)
-        .order('created_at', ascending: false);
-    return data.map((json) => SupportTicket.fromJson(json)).toList();
+    try {
+      final data = await _client
+          .from('support_tickets')
+          .select()
+          .eq('user_id', userId)
+          .order('created_at', ascending: false);
+      return data.map((json) => SupportTicket.fromJson(json)).toList();
+    } catch (e) {
+      // ignore: avoid_print
+      print('[SupportTicketRepository.getUserTickets] $e');
+      rethrow;
+    }
   }
 
   Future<SupportTicket?> getTicket(String ticketId) async {
-    final data = await _client
-        .from('support_tickets')
-        .select()
-        .eq('id', ticketId)
-        .maybeSingle();
-    return data != null ? SupportTicket.fromJson(data) : null;
+    try {
+      final data = await _client
+          .from('support_tickets')
+          .select()
+          .eq('id', ticketId)
+          .maybeSingle();
+      return data != null ? SupportTicket.fromJson(data) : null;
+    } catch (e) {
+      // ignore: avoid_print
+      print('[SupportTicketRepository.getTicket] $e');
+      rethrow;
+    }
   }
 
   Future<SupportTicket> createTicket({
@@ -29,24 +41,36 @@ class SupportTicketRepository {
     required String description,
     String priority = 'medium',
   }) async {
-    final data = await _client
-        .from('support_tickets')
-        .insert({
-          'user_id': userId,
-          'user_type': userType,
-          'subject': subject,
-          'description': description,
-          'priority': priority,
-        })
-        .select()
-        .single();
-    return SupportTicket.fromJson(data);
+    try {
+      final data = await _client
+          .from('support_tickets')
+          .insert({
+            'user_id': userId,
+            'user_type': userType,
+            'subject': subject,
+            'description': description,
+            'priority': priority,
+          })
+          .select()
+          .single();
+      return SupportTicket.fromJson(data);
+    } catch (e) {
+      // ignore: avoid_print
+      print('[SupportTicketRepository.createTicket] $e');
+      rethrow;
+    }
   }
 
   Future<void> closeTicket(String ticketId) async {
-    await _client
-        .from('support_tickets')
-        .update({'status': 'closed'})
-        .eq('id', ticketId);
+    try {
+      await _client
+          .from('support_tickets')
+          .update({'status': 'closed'})
+          .eq('id', ticketId);
+    } catch (e) {
+      // ignore: avoid_print
+      print('[SupportTicketRepository.closeTicket] $e');
+      rethrow;
+    }
   }
 }

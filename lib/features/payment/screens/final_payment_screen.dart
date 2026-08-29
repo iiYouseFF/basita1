@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:basita1/core/services/supabase_service.dart';
+import 'package:basita1/core/repositories/payment_log_repository.dart';
 
 // استدعاء ملف جلسة المستخدم لجلب معلوماته عند حفظ البطاقة
 import 'package:basita1/core/session/user_session.dart';
@@ -597,15 +599,55 @@ class _PaymentScreenState extends State<PaymentScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await Future.delayed(const Duration(seconds: 2));
-
       String methodTitle = _selectedMethod == 0
           ? "بطاقة بنكية"
           : _selectedMethod == 1
           ? "محفظة إلكترونية"
           : "كاش";
-
       bool isCash = _selectedMethod == 2;
+
+      // Phase 3: Edge Function process-payment for card/wallet (mock Stripe) + audit log
+      if (!isCash) {
+        try {
+          final svc = SupabaseService();
+          await svc.invokeFunction(
+            functionName: 'process-payment',
+            body: {
+              'amount': widget.amount,
+              'currency': 'EGP',
+              'paymentMethodId':
+                  'pm_mock_${DateTime.now().millisecondsSinceEpoch}',
+              'requestId': widget.requestId,
+              'userId': _userId,
+              'technicianId': widget.technicianId,
+              'serviceName': widget.serviceName,
+            },
+          );
+          try {
+            await PaymentLogRepository().logPayment(
+              userId: _userId,
+              amount: widget.amount,
+              paymentMethod: _selectedMethod == 0 ? 'card' : 'wallet',
+              requestId: widget.requestId,
+              technicianId: widget.technicianId,
+            );
+          } catch (_) {}
+        } catch (e) {
+          // ignore: avoid_print
+          print('[PaymentScreen] Edge process-payment (MVP mock) $e');
+        }
+      } else {
+        try {
+          await PaymentLogRepository().logPayment(
+            userId: _userId,
+            amount: widget.amount,
+            paymentMethod: 'cash',
+            requestId: widget.requestId,
+            technicianId: widget.technicianId,
+          );
+        } catch (_) {}
+      }
+      await Future.delayed(const Duration(milliseconds: 800));
 
       if (widget.requestId.isNotEmpty) {
         final reqRef = FirebaseFirestore.instance

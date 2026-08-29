@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:basita1/core/repositories/request_repository.dart';
 import 'package:basita1/core/session/user_session.dart';
 import 'package:basita1/core/repositories/chat_repository.dart';
 import 'package:basita1/features/offers/screens/offers_dashboard_screen.dart';
@@ -133,9 +134,8 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
         final supabase = Supabase.instance.client;
         for (int i = 0; i < _selectedImages.length; i++) {
           try {
-            String fileName =
-                '$uid/${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
-
+            final ts = DateTime.now().millisecondsSinceEpoch;
+            final fileName = '$uid/${ts}_$i.jpg';
             await supabase.storage
                 .from('request')
                 .upload(
@@ -146,14 +146,12 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
                     upsert: false,
                   ),
                 );
-
-            String downloadUrl = supabase.storage
-                .from('request')
-                .getPublicUrl(fileName);
-
-            imageUrls.add(downloadUrl);
+            imageUrls.add(
+              supabase.storage.from('request').getPublicUrl(fileName),
+            );
           } catch (e) {
-            print("Error uploading image $i to Supabase: $e");
+            // ignore: avoid_print
+            print('[RequestServiceScreen] upload $i failed: $e');
           }
         }
       }
@@ -185,22 +183,23 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
         'createdAt': FieldValue.serverTimestamp(),
       };
 
-      DocumentReference docRef = await FirebaseFirestore.instance
-          .collection('requests')
-          .add(requestData);
-      String requestId = docRef.id;
+      // Use Clean Architecture repository (wraps Firestore, handles typed collections)
+      final requestRepo = RequestRepository();
+      final String requestId = await requestRepo.createRequest(
+        data: requestData,
+      );
 
-      // إنشاء جلسة محادثة مبدئية للطلب فوراً،
-      // سيتم ربط الفني بها عند قبوله للطلب دون إنشاء غرفة مكررة.
+      // Create initial chat placeholder (Supabase chat_rooms) — technician will be linked on accept
       try {
         await ChatRepository().getOrCreateRoom(
-          clientId: userPhone,
+          clientId: userPhone.isNotEmpty ? userPhone : uid,
           technicianId: '',
           requestId: requestId,
           serviceType: _titleController.text.trim(),
         );
       } catch (e) {
-        print("Error creating chat room: $e");
+        // ignore: avoid_print
+        print('[RequestServiceScreen] chat room: $e');
       }
 
       if (!mounted) return;
