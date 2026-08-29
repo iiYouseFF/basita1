@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "figma": {
+      "source": "davila7/claude-code-templates",
+      "sourceType": "github",
+      "skillPath": "cli-tool/components/skills/creative-design/figma/SKILL.md",
+      "computedHash": "36a18d074be50ee2f9329946ead9c0c4b3fddc543108aedbd23bd098b0b58ddb"
+    }
+  }
+}

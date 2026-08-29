@@ -1,0 +1,1 @@
+Please modify the phone verification screen. Remove the real Firebase Phone Auth implementation and make the OTP check mockup/fake (so that entering any 6 digits and clicking verify will successfully pass and navigate to the next screen). Also, ensure the previous screen flow works seamlessly as it did before.
