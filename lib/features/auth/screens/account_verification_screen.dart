@@ -276,7 +276,7 @@ class _AccountVerificationScreenState extends State<AccountVerificationScreen> {
                   width: 70,
                   height: 70,
                   decoration: BoxDecoration(
-                    color: brandBlue.withOpacity(0.1),
+                    color: brandBlue.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -309,7 +309,7 @@ class _AccountVerificationScreenState extends State<AccountVerificationScreen> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
@@ -434,7 +434,7 @@ class _AccountVerificationScreenState extends State<AccountVerificationScreen> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: brandBlue.withOpacity(0.1),
+                              color: brandBlue.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(
@@ -496,7 +496,7 @@ class _AccountVerificationScreenState extends State<AccountVerificationScreen> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -555,7 +555,7 @@ class _AccountVerificationScreenState extends State<AccountVerificationScreen> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.15),
+                    color: Colors.green.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(

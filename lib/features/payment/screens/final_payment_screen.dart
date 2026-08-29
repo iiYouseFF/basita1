@@ -267,7 +267,7 @@ class _ClientRequestsScreenState extends State<ClientRequestsScreen> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
+                          color: Colors.black.withValues(alpha: 0.04),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -813,7 +813,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         border: Border.all(color: borderGrey, width: 0.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1050,8 +1050,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       ...sortedDocs.map((doc) {
                         final data = doc.data();
                         final docId = doc.id;
-                        final last4 = (data['cardLast4'] ?? data['cardNumber'] ?? '0000').toString();
-                        final displayLast4 = last4.length >= 4 ? last4.substring(last4.length - 4) : last4;
+                        final last4 =
+                            (data['cardLast4'] ?? data['cardNumber'] ?? '0000')
+                                .toString();
+                        final displayLast4 = last4.length >= 4
+                            ? last4.substring(last4.length - 4)
+                            : last4;
                         final cardHolder = data['cardHolder'] ?? '';
                         final expiryDate = data['expiryDate'] ?? '';
                         final cardType = data['cardType'] ?? 'visa';
@@ -1084,7 +1088,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                               boxShadow: isCardSelected
                                   ? [
                                       BoxShadow(
-                                        color: primaryBlue.withOpacity(0.06),
+                                        color: primaryBlue.withValues(
+                                          alpha: 0.06,
+                                        ),
                                         blurRadius: 8,
                                         offset: const Offset(0, 2),
                                       ),
@@ -1182,7 +1188,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             ),
                           ),
                         );
-                      }).toList(),
+                      }),
                       const SizedBox(height: 8),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1274,7 +1280,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       width: 12,
                       height: 12,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF79E1B).withOpacity(0.85),
+                        color: const Color(0xFFF79E1B).withValues(alpha: 0.85),
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -1519,7 +1525,7 @@ class PaymentSuccessScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: primaryBlue.withOpacity(0.1),
+                    color: primaryBlue.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Container(
@@ -1562,7 +1568,7 @@ class PaymentSuccessScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.03),
+                        color: Colors.black.withValues(alpha: 0.03),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -1731,7 +1737,7 @@ class PaymentFailedScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: redColor.withOpacity(0.1),
+                    color: redColor.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Container(
@@ -1829,7 +1835,7 @@ class PaymentFailedScreen extends StatelessWidget {
 // ==========================================
 class _AddCardBottomSheet extends StatefulWidget {
   final String userId;
-  const _AddCardBottomSheet({Key? key, required this.userId}) : super(key: key);
+  const _AddCardBottomSheet({super.key, required this.userId});
 
   @override
   State<_AddCardBottomSheet> createState() => _AddCardBottomSheetState();
@@ -1880,7 +1886,9 @@ class _AddCardBottomSheetState extends State<_AddCardBottomSheet> {
       }
 
       await cardsCollection.add({
-        'cardLast4': cleanNumber.length >= 4 ? cleanNumber.substring(cleanNumber.length - 4) : cleanNumber,
+        'cardLast4': cleanNumber.length >= 4
+            ? cleanNumber.substring(cleanNumber.length - 4)
+            : cleanNumber,
         'cardHolder': _holderController.text.trim(),
         'expiryDate': _expiryController.text.trim(),
         'isDefault': _isDefault,
@@ -2052,7 +2060,7 @@ class _AddCardBottomSheetState extends State<_AddCardBottomSheet> {
                     ),
                     Switch(
                       value: _isDefault,
-                      activeColor: const Color(0xFF0D6EFD),
+                      activeThumbColor: const Color(0xFF0D6EFD),
                       onChanged: (val) => setState(() => _isDefault = val),
                     ),
                   ],

@@ -45,8 +45,8 @@ class OfferModel {
       imagePath: data['imagePath'] ?? 'assets/images/default_avatar.png',
       isVerified: data['isVerified'] ?? false,
       hasGreenArrivalTag: data['hasGreenArrivalTag'] ?? false,
-      timestamp: data['timestamp'] != null 
-          ? (data['timestamp'] as Timestamp).toDate() 
+      timestamp: data['timestamp'] != null
+          ? (data['timestamp'] as Timestamp).toDate()
           : DateTime.now(),
     );
   }

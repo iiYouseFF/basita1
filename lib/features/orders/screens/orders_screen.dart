@@ -410,7 +410,7 @@ class _RequestsPageState extends State<RequestsPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -662,7 +662,7 @@ class _RequestsPageState extends State<RequestsPage> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -749,7 +749,7 @@ class _RequestsPageState extends State<RequestsPage> {
         ),
         decoration: isActive
             ? BoxDecoration(
-                color: const Color(0xFF82A9FF).withOpacity(0.8),
+                color: const Color(0xFF82A9FF).withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(20),
               )
             : null,
@@ -1022,7 +1022,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 8,
                   offset: const Offset(0, 3),
                 ),
@@ -1292,7 +1292,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   errorBuilder: (_, __, ___) =>
                       Container(color: Colors.grey.shade300),
                 ),
-                Container(color: Colors.black.withOpacity(0.3)),
+                Container(color: Colors.black.withValues(alpha: 0.3)),
                 Center(
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1373,7 +1373,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -4),
           ),
@@ -2121,7 +2121,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -2185,7 +2185,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
                     ? NetworkImage(widget.request.imagePath) as ImageProvider
                     : AssetImage(widget.request.imagePath),
                 onBackgroundImageError: (_, __) {},
-                backgroundColor: const Color(0xFF82A9FF).withOpacity(0.5),
+                backgroundColor: const Color(0xFF82A9FF).withValues(alpha: 0.5),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -2399,7 +2399,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),

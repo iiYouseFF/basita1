@@ -91,8 +91,7 @@ class ChatRepository {
         .stream(primaryKey: ['id'])
         .eq('room_id', roomId)
         .order('created_at', ascending: false)
-        .map((data) =>
-            data.map((json) => ChatMessage.fromJson(json)).toList());
+        .map((data) => data.map((json) => ChatMessage.fromJson(json)).toList());
   }
 
   Stream<List<ChatRoom>> watchUserChatRooms(String userId) {
@@ -100,12 +99,16 @@ class ChatRepository {
         .from('chat_rooms')
         .stream(primaryKey: ['id'])
         .order('updated_at', ascending: false)
-        .map((data) => data
-            .where((json) =>
-                json['client_id'] == userId ||
-                json['technician_id'] == userId)
-            .map((json) => ChatRoom.fromJson(json))
-            .toList());
+        .map(
+          (data) => data
+              .where(
+                (json) =>
+                    json['client_id'] == userId ||
+                    json['technician_id'] == userId,
+              )
+              .map((json) => ChatRoom.fromJson(json))
+              .toList(),
+        );
   }
 
   Future<void> sendMessage({

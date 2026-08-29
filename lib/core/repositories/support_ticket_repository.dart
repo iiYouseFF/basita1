@@ -46,6 +46,7 @@ class SupportTicketRepository {
   Future<void> closeTicket(String ticketId) async {
     await _client
         .from('support_tickets')
-        .update({'status': 'closed'}).eq('id', ticketId);
+        .update({'status': 'closed'})
+        .eq('id', ticketId);
   }
 }

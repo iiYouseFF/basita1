@@ -175,7 +175,7 @@ class _CommunityScreenPerfectState extends State<CommunityScreen>
 
   // --- دالة عرض نافذة التعليقات ---
   void _showCommentsSheet(BuildContext context, String postId) {
-    final TextEditingController _commentController = TextEditingController();
+    final TextEditingController commentController = TextEditingController();
 
     showModalBottomSheet(
       context: context,
@@ -269,7 +269,7 @@ class _CommunityScreenPerfectState extends State<CommunityScreen>
                       children: [
                         Expanded(
                           child: TextField(
-                            controller: _commentController,
+                            controller: commentController,
                             style: GoogleFonts.cairo(),
                             decoration: InputDecoration(
                               hintText: "اكتب تعليقاً...",
@@ -294,13 +294,13 @@ class _CommunityScreenPerfectState extends State<CommunityScreen>
                               size: 20,
                             ),
                             onPressed: () {
-                              if (_commentController.text.trim().isNotEmpty) {
+                              if (commentController.text.trim().isNotEmpty) {
                                 FirebaseFirestore.instance
                                     .collection('posts')
                                     .doc(postId)
                                     .collection('comments')
                                     .add({
-                                      'text': _commentController.text.trim(),
+                                      'text': commentController.text.trim(),
                                       'authorName':
                                           UserSession.instance.name.isNotEmpty
                                           ? UserSession.instance.name
@@ -313,7 +313,7 @@ class _CommunityScreenPerfectState extends State<CommunityScreen>
                                     .update({
                                       'comments': FieldValue.increment(1),
                                     });
-                                _commentController.clear();
+                                commentController.clear();
                               }
                             },
                           ),
@@ -739,7 +739,7 @@ class _CommunityScreenPerfectState extends State<CommunityScreen>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: post.isQuestion
-            ? Colors.blue.shade50.withOpacity(0.5)
+            ? Colors.blue.shade50.withValues(alpha: 0.5)
             : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200),
@@ -1373,7 +1373,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 border: Border.all(color: Colors.grey.shade200),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
+                    color: Colors.black.withValues(alpha: 0.03),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),

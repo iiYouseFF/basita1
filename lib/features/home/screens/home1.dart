@@ -142,8 +142,7 @@ class _MainTechnicianScreenState extends State<MainTechnicianScreen> {
                   CircleAvatar(
                     radius: 18,
                     backgroundColor: Colors.blueAccent,
-                    backgroundImage:
-                        UserDataSession.profileImagePath.isNotEmpty
+                    backgroundImage: UserDataSession.profileImagePath.isNotEmpty
                         ? (UserDataSession.profileImagePath.startsWith('http')
                                   ? NetworkImage(
                                       UserDataSession.profileImagePath,
@@ -240,7 +239,7 @@ class _MainTechnicianScreenState extends State<MainTechnicianScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -493,7 +492,7 @@ class _MainTechnicianScreenState extends State<MainTechnicianScreen> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: primaryBlue.withOpacity(0.3),
+                    color: primaryBlue.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -531,9 +530,7 @@ class _MainTechnicianScreenState extends State<MainTechnicianScreen> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const SmartMapScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const SmartMapScreen()),
               );
             },
           ),
@@ -688,7 +685,7 @@ class _MainTechnicianScreenState extends State<MainTechnicianScreen> {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.02),
+                color: Colors.black.withValues(alpha: 0.02),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -820,7 +817,7 @@ class _MainTechnicianScreenState extends State<MainTechnicianScreen> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -854,7 +851,7 @@ class _MainTechnicianScreenState extends State<MainTechnicianScreen> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 5,
                       ),
                     ],
@@ -890,7 +887,7 @@ class _MainTechnicianScreenState extends State<MainTechnicianScreen> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -4),
           ),

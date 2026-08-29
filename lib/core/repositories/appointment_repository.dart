@@ -59,12 +59,16 @@ class AppointmentRepository {
         .from('appointments')
         .stream(primaryKey: ['id'])
         .order('appointment_date', ascending: true)
-        .map((data) => data
-            .where((json) =>
-                json['client_id'] == userId ||
-                json['technician_id'] == userId)
-            .map((json) => Appointment.fromJson(json))
-            .toList());
+        .map(
+          (data) => data
+              .where(
+                (json) =>
+                    json['client_id'] == userId ||
+                    json['technician_id'] == userId,
+              )
+              .map((json) => Appointment.fromJson(json))
+              .toList(),
+        );
   }
 
   Future<Appointment?> getAppointmentByRequestId(String requestId) async {
@@ -161,10 +165,15 @@ class AppointmentRepository {
   }
 
   Future<void> updateAppointmentStatus(
-      String appointmentId, String status) async {
+    String appointmentId,
+    String status,
+  ) async {
     await _client
         .from('appointments')
-        .update({'status': status, 'updated_at': DateTime.now().toIso8601String()})
+        .update({
+          'status': status,
+          'updated_at': DateTime.now().toIso8601String(),
+        })
         .eq('id', appointmentId);
   }
 
@@ -190,7 +199,9 @@ class AppointmentRepository {
         .eq('id', appointmentId);
   }
 
-  Future<List<Appointment>> getTechnicianAppointments(String technicianId) async {
+  Future<List<Appointment>> getTechnicianAppointments(
+    String technicianId,
+  ) async {
     final data = await _client
         .from('appointments')
         .select()

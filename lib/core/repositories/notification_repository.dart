@@ -9,18 +9,13 @@ class NotificationRepository {
     bool unreadOnly = false,
     int limit = 50,
   }) async {
-    var query = _client
-        .from('notifications')
-        .select()
-        .eq('user_id', userId);
+    var query = _client.from('notifications').select().eq('user_id', userId);
 
     if (unreadOnly) {
       query = query.eq('is_read', false);
     }
 
-    final data = await query
-        .order('created_at', ascending: false)
-        .limit(limit);
+    final data = await query.order('created_at', ascending: false).limit(limit);
     return data.map((json) => AppNotification.fromJson(json)).toList();
   }
 
@@ -31,7 +26,9 @@ class NotificationRepository {
         .eq('user_id', userId)
         .order('created_at', ascending: false)
         .limit(50)
-        .map((data) => data.map((json) => AppNotification.fromJson(json)).toList());
+        .map(
+          (data) => data.map((json) => AppNotification.fromJson(json)).toList(),
+        );
   }
 
   Future<int> getUnreadCount(String userId) async {

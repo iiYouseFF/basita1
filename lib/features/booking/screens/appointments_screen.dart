@@ -51,16 +51,19 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     _appointmentsSub?.cancel();
     _appointmentsSub = _appointmentRepo
         .watchUserAppointments(_currentUserId)
-        .listen((appointments) {
-      if (!mounted) return;
-      setState(() {
-        _allAppointments = appointments;
-        _isLoading = false;
-      });
-    }, onError: (e) {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-    });
+        .listen(
+          (appointments) {
+            if (!mounted) return;
+            setState(() {
+              _allAppointments = appointments;
+              _isLoading = false;
+            });
+          },
+          onError: (e) {
+            if (!mounted) return;
+            setState(() => _isLoading = false);
+          },
+        );
   }
 
   List<Appointment> get _filteredAppointments {
@@ -230,7 +233,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
+                      color: Colors.black.withValues(alpha: 0.04),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -296,7 +299,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         border: Border.all(color: const Color(0xFFF3F4F6)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -379,7 +382,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.person_pin_circle, color: const Color(0xFF16A34A), size: 20),
+                  Icon(
+                    Icons.person_pin_circle,
+                    color: const Color(0xFF16A34A),
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -747,7 +754,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 15,
             offset: const Offset(0, -4),
           ),

@@ -193,7 +193,7 @@ class _ElectricityCommunityScreenState extends State<ElectricityCommunityScreen>
 
   // --- دالة عرض نافذة التعليقات ---
   void _showCommentsSheet(BuildContext context, String postId) {
-    final TextEditingController _commentController = TextEditingController();
+    final TextEditingController commentController = TextEditingController();
 
     showModalBottomSheet(
       context: context,
@@ -287,7 +287,7 @@ class _ElectricityCommunityScreenState extends State<ElectricityCommunityScreen>
                       children: [
                         Expanded(
                           child: TextField(
-                            controller: _commentController,
+                            controller: commentController,
                             style: GoogleFonts.cairo(),
                             decoration: InputDecoration(
                               hintText: "اكتب تعليقاً...",
@@ -312,13 +312,13 @@ class _ElectricityCommunityScreenState extends State<ElectricityCommunityScreen>
                               size: 20,
                             ),
                             onPressed: () {
-                              if (_commentController.text.trim().isNotEmpty) {
+                              if (commentController.text.trim().isNotEmpty) {
                                 FirebaseFirestore.instance
                                     .collection('post_electricity')
                                     .doc(postId)
                                     .collection('comments')
                                     .add({
-                                      'text': _commentController.text.trim(),
+                                      'text': commentController.text.trim(),
                                       'authorName':
                                           UserSession.instance.name.isNotEmpty
                                           ? UserSession.instance.name
@@ -331,7 +331,7 @@ class _ElectricityCommunityScreenState extends State<ElectricityCommunityScreen>
                                     .update({
                                       'comments': FieldValue.increment(1),
                                     });
-                                _commentController.clear();
+                                commentController.clear();
                               }
                             },
                           ),
@@ -726,7 +726,7 @@ class _ElectricityCommunityScreenState extends State<ElectricityCommunityScreen>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: post.isQuestion
-            ? Colors.blue.shade50.withOpacity(0.5)
+            ? Colors.blue.shade50.withValues(alpha: 0.5)
             : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200),
@@ -1106,7 +1106,7 @@ class _CreateElectricityPostScreenState
 
   @override
   Widget build(BuildContext context) {
-    ImageProvider _getCreateProfileImage(String? path) {
+    ImageProvider getCreateProfileImage(String? path) {
       if (path != null && path.isNotEmpty) {
         if (path.startsWith('http')) {
           return NetworkImage(path);
@@ -1196,7 +1196,7 @@ class _CreateElectricityPostScreenState
                         CircleAvatar(
                           radius: 26,
                           backgroundColor: Colors.grey.shade200,
-                          backgroundImage: _getCreateProfileImage(displayImage),
+                          backgroundImage: getCreateProfileImage(displayImage),
                         ),
                         const SizedBox(width: 12),
                         Column(
@@ -1371,7 +1371,7 @@ class _CreateElectricityPostScreenState
                 border: Border.all(color: Colors.grey.shade200),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
+                    color: Colors.black.withValues(alpha: 0.03),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -1524,7 +1524,7 @@ class _CreateElectricityQuestionScreenState
 
   @override
   Widget build(BuildContext context) {
-    ImageProvider _getQuestionProfileImage(String? path) {
+    ImageProvider getQuestionProfileImage(String? path) {
       if (path != null && path.isNotEmpty) {
         if (path.startsWith('http')) {
           return NetworkImage(path);
@@ -1608,7 +1608,7 @@ class _CreateElectricityQuestionScreenState
                   CircleAvatar(
                     radius: 26,
                     backgroundColor: Colors.grey.shade200,
-                    backgroundImage: _getQuestionProfileImage(displayImage),
+                    backgroundImage: getQuestionProfileImage(displayImage),
                   ),
                   const SizedBox(width: 12),
                   Column(

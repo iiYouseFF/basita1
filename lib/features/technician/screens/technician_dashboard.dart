@@ -253,7 +253,7 @@ class _TechnicianDashboardSState extends State<TechnicianDashboardS> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -474,7 +474,7 @@ class _TechnicianDashboardSState extends State<TechnicianDashboardS> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -494,7 +494,7 @@ class _TechnicianDashboardSState extends State<TechnicianDashboardS> {
                   fontSize: 14,
                 ),
               ),
-              Icon(icon, color: iconColor.withOpacity(0.8), size: 24),
+              Icon(icon, color: iconColor.withValues(alpha: 0.8), size: 24),
             ],
           ),
           const SizedBox(height: 16),
@@ -558,7 +558,7 @@ class _TechnicianDashboardSState extends State<TechnicianDashboardS> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -683,7 +683,7 @@ class _TechnicianDashboardSState extends State<TechnicianDashboardS> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -779,7 +779,7 @@ class _TechnicianDashboardSState extends State<TechnicianDashboardS> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: primaryBlue.withOpacity(0.3),
+            color: primaryBlue.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -897,7 +897,7 @@ class _TechnicianDashboardSState extends State<TechnicianDashboardS> {
               subtitle: achievement['subtitle'] ?? '',
               icon: Icons.emoji_events,
               iconColor: const Color(0xFFC5A059),
-              bgColor: const Color(0xFFC5A059).withOpacity(0.15),
+              bgColor: const Color(0xFFC5A059).withValues(alpha: 0.15),
             ),
           );
         }),
@@ -920,7 +920,7 @@ class _TechnicianDashboardSState extends State<TechnicianDashboardS> {
         border: Border.all(color: Colors.grey.shade100, width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),

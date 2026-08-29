@@ -11,7 +11,6 @@ import 'package:basita1/features/family/screens/family_join_screen.dart';
 import 'package:basita1/features/chat/screens/chat_screen.dart';
 import 'package:basita1/features/community/screens/community_screen.dart';
 import 'package:basita1/features/feedback/screens/dummy_screen.dart';
-import 'package:basita1/features/technician/screens/technicians_screen.dart';
 import 'package:basita1/features/offers/screens/offers_screen.dart';
 import 'package:basita1/features/visits/screens/visits_screen.dart';
 import 'package:basita1/features/home/screens/shatably_app.dart';

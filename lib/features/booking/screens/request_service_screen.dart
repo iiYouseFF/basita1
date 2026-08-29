@@ -29,7 +29,7 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
   final TextEditingController _budgetController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
 
-  List<File> _selectedImages = [];
+  final List<File> _selectedImages = [];
   final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
 
@@ -134,7 +134,7 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
         for (int i = 0; i < _selectedImages.length; i++) {
           try {
             String fileName =
-                '${uid}/${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
+                '$uid/${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
 
             await supabase.storage
                 .from('request')
@@ -402,7 +402,7 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
       decoration: BoxDecoration(
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.01),
+            color: Colors.black.withValues(alpha: 0.01),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -459,7 +459,7 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: brandBlue.withOpacity(0.4),
+                  color: brandBlue.withValues(alpha: 0.4),
                   width: 1.5,
                 ),
               ),
@@ -507,7 +507,7 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
+                      color: Colors.black.withValues(alpha: 0.04),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),
@@ -551,7 +551,7 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withValues(alpha: 0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),

@@ -169,11 +169,11 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
         ),
       ),
       leading: IconButton(
-  icon: const Icon(Icons.arrow_back, color: Color(0xFF0056D2), size: 28),
-  onPressed: () {
-    Navigator.pop(context); // العودة للصفحة السابقة مباشرة
-  },
-),
+        icon: const Icon(Icons.arrow_back, color: Color(0xFF0056D2), size: 28),
+        onPressed: () {
+          Navigator.pop(context); // العودة للصفحة السابقة مباشرة
+        },
+      ),
     );
   }
 

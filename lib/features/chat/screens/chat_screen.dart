@@ -56,9 +56,8 @@ class _ChatMainPageState extends State<ChatMainPage> {
         _filteredRooms = _allRooms;
       } else {
         _filteredRooms = _allRooms.where((room) {
-          final serviceMatch = room.serviceType
-                  ?.toLowerCase()
-                  .contains(query.toLowerCase()) ??
+          final serviceMatch =
+              room.serviceType?.toLowerCase().contains(query.toLowerCase()) ??
               false;
           return serviceMatch;
         }).toList();
@@ -158,43 +157,46 @@ class _ChatMainPageState extends State<ChatMainPage> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _filteredRooms.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.chat_bubble_outline,
-                                size: 64, color: Colors.grey.shade300),
-                            const SizedBox(height: 16),
-                            Text(
-                              "لا توجد محادثات بعد",
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 16,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              "ابدأ محادثة مع فني عند طلب خدمة",
-                              style: TextStyle(
-                                color: Colors.grey.shade400,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 64,
+                          color: Colors.grey.shade300,
                         ),
-                      )
-                    : StreamBuilder<List<model.ChatRoom>>(
-                        stream: _chatRepo.watchUserChatRooms(_currentUserId),
-                        builder: (context, snapshot) {
-                          final rooms = snapshot.data ?? _filteredRooms;
-                          return ListView.builder(
-                            itemCount: rooms.length,
-                            itemBuilder: (context, index) {
-                              return _buildChatItem(rooms[index]);
-                            },
-                          );
+                        const SizedBox(height: 16),
+                        Text(
+                          "لا توجد محادثات بعد",
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "ابدأ محادثة مع فني عند طلب خدمة",
+                          style: TextStyle(
+                            color: Colors.grey.shade400,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : StreamBuilder<List<model.ChatRoom>>(
+                    stream: _chatRepo.watchUserChatRooms(_currentUserId),
+                    builder: (context, snapshot) {
+                      final rooms = snapshot.data ?? _filteredRooms;
+                      return ListView.builder(
+                        itemCount: rooms.length,
+                        itemBuilder: (context, index) {
+                          return _buildChatItem(rooms[index]);
                         },
-                      ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -228,7 +230,9 @@ class _ChatMainPageState extends State<ChatMainPage> {
               },
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0, vertical: 12.0),
+                  horizontal: 16.0,
+                  vertical: 12.0,
+                ),
                 child: Row(
                   children: [
                     Stack(
@@ -247,8 +251,7 @@ class _ChatMainPageState extends State<ChatMainPage> {
                             decoration: BoxDecoration(
                               color: Colors.green,
                               shape: BoxShape.circle,
-                              border:
-                                  Border.all(color: Colors.white, width: 2),
+                              border: Border.all(color: Colors.white, width: 2),
                             ),
                           ),
                         ),
@@ -425,10 +428,7 @@ class _ChatDetailsBotScreenState extends State<ChatDetailsBotScreen> {
                 ),
                 Text(
                   "متصل الآن",
-                  style: TextStyle(
-                    color: Colors.green,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.green, fontSize: 12),
                 ),
               ],
             ),
@@ -448,8 +448,11 @@ class _ChatDetailsBotScreenState extends State<ChatDetailsBotScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.chat_bubble_outline,
-                            size: 48, color: Colors.grey.shade300),
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 48,
+                          color: Colors.grey.shade300,
+                        ),
                         const SizedBox(height: 12),
                         Text(
                           "ابدأ المحادثة",
@@ -467,7 +470,9 @@ class _ChatDetailsBotScreenState extends State<ChatDetailsBotScreen> {
                   controller: _scrollController,
                   reverse: true,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 20),
+                    horizontal: 16,
+                    vertical: 20,
+                  ),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final msgItem = messages[index];
@@ -492,8 +497,7 @@ class _ChatDetailsBotScreenState extends State<ChatDetailsBotScreen> {
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         margin: const EdgeInsets.only(bottom: 12),
-        padding:
-            const EdgeInsets.only(left: 12, right: 12, top: 10, bottom: 6),
+        padding: const EdgeInsets.only(left: 12, right: 12, top: 10, bottom: 6),
         decoration: BoxDecoration(
           color: isMe ? primaryBlue : Colors.white,
           borderRadius: BorderRadius.only(

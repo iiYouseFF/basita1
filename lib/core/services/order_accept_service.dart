@@ -60,14 +60,14 @@ class OrderAcceptService {
     final finalMessage = (message != null && message.trim().isNotEmpty)
         ? message.trim()
         : 'أوافق على طلبك بالسعر المعروض.';
-    final finalDuration =
-        (duration != null && duration.trim().isNotEmpty) ? duration.trim() : 'غير محدد';
+    final finalDuration = (duration != null && duration.trim().isNotEmpty)
+        ? duration.trim()
+        : 'غير محدد';
     final finalArrivalTime =
         (arrivalTime != null && arrivalTime.trim().isNotEmpty)
         ? arrivalTime.trim()
         : 'غير محدد';
-    final finalWarranty =
-        (warranty != null && warranty.trim().isNotEmpty)
+    final finalWarranty = (warranty != null && warranty.trim().isNotEmpty)
         ? warranty.trim()
         : 'غير محدد';
 
@@ -93,10 +93,7 @@ class OrderAcceptService {
     });
 
     // 2) تحديث حالة الطلب إلى "offer_submitted"
-    await FirebaseFirestore.instance
-        .collection('requests')
-        .doc(requestId)
-        .set({
+    await FirebaseFirestore.instance.collection('requests').doc(requestId).set({
       'status': 'offer_submitted',
       'hasOffers': true,
       'technicianName': techName,

@@ -9,7 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:basita1/core/session/user_session.dart';
 
 class PaymentCardsScreen extends StatefulWidget {
-  const PaymentCardsScreen({Key? key}) : super(key: key);
+  const PaymentCardsScreen({super.key});
 
   @override
   State<PaymentCardsScreen> createState() => _PaymentCardsScreenState();
@@ -271,7 +271,12 @@ class _PaymentCardsScreenState extends State<PaymentCardsScreen> {
   }
 
   Widget _buildCardItem(String docId, Map<String, dynamic> data) {
-    final cardLast4 = data['cardLast4'] ?? data['cardNumber']?.toString().substring((data['cardNumber']?.toString().length ?? 4) - 4) ?? '0000';
+    final cardLast4 =
+        data['cardLast4'] ??
+        data['cardNumber']?.toString().substring(
+          (data['cardNumber']?.toString().length ?? 4) - 4,
+        ) ??
+        '0000';
     final cardHolder = data['cardHolder'] ?? '';
     final expiryDate = data['expiryDate'] ?? '';
     final isDefault = data['isDefault'] ?? false;
@@ -286,7 +291,7 @@ class _PaymentCardsScreenState extends State<PaymentCardsScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -456,7 +461,7 @@ class _PaymentCardsScreenState extends State<PaymentCardsScreen> {
                       width: 12,
                       height: 12,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF79E1B).withOpacity(0.85),
+                        color: const Color(0xFFF79E1B).withValues(alpha: 0.85),
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -473,7 +478,7 @@ class _PaymentCardsScreenState extends State<PaymentCardsScreen> {
 // ==========================================
 class _AddCardBottomSheet extends StatefulWidget {
   final String userId;
-  const _AddCardBottomSheet({Key? key, required this.userId}) : super(key: key);
+  const _AddCardBottomSheet({super.key, required this.userId});
 
   @override
   State<_AddCardBottomSheet> createState() => _AddCardBottomSheetState();
@@ -722,7 +727,7 @@ class _AddCardBottomSheetState extends State<_AddCardBottomSheet> {
                     ),
                     Switch(
                       value: _isDefault,
-                      activeColor: const Color(0xFF0D6EFD),
+                      activeThumbColor: const Color(0xFF0D6EFD),
                       onChanged: (val) => setState(() => _isDefault = val),
                     ),
                   ],
@@ -863,9 +868,7 @@ class _CardExpiryFormatter extends TextInputFormatter {
 class _DashedRectPainter extends CustomPainter {
   final Color color;
 
-  _DashedRectPainter({
-    required this.color,
-  });
+  _DashedRectPainter({required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {

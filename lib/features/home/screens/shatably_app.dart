@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart'; // تم إضافة مكتبة خطوط جوجل
 import 'package:basita1/features/home/screens/shatab.dart'; // تأكد من وجود هذا الملف
 
-
 // ==========================================
 // 1. الصفحة الرئيسية (باقات التشطيب)
 // ==========================================

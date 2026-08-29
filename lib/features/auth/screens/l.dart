@@ -36,7 +36,7 @@ class _SignUpScreenState extends State<BaseetaSignUpApp> {
   final TextEditingController _cityController = TextEditingController();
   final TextEditingController _regionController = TextEditingController();
 
-  String _selectedPlaceType = "شقة";
+  final String _selectedPlaceType = "شقة";
   final List<String> _placeTypes = ["شقة", "فيلا", "مكتب", "محل", "أخرى"];
 
   bool _isTermsAccepted = false;
@@ -748,7 +748,7 @@ class _SignUpScreenState extends State<BaseetaSignUpApp> {
       validator: validator,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: textGrey.withOpacity(0.5)),
+        hintStyle: TextStyle(color: textGrey.withValues(alpha: 0.5)),
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(
@@ -789,7 +789,7 @@ class _SignUpScreenState extends State<BaseetaSignUpApp> {
       },
       decoration: InputDecoration(
         hintText: "01XXXXXXXXX",
-        hintStyle: TextStyle(color: textGrey.withOpacity(0.5)),
+        hintStyle: TextStyle(color: textGrey.withValues(alpha: 0.5)),
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(

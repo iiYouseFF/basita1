@@ -527,7 +527,7 @@ class _TechnicianOnboardingScreenState
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -598,7 +598,7 @@ class _TechnicianOnboardingScreenState
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -771,8 +771,9 @@ class _TechnicianOnboardingScreenState
             style: const TextStyle(fontFamily: 'Cairo', fontSize: 14),
             decoration: _buildInputDecoration("ادخل المحافظة"),
             validator: (value) {
-              if (value == null || value.trim().isEmpty)
+              if (value == null || value.trim().isEmpty) {
                 return 'يرجى إدخال المحافظة';
+              }
               return null;
             },
           ),
@@ -785,8 +786,9 @@ class _TechnicianOnboardingScreenState
             style: const TextStyle(fontFamily: 'Cairo', fontSize: 14),
             decoration: _buildInputDecoration("ادخل المنطقة"),
             validator: (value) {
-              if (value == null || value.trim().isEmpty)
+              if (value == null || value.trim().isEmpty) {
                 return 'يرجى إدخال المنطقة';
+              }
               return null;
             },
           ),
@@ -842,7 +844,7 @@ class _TechnicianOnboardingScreenState
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -3),
           ),

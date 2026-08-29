@@ -9,12 +9,15 @@ class SearchRepository {
     String? governorate,
     int limit = 20,
   }) async {
-    var rpcQuery = _client.rpc('search_entities', params: {
-      'search_query': query,
-    });
+    var rpcQuery = _client.rpc(
+      'search_entities',
+      params: {'search_query': query},
+    );
 
     final data = await rpcQuery;
-    List<Map<String, dynamic>> results = List<Map<String, dynamic>>.from(data ?? []);
+    List<Map<String, dynamic>> results = List<Map<String, dynamic>>.from(
+      data ?? [],
+    );
 
     if (entityType != null) {
       results = results.where((r) => r['entity_type'] == entityType).toList();

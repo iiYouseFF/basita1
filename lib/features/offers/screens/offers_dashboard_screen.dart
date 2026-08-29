@@ -358,7 +358,7 @@ class _AvailableOffersScreenState extends State<AvailableOffersScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -503,7 +503,7 @@ class _AvailableOffersScreenState extends State<AvailableOffersScreen> {
                 ),
                 decoration: BoxDecoration(
                   color: offer.hasGreenArrivalTag
-                      ? tagBgGreen.withOpacity(0.15)
+                      ? tagBgGreen.withValues(alpha: 0.15)
                       : tagBgBlue,
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -696,7 +696,7 @@ class _AvailableOffersScreenState extends State<AvailableOffersScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, -3),
           ),
@@ -1290,7 +1290,7 @@ class _DynamicNegotiationScreenState extends State<DynamicNegotiationScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: badgeGreen.withOpacity(0.15),
+                  color: badgeGreen.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -1414,7 +1414,7 @@ class _DynamicNegotiationScreenState extends State<DynamicNegotiationScreen> {
             border: Border.all(color: const Color(0xFFD6E4F0), width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
@@ -1437,7 +1437,7 @@ class _DynamicNegotiationScreenState extends State<DynamicNegotiationScreen> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: brandBlue.withOpacity(0.1),
+                      color: brandBlue.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -1518,7 +1518,7 @@ class _DynamicNegotiationScreenState extends State<DynamicNegotiationScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
-                    color: badgeGreen.withOpacity(0.1),
+                    color: badgeGreen.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: badgeGreen),
                   ),
@@ -1579,7 +1579,7 @@ class _DynamicNegotiationScreenState extends State<DynamicNegotiationScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, -4),
           ),
@@ -1936,7 +1936,7 @@ class _DynamicChatScreenState extends State<DynamicChatScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, -4),
           ),

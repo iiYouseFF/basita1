@@ -160,10 +160,7 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
         await FirebaseFirestore.instance
             .collection('requests')
             .doc(widget.requestId)
-            .update({
-          'status': 'completed',
-          'paymentMethod': 'instapay',
-        });
+            .update({'status': 'completed', 'paymentMethod': 'instapay'});
 
         if (mounted) {
           setState(() => _isProcessing = false);
@@ -229,10 +226,7 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
                 Text(
                   'تم تحويل ${widget.amount.toStringAsFixed(0)} ج.م عبر InstaPay',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.cairo(
-                    fontSize: 14,
-                    color: textGrey,
-                  ),
+                  style: GoogleFonts.cairo(fontSize: 14, color: textGrey),
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
@@ -302,7 +296,7 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
+                      color: Colors.black.withValues(alpha: 0.04),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -313,7 +307,7 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: primaryBlue.withOpacity(0.1),
+                        color: primaryBlue.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -325,10 +319,7 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
                     const SizedBox(height: 16),
                     Text(
                       'المبلغ المطلوب',
-                      style: GoogleFonts.cairo(
-                        fontSize: 14,
-                        color: textGrey,
-                      ),
+                      style: GoogleFonts.cairo(fontSize: 14, color: textGrey),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -357,7 +348,10 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
                     const Divider(height: 24),
                     _buildDetailRow('الفني', widget.technicianName),
                     const Divider(height: 24),
-                    _buildDetailRow('رقم الطلب', widget.requestId.substring(0, 8)),
+                    _buildDetailRow(
+                      'رقم الطلب',
+                      widget.requestId.substring(0, 8),
+                    ),
                   ],
                 ),
               ),
@@ -371,7 +365,11 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline, color: Color(0xFF005CEE), size: 20),
+                      const Icon(
+                        Icons.info_outline,
+                        color: Color(0xFF005CEE),
+                        size: 20,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
@@ -401,9 +399,15 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
                               strokeWidth: 2,
                             ),
                           )
-                        : const Icon(Icons.account_balance_wallet, color: Colors.white, size: 20),
+                        : const Icon(
+                            Icons.account_balance_wallet,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                     label: Text(
-                      _isProcessing ? 'جاري الفتح...' : 'الدفع عبر تطبيق InstaPay',
+                      _isProcessing
+                          ? 'جاري الفتح...'
+                          : 'الدفع عبر تطبيق InstaPay',
                       style: GoogleFonts.cairo(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -424,11 +428,17 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
                   decoration: BoxDecoration(
                     color: const Color(0xFFECFDF5),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
+                    border: Border.all(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 24),
+                      const Icon(
+                        Icons.check_circle,
+                        color: Color(0xFF10B981),
+                        size: 24,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
@@ -488,7 +498,11 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
                               strokeWidth: 2,
                             ),
                           )
-                        : const Icon(Icons.verified, color: Colors.white, size: 20),
+                        : const Icon(
+                            Icons.verified,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                     label: Text(
                       _isProcessing ? 'جاري التأكيد...' : 'تأكيد إتمام الدفع',
                       style: GoogleFonts.cairo(
@@ -517,10 +531,7 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.cairo(fontSize: 14, color: textGrey),
-        ),
+        Text(label, style: GoogleFonts.cairo(fontSize: 14, color: textGrey)),
         Text(
           value,
           style: GoogleFonts.cairo(

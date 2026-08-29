@@ -467,7 +467,7 @@ class _InvoicesListScreenState extends State<InvoicesListScreen> {
           border: Border.all(color: borderGrey, width: 0.5),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -874,7 +874,7 @@ class InvoiceDetailsScreen extends StatelessWidget {
                   onPressed: () {},
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(
-                      color: textGrey.withOpacity(0.5),
+                      color: textGrey.withValues(alpha: 0.5),
                       width: 1.5,
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 14),

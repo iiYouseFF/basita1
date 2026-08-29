@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:basita1/features/feedback/screens/feedback_screen.dart';
 
 class ConsultationReadyScreen extends StatefulWidget {
-  const ConsultationReadyScreen({Key? key}) : super(key: key);
+  const ConsultationReadyScreen({super.key});
 
   @override
   State<ConsultationReadyScreen> createState() =>
@@ -154,7 +154,7 @@ class _ConsultationReadyScreenState extends State<ConsultationReadyScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: primaryBlue.withOpacity(0.1),
+        color: primaryBlue.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -194,7 +194,7 @@ class _ConsultationReadyScreenState extends State<ConsultationReadyScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
+            color: Colors.grey.withValues(alpha: 0.05),
             blurRadius: 10,
             spreadRadius: 2,
             offset: const Offset(0, 4),
@@ -240,7 +240,7 @@ class _ConsultationReadyScreenState extends State<ConsultationReadyScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
+            color: Colors.grey.withValues(alpha: 0.05),
             blurRadius: 10,
             spreadRadius: 2,
             offset: const Offset(0, 4),
@@ -433,7 +433,7 @@ class _ConsultationReadyScreenState extends State<ConsultationReadyScreen> {
               children: [
                 Icon(
                   tools[index]['icon'],
-                  color: textDark.withOpacity(0.8),
+                  color: textDark.withValues(alpha: 0.8),
                   size: 26,
                 ),
                 const SizedBox(height: 8),
@@ -443,7 +443,7 @@ class _ConsultationReadyScreenState extends State<ConsultationReadyScreen> {
                   style: GoogleFonts.cairo(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: textDark.withOpacity(0.8),
+                    color: textDark.withValues(alpha: 0.8),
                   ),
                 ),
               ],

@@ -66,7 +66,9 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
 
       setState(() {
         _completedRequests = snapshot.docs
-            .map((doc) => {'id': doc.id, ...(doc.data() as Map<String, dynamic>)})
+            .map(
+              (doc) => {'id': doc.id, ...(doc.data() as Map<String, dynamic>)},
+            )
             .where((req) {
               final status = (req['status'] ?? '').toString();
               return status == 'completed' ||
@@ -115,8 +117,11 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
             date.month == now.month &&
             date.day == now.day;
       case 2:
-        final DateTime weekStart = DateTime(now.year, now.month, now.day)
-            .subtract(const Duration(days: 6));
+        final DateTime weekStart = DateTime(
+          now.year,
+          now.month,
+          now.day,
+        ).subtract(const Duration(days: 6));
         return !date.isBefore(weekStart);
       default:
         return true;
@@ -140,11 +145,12 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
   }
 
   String _technicianName(Map<String, dynamic> req) {
-    final String name = (req['acceptedTechnicianName'] ??
-            req['technicianName'] ??
-            '')
-        .toString();
-    return name.isNotEmpty ? name : (req['name'] ?? req['customerName'] ?? '').toString();
+    final String name =
+        (req['acceptedTechnicianName'] ?? req['technicianName'] ?? '')
+            .toString();
+    return name.isNotEmpty
+        ? name
+        : (req['name'] ?? req['customerName'] ?? '').toString();
   }
 
   String _priceText(Map<String, dynamic> req) {
@@ -248,11 +254,7 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
           const SizedBox(height: 120),
-          Icon(
-            Icons.history,
-            size: 80,
-            color: Colors.grey.shade300,
-          ),
+          Icon(Icons.history, size: 80, color: Colors.grey.shade300),
           const SizedBox(height: 16),
           const Center(
             child: Text(
@@ -401,8 +403,7 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
     final String serviceName = _serviceName(req);
     final DateTime? visitDate = _requestDate(req);
     final String date = visitDate != null ? _formatDate(visitDate) : 'غير محدد';
-    final String time =
-        visitDate != null ? _formatTime(visitDate) : 'غير محدد';
+    final String time = visitDate != null ? _formatTime(visitDate) : 'غير محدد';
     final int ratingValue = (req['clientRating'] as int?) ?? 0;
     final String image = (req['image'] ?? '').toString();
     final bool isNetworkImage = image.startsWith('http');
@@ -547,14 +548,8 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    _buildDetailItem(
-                      Icons.payments_outlined,
-                      _priceText(req),
-                    ),
-                    _buildDetailItem(
-                      Icons.person_outline,
-                      'فني مختص',
-                    ),
+                    _buildDetailItem(Icons.payments_outlined, _priceText(req)),
+                    _buildDetailItem(Icons.person_outline, 'فني مختص'),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -586,8 +581,9 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
                         children: List.generate(
                           5,
                           (index) => Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 2.0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 2.0,
+                            ),
                             child: Icon(
                               index < ratingValue
                                   ? Icons.star
@@ -646,8 +642,7 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              const RequestServiceScreen(),
+                          builder: (context) => const RequestServiceScreen(),
                         ),
                       );
                     },
@@ -812,10 +807,7 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
       );
       setState(() {
         _completedRequests[index]['clientRating'] = rating;
-        _completedRequests[index] = {
-          'id': requestId,
-          ...data,
-        };
+        _completedRequests[index] = {'id': requestId, ...data};
       });
     } catch (e) {
       // تجاهل أخطاء إعادة التحميل

@@ -153,7 +153,7 @@ class _OtpScreenState extends State<OtpScreen> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: primaryBlue.withOpacity(0.2),
+                            color: primaryBlue.withValues(alpha: 0.2),
                             spreadRadius: 10,
                             blurRadius: 20,
                           ),

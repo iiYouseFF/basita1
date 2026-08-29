@@ -52,6 +52,7 @@ class PaymentLogRepository {
   }) async {
     await _client
         .from('payment_logs')
-        .update({'status': status}).eq('id', paymentId);
+        .update({'status': status})
+        .eq('id', paymentId);
   }
 }

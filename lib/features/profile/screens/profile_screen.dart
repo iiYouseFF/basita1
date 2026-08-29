@@ -265,7 +265,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: brandBlue.withOpacity(0.1),
+                                  color: brandBlue.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Row(

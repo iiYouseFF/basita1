@@ -278,10 +278,14 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: FamilyJoiningScreen.primaryBlue.withOpacity(0.05),
+                      color: FamilyJoiningScreen.primaryBlue.withValues(
+                        alpha: 0.05,
+                      ),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: FamilyJoiningScreen.primaryBlue.withOpacity(0.2),
+                        color: FamilyJoiningScreen.primaryBlue.withValues(
+                          alpha: 0.2,
+                        ),
                       ),
                     ),
                     child: Row(
@@ -470,11 +474,11 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
                   color: const Color(0xFFFFF9E6), // لون مميز لكارت الدعوة
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: const Color(0xFFFFC107).withOpacity(0.5),
+                    color: const Color(0xFFFFC107).withValues(alpha: 0.5),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
+                      color: Colors.black.withValues(alpha: 0.03),
                       blurRadius: 10,
                       spreadRadius: 2,
                     ),
@@ -621,7 +625,7 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
+                            color: Colors.black.withValues(alpha: 0.03),
                             blurRadius: 10,
                             spreadRadius: 2,
                           ),
@@ -703,7 +707,7 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
+                            color: Colors.black.withValues(alpha: 0.03),
                             blurRadius: 10,
                             spreadRadius: 2,
                           ),
@@ -792,8 +796,8 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
                     Container(
                       padding: const EdgeInsets.all(15),
                       decoration: BoxDecoration(
-                        color: FamilyJoiningScreen.primaryBlue.withOpacity(
-                          0.05,
+                        color: FamilyJoiningScreen.primaryBlue.withValues(
+                          alpha: 0.05,
                         ),
                         borderRadius: BorderRadius.circular(15),
                       ),
@@ -1060,7 +1064,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: FamilyDashboardScreen.primaryBlue.withOpacity(0.25),
+            color: FamilyDashboardScreen.primaryBlue.withValues(alpha: 0.25),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -1100,7 +1104,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -1131,7 +1135,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Icon(
@@ -1167,9 +1171,9 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
+          color: Colors.white.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1177,7 +1181,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
             Text(
               title,
               style: GoogleFonts.cairo(
-                color: Colors.white.withOpacity(0.85),
+                color: Colors.white.withValues(alpha: 0.85),
                 fontSize: 12,
               ),
             ),
@@ -1247,7 +1251,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.02),
+                color: Colors.black.withValues(alpha: 0.02),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -1303,10 +1307,12 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
           .collection('members')
           .snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting)
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty)
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const Text("لا يوجد أفراد بعد");
+        }
 
         return Column(
           children: snapshot.data!.docs.map((doc) {
@@ -1359,7 +1365,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1494,7 +1500,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -1719,7 +1725,9 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
                     width: 1.5,
                   ),
                   borderRadius: BorderRadius.circular(12),
-                  color: FamilyDashboardScreen.primaryBlue.withOpacity(0.05),
+                  color: FamilyDashboardScreen.primaryBlue.withValues(
+                    alpha: 0.05,
+                  ),
                 ),
                 child: Text(
                   widget.familyCode,
@@ -1940,7 +1948,7 @@ Widget _buildCustomBottomNavBar(BuildContext context, int currentIndex) {
       color: Colors.white,
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.05),
+          color: Colors.black.withValues(alpha: 0.05),
           blurRadius: 10,
           offset: const Offset(0, -5),
         ),
@@ -2010,7 +2018,7 @@ Widget _buildCustomBottomNavBar(BuildContext context, int currentIndex) {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: primaryBlue.withOpacity(0.15),
+                      color: primaryBlue.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(25),
                     ),
                     child: Column(

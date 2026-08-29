@@ -349,7 +349,7 @@ class _CompleteTaskPageState extends State<CompleteTaskPage> {
             color: Colors.white,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 spreadRadius: 1,
                 blurRadius: 10,
                 offset: const Offset(0, -5),
@@ -1681,7 +1681,7 @@ class _FinalInvoiceScreenState extends State<FinalInvoiceScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, -4),
           ),
@@ -1809,7 +1809,7 @@ class _TechnicianInvoiceIssuedScreenState
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: primaryBlue.withOpacity(0.15),
+                    color: primaryBlue.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Container(
@@ -1855,7 +1855,7 @@ class _TechnicianInvoiceIssuedScreenState
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
+                        color: Colors.black.withValues(alpha: 0.04),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -1945,7 +1945,7 @@ class _TechnicianInvoiceIssuedScreenState
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
+                        color: Colors.black.withValues(alpha: 0.04),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),

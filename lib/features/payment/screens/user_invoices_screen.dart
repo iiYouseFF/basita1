@@ -232,7 +232,7 @@ class _UserInvoicesListScreenState extends State<UserInvoicesListScreen> {
                       border: Border.all(color: const Color(0xFFE5E7EB)),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
+                          color: Colors.black.withValues(alpha: 0.02),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -342,7 +342,7 @@ class _UserInvoicesListScreenState extends State<UserInvoicesListScreen> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: primaryBlue.withOpacity(0.05),
+              color: primaryBlue.withValues(alpha: 0.05),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -434,7 +434,7 @@ class InvoiceDetailsScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
+                      color: Colors.black.withValues(alpha: 0.04),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -446,7 +446,7 @@ class InvoiceDetailsScreen extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: primaryBlue.withOpacity(0.03),
+                        color: primaryBlue.withValues(alpha: 0.03),
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(16),
                         ),
@@ -509,7 +509,7 @@ class InvoiceDetailsScreen extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: primaryBlue.withOpacity(0.1),
+                                  color: primaryBlue.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Icon(
@@ -605,10 +605,10 @@ class InvoiceDetailsScreen extends StatelessWidget {
                               vertical: 12,
                             ),
                             decoration: BoxDecoration(
-                              color: primaryBlue.withOpacity(0.05),
+                              color: primaryBlue.withValues(alpha: 0.05),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: primaryBlue.withOpacity(0.2),
+                                color: primaryBlue.withValues(alpha: 0.2),
                               ),
                             ),
                             child: Row(
@@ -713,7 +713,7 @@ class InvoiceDetailsScreen extends StatelessWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -4),
           ),

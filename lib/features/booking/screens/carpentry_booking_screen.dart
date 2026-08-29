@@ -230,7 +230,7 @@ class _CarpentryBookingScreenState extends State<CarpentryBookingScreen> {
               _buildSectionCard(
                 title: "نوع الخشب",
                 child: DropdownButtonFormField<String>(
-                  value: _selectedWoodType,
+                  initialValue: _selectedWoodType,
                   hint: Text(
                     "اختر نوع الخشب",
                     style: GoogleFonts.cairo(color: Colors.grey),
@@ -377,7 +377,7 @@ class _CarpentryBookingScreenState extends State<CarpentryBookingScreen> {
             color: Colors.white,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, -5),
               ),
@@ -430,7 +430,7 @@ class _CarpentryBookingScreenState extends State<CarpentryBookingScreen> {
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),

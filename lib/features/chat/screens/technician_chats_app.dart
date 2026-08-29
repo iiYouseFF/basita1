@@ -78,9 +78,8 @@ class _TechnicianChatsMainScreenState extends State<TechnicianChatsMainScreen> {
         _filteredRooms = _allRooms;
       } else {
         _filteredRooms = _allRooms.where((room) {
-          final serviceMatch = room.serviceType
-                  ?.toLowerCase()
-                  .contains(query.toLowerCase()) ??
+          final serviceMatch =
+              room.serviceType?.toLowerCase().contains(query.toLowerCase()) ??
               false;
           return serviceMatch;
         }).toList();
@@ -125,8 +124,10 @@ class _TechnicianChatsMainScreenState extends State<TechnicianChatsMainScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 12.0,
+            ),
             child: Container(
               decoration: BoxDecoration(
                 color: const Color(0xFFF1F3F5),
@@ -138,10 +139,11 @@ class _TechnicianChatsMainScreenState extends State<TechnicianChatsMainScreen> {
                 onChanged: _filterChats,
                 decoration: InputDecoration(
                   hintText: "ابحث في المحادثات",
-                  hintStyle:
-                      TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                  prefixIcon:
-                      Icon(Icons.search, color: Colors.grey.shade500),
+                  hintStyle: TextStyle(
+                    color: Colors.grey.shade400,
+                    fontSize: 14,
+                  ),
+                  prefixIcon: Icon(Icons.search, color: Colors.grey.shade500),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear, color: Colors.grey),
@@ -162,49 +164,51 @@ class _TechnicianChatsMainScreenState extends State<TechnicianChatsMainScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _filteredRooms.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.chat_bubble_outline,
-                                size: 64, color: Colors.grey.shade300),
-                            const SizedBox(height: 16),
-                            Text(
-                              "لا توجد محادثات بعد",
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 16,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              "ستظهر المحادثات عند وجود طلبات نشطة",
-                              style: TextStyle(
-                                color: Colors.grey.shade400,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 64,
+                          color: Colors.grey.shade300,
                         ),
-                      )
-                    : StreamBuilder<List<model.ChatRoom>>(
-                        stream:
-                            _chatRepo.watchUserChatRooms(_currentUserId),
-                        builder: (context, snapshot) {
-                          final rooms = snapshot.data ?? _filteredRooms;
-                          return ListView.separated(
-                            itemCount: rooms.length,
-                            separatorBuilder: (context, index) => Divider(
-                              color: Colors.grey.shade200,
-                              height: 1,
-                              indent: 80,
-                            ),
-                            itemBuilder: (context, index) {
-                              return _buildChatTile(rooms[index]);
-                            },
-                          );
+                        const SizedBox(height: 16),
+                        Text(
+                          "لا توجد محادثات بعد",
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "ستظهر المحادثات عند وجود طلبات نشطة",
+                          style: TextStyle(
+                            color: Colors.grey.shade400,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : StreamBuilder<List<model.ChatRoom>>(
+                    stream: _chatRepo.watchUserChatRooms(_currentUserId),
+                    builder: (context, snapshot) {
+                      final rooms = snapshot.data ?? _filteredRooms;
+                      return ListView.separated(
+                        itemCount: rooms.length,
+                        separatorBuilder: (context, index) => Divider(
+                          color: Colors.grey.shade200,
+                          height: 1,
+                          indent: 80,
+                        ),
+                        itemBuilder: (context, index) {
+                          return _buildChatTile(rooms[index]);
                         },
-                      ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -267,7 +271,9 @@ class _TechnicianChatsMainScreenState extends State<TechnicianChatsMainScreen> {
               child: Container(
                 color: Colors.white,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0, vertical: 12.0),
+                  horizontal: 16.0,
+                  vertical: 12.0,
+                ),
                 child: Row(
                   children: [
                     Stack(
@@ -286,8 +292,7 @@ class _TechnicianChatsMainScreenState extends State<TechnicianChatsMainScreen> {
                             decoration: BoxDecoration(
                               color: Colors.green,
                               shape: BoxShape.circle,
-                              border:
-                                  Border.all(color: Colors.white, width: 2),
+                              border: Border.all(color: Colors.white, width: 2),
                             ),
                           ),
                         ),
@@ -539,10 +544,7 @@ class _TechnicianChatDetailScreenState
                 ),
                 Text(
                   "متصل الآن",
-                  style: TextStyle(
-                    color: Colors.green,
-                    fontSize: 11,
-                  ),
+                  style: TextStyle(color: Colors.green, fontSize: 11),
                 ),
               ],
             ),
@@ -562,8 +564,11 @@ class _TechnicianChatDetailScreenState
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.chat_bubble_outline,
-                            size: 48, color: Colors.grey.shade300),
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 48,
+                          color: Colors.grey.shade300,
+                        ),
                         const SizedBox(height: 12),
                         Text(
                           "ابدأ المحادثة مع العميل",
@@ -581,7 +586,9 @@ class _TechnicianChatDetailScreenState
                   controller: _scrollController,
                   reverse: true,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 20),
+                    horizontal: 16,
+                    vertical: 20,
+                  ),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final msgItem = messages[index];
@@ -692,8 +699,11 @@ class _TechnicianChatDetailScreenState
         child: Row(
           children: [
             IconButton(
-              icon: Icon(Icons.add_circle_outline,
-                  color: primaryBlue, size: 26),
+              icon: Icon(
+                Icons.add_circle_outline,
+                color: primaryBlue,
+                size: 26,
+              ),
               onPressed: () {},
             ),
             Expanded(
@@ -724,8 +734,7 @@ class _TechnicianChatDetailScreenState
                   color: primaryBlue,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.send,
-                    color: Colors.white, size: 18),
+                child: const Icon(Icons.send, color: Colors.white, size: 18),
               ),
             ),
           ],

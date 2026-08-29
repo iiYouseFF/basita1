@@ -16,10 +16,7 @@ class SupabaseService {
     required String functionName,
     required Map<String, dynamic> body,
   }) async {
-    final response = await _client.functions.invoke(
-      functionName,
-      body: body,
-    );
+    final response = await _client.functions.invoke(functionName, body: body);
     return response.data as Map<String, dynamic>;
   }
 }

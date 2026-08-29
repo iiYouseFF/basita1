@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PlumbingBookingScreen extends StatefulWidget {
-  const PlumbingBookingScreen({Key? key}) : super(key: key);
+  const PlumbingBookingScreen({super.key});
 
   @override
   State<PlumbingBookingScreen> createState() => _PlumbingBookingScreenState();
@@ -407,7 +407,7 @@ class _PlumbingBookingScreenState extends State<PlumbingBookingScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
