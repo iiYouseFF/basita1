@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:pinput/pinput.dart';
 import 'dart:async';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:basita1/core/config/app_config.dart';
 import 'package:basita1/features/home/screens/home_screen.dart';
 
 class OtpScreen extends StatefulWidget {
-  // المتغير ده بيستقبل رقم الهاتف من صفحة تسجيل الدخول
   final String phoneNumber;
+  final String? verificationId;
+  final int? resendToken;
 
-  const OtpScreen({super.key, required this.phoneNumber});
+  const OtpScreen({
+    super.key,
+    required this.phoneNumber,
+    this.verificationId,
+    this.resendToken,
+  });
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -19,15 +26,22 @@ class _OtpScreenState extends State<OtpScreen> {
   String otpCode = "";
   bool _isLoading = false;
 
-  // متغيرات المؤقت (Timer)
   int _start = 58;
   Timer? _timer;
   bool _canResend = false;
+  String? _verificationId;
+  int? _resendToken;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
+    _verificationId = widget.verificationId;
+    _resendToken = widget.resendToken;
     _startTimer();
+    if (!AppConfig.useMockOtp && _verificationId == null) {
+      _sendCode();
+    }
   }
 
   @override
@@ -53,42 +67,164 @@ class _OtpScreenState extends State<OtpScreen> {
     });
   }
 
-  // دالة التحقق من الكود
+  Future<void> _sendCode() async {
+    try {
+      setState(() {
+        _errorMessage = null;
+      });
+      await FirebaseAuth.instance.verifyPhoneNumber(
+        phoneNumber: widget.phoneNumber.startsWith('+')
+            ? widget.phoneNumber
+            : '+2${widget.phoneNumber}',
+        forceResendingToken: _resendToken,
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          try {
+            await FirebaseAuth.instance.signInWithCredential(credential);
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('تم التحقق تلقائياً!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const SimpleHomeScreen()),
+              (route) => false,
+            );
+          } catch (e) {
+            if (!mounted) return;
+            setState(() => _errorMessage = 'فشل التحقق التلقائي: $e');
+          }
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          if (!mounted) return;
+          String msg;
+          switch (e.code) {
+            case 'invalid-phone-number':
+              msg = 'رقم الهاتف غير صحيح';
+              break;
+            case 'too-many-requests':
+              msg = 'عدد محاولات كثيرة، حاول لاحقاً';
+              break;
+            default:
+              msg = e.message ?? 'فشل إرسال الكود';
+          }
+          setState(() => _errorMessage = msg);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(msg), backgroundColor: Colors.red),
+          );
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          if (!mounted) return;
+          setState(() {
+            _verificationId = verificationId;
+            _resendToken = resendToken;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('تم إرسال كود التحقق عبر SMS'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {
+          _verificationId = verificationId;
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _errorMessage = 'خطأ: $e');
+    }
+  }
+
   Future<void> _verifyOtp() async {
-    // التحقق الأساسي: لازم الكود يكون 6 أرقام بالظبط وميكونش فاضي
     if (otpCode.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('يرجى إدخال كود التحقق كاملاً المكون من 6 أرقام'),
           backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
         ),
       );
-      return; // وقف الكود وماتكملش
+      return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
-    // محاكاة وقت الاتصال بالسيرفر للتحقق من الكود
-    await Future.delayed(const Duration(seconds: 2));
+    // ── Mock mode: any 6 digits passes (PROMPT.MD:1) ──
+    if (AppConfig.useMockOtp) {
+      await Future.delayed(const Duration(seconds: 1));
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تم التحقق بنجاح! (وضع Mock)'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const SimpleHomeScreen()),
+        (route) => false,
+      );
+      return;
+    }
 
-    if (!mounted) return;
-
-    setState(() => _isLoading = false);
-
-    // لو الكود صحيح، انقله للصفحة الرئيسية أو اعرض رسالة نجاح
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('تم التحقق بنجاح!'),
-        backgroundColor: Colors.green,
-      ),
-    );
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const SimpleHomeScreen()),
-      (Route<dynamic> route) =>
-          false, // بيمسح صفحة الـ OTP والـ Login وأي حاجة تانية في الخلفية
-    );
+    // ── Real Firebase flow ──
+    try {
+      if (_verificationId == null) {
+        throw FirebaseAuthException(
+          code: 'missing-verification-id',
+          message: 'لم يتم إرسال كود التحقق بعد، اضغط إعادة إرسال',
+        );
+      }
+      final credential = PhoneAuthProvider.credential(
+        verificationId: _verificationId!,
+        smsCode: otpCode,
+      );
+      await FirebaseAuth.instance.signInWithCredential(credential);
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تم التحقق بنجاح!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const SimpleHomeScreen()),
+        (route) => false,
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      String msg;
+      switch (e.code) {
+        case 'invalid-verification-code':
+          msg = 'كود التحقق غير صحيح';
+          break;
+        case 'session-expired':
+          msg = 'انتهت صلاحية الكود، اطلب كوداً جديداً';
+          break;
+        default:
+          msg = e.message ?? 'فشل التحقق';
+      }
+      setState(() => _errorMessage = msg);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      setState(() => _errorMessage = 'خطأ: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('خطأ: $e'), backgroundColor: Colors.red),
+      );
+    }
   }
 
   @override
@@ -196,6 +332,59 @@ class _OtpScreenState extends State<OtpScreen> {
                     ),
                     const SizedBox(height: 40),
 
+                    if (AppConfig.useMockOtp)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.orange.shade200),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.bug_report,
+                              size: 16,
+                              color: Colors.orange.shade700,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'وضع Mock — أي 6 أرقام ينجح',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.orange.shade700,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (AppConfig.useMockOtp) const SizedBox(height: 12),
+
+                    if (_errorMessage != null)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.red.shade200),
+                        ),
+                        child: Text(
+                          _errorMessage!,
+                          style: TextStyle(
+                            color: Colors.red.shade700,
+                            fontSize: 13,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+
                     // مربعات الـ OTP
                     Directionality(
                       textDirection: TextDirection.ltr,
@@ -206,6 +395,9 @@ class _OtpScreenState extends State<OtpScreen> {
                           border: Border.all(color: primaryBlue, width: 2),
                         ),
                         onChanged: (value) {
+                          otpCode = value;
+                        },
+                        onCompleted: (value) {
                           otpCode = value;
                         },
                       ),
@@ -238,7 +430,19 @@ class _OtpScreenState extends State<OtpScreen> {
                       onPressed: _canResend
                           ? () {
                               _startTimer();
-                              // أضف هنا كود إعادة إرسال الرسالة من الـ API
+                              setState(() => _errorMessage = null);
+                              if (AppConfig.useMockOtp) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'تم إعادة إرسال الكود (Mock)',
+                                    ),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              } else {
+                                _sendCode();
+                              }
                             }
                           : null,
                       icon: Icon(

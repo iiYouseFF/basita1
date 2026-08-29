@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // 👈 التخزين المحلي
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:basita1/core/config/app_config.dart';
 import 'package:basita1/features/auth/screens/otp_screen.dart';
+import 'package:basita1/features/home/screens/home_screen.dart';
 import 'package:basita1/core/session/user_session.dart';
 import 'package:basita1/core/utils/phone_utils.dart';
 
@@ -107,16 +110,74 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         );
 
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => OtpScreen(
-              phoneNumber: normalizeEgyptPhone(
-                data['phone'] ?? formatWithCountryNoZero,
-              ),
-            ),
-          ),
+        final normalizedPhone = normalizeEgyptPhone(
+          data['phone'] ?? formatWithCountryNoZero,
         );
+
+        if (AppConfig.useMockOtp) {
+          if (!mounted) return;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OtpScreen(phoneNumber: normalizedPhone),
+            ),
+          );
+        } else {
+          // Real Firebase Phone Auth — set loading true until codeSent
+          if (mounted) setState(() => _isLoading = true);
+          try {
+            await FirebaseAuth.instance.verifyPhoneNumber(
+              phoneNumber: normalizedPhone.startsWith('+')
+                  ? normalizedPhone
+                  : '+2$normalizedPhone',
+              verificationCompleted: (PhoneAuthCredential credential) async {
+                try {
+                  await FirebaseAuth.instance.signInWithCredential(credential);
+                  if (!mounted) return;
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SimpleHomeScreen(),
+                    ),
+                    (route) => false,
+                  );
+                } catch (_) {}
+              },
+              verificationFailed: (FirebaseAuthException e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(e.message ?? 'فشل إرسال كود التحقق'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                setState(() => _isLoading = false);
+              },
+              codeSent: (String verificationId, int? resendToken) {
+                if (!mounted) return;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => OtpScreen(
+                      phoneNumber: normalizedPhone,
+                      verificationId: verificationId,
+                      resendToken: resendToken,
+                    ),
+                  ),
+                );
+                setState(() => _isLoading = false);
+              },
+              codeAutoRetrievalTimeout: (String verificationId) {},
+            );
+          } catch (e) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('خطأ: $e'), backgroundColor: Colors.red),
+            );
+            setState(() => _isLoading = false);
+          }
+          return;
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
