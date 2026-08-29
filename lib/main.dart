@@ -3,12 +3,15 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:basita1/core/config/env.dart';
 import 'package:basita1/core/config/firebase_options.dart';
+import 'package:basita1/core/services/analytics_service.dart';
+import 'package:basita1/core/services/crash_service.dart';
 import 'package:basita1/features/auth/screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await CrashService.setup();
 
   // ignore: deprecated_member_use — anonKey still works with supabase_flutter 2.8; switch to publishableKey when upgrading
   await Supabase.initialize(url: Env.supabaseUrl, anonKey: Env.supabaseAnonKey);
@@ -29,6 +32,7 @@ class BasseeytaApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.white,
         fontFamily: 'Cairo',
       ),
+      navigatorObservers: [AnalyticsService().observer],
       home: const SplashScreen(),
     );
   }
