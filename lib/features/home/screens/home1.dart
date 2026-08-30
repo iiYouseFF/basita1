@@ -7,10 +7,11 @@ import 'package:basita1/features/orders/screens/orders_screen.dart';
 import 'package:basita1/features/orders/screens/sale_screen.dart';
 import 'package:basita1/features/profile/screens/profile2.dart';
 import 'package:basita1/core/session/user_data_session.dart';
-import 'package:basita1/features/home/screens/smart_map_screen.dart';
+// import 'package:basita1/features/home/screens/smart_map_screen.dart';
 import 'package:basita1/features/technician/screens/technician_dashboard.dart';
 import 'package:basita1/features/booking/screens/appointments_screen.dart';
 import 'package:basita1/features/chat/screens/technician_chats_app.dart';
+import 'package:basita1/features/feedback/screens/coming.dart';
 
 class MainTechnicianScreen extends StatefulWidget {
   const MainTechnicianScreen({super.key});
@@ -142,8 +143,7 @@ class _MainTechnicianScreenState extends State<MainTechnicianScreen> {
                   CircleAvatar(
                     radius: 18,
                     backgroundColor: Colors.blueAccent,
-                    backgroundImage:
-                        UserDataSession.profileImagePath.isNotEmpty
+                    backgroundImage: UserDataSession.profileImagePath.isNotEmpty
                         ? (UserDataSession.profileImagePath.startsWith('http')
                                   ? NetworkImage(
                                       UserDataSession.profileImagePath,
@@ -532,7 +532,7 @@ class _MainTechnicianScreenState extends State<MainTechnicianScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const SmartMapScreen(),
+                  builder: (context) => const ComingSoonScreen1(),
                 ),
               );
             },

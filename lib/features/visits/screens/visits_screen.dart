@@ -1,9 +1,67 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:basita1/core/session/user_session.dart';
-import 'package:basita1/features/orders/screens/visit_details_page.dart';
-import 'package:basita1/features/booking/screens/request_service_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart'; // تأكد من إضافة المكتبة في pubspec.yaml
 
+// =========================================================================
+// 1. نموذج البيانات (Model) لتوحيد شكل البيانات الثابتة والقادمة من فايربيس
+// =========================================================================
+class VisitModel {
+  final String requestId;
+  final String name;
+  final String jobTitle;
+  final String date;
+  final String time;
+  final String duration;
+  final String price;
+  final String location;
+  final String rating;
+  final bool isVerified;
+  final String imageUrl; // صورة الفني
+  final String description; // وصف المشكلة من العميل
+  final String solution; // الحل المنفذ
+  final String laborCost;
+  final String materialsCost;
+  final String experience;
+  final List<String> afterTaskImages; // صور العمل بعد التنفيذ من فايربيس
+  final String technicianNotes; // ملاحظات الفني الختامية
+
+  // حقول إضافية لدعم التصميم الجديد (مع قيم افتراضية حتى لا يتأثر الكود القديم)
+  final String totalServices;
+  final int clientRating;
+  final String paymentMethod;
+  final String warrantyDuration;
+  final String warrantyEndDate;
+
+  VisitModel({
+    required this.requestId,
+    required this.name,
+    required this.jobTitle,
+    required this.date,
+    required this.time,
+    required this.duration,
+    required this.price,
+    required this.location,
+    required this.rating,
+    required this.isVerified,
+    required this.imageUrl,
+    required this.description,
+    required this.solution,
+    required this.laborCost,
+    required this.materialsCost,
+    required this.experience,
+    this.afterTaskImages = const [],
+    this.technicianNotes = "",
+    this.totalServices = "1,240 خدمة",
+    this.clientRating = 5,
+    this.paymentMethod = "نقدي",
+    this.warrantyDuration = "6 أشهر",
+    this.warrantyEndDate = "15 سبتمبر 2024",
+  });
+}
+
+// =========================================================================
+// 2. الواجهة الرئيسية: سجل الزيارات (Dynamic Visits App)
+// =========================================================================
 class BasseytaVisitsApp extends StatefulWidget {
   const BasseytaVisitsApp({super.key});
 
@@ -14,336 +72,248 @@ class BasseytaVisitsApp extends StatefulWidget {
 class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
   int selectedFilterIndex = 0;
   final List<String> filters = ["كل الزيارات", "اليوم", "هذا الأسبوع"];
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-  bool _isLoading = true;
-  List<Map<String, dynamic>> _completedRequests = [];
 
-  static const List<String> _arabicMonths = [
-    'يناير',
-    'فبراير',
-    'مارس',
-    'أبريل',
-    'مايو',
-    'يونيو',
-    'يوليو',
-    'أغسطس',
-    'سبتمبر',
-    'أكتوبر',
-    'نوفمبر',
-    'ديسمبر',
-  ];
+  List<VisitModel> allVisits = [];
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadCompletedRequests();
+    _loadData();
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
+  // دالة لجلب البيانات ودمجها مع البيانات الثابتة (كما هي تماماً بدون نقص أي سطر)
+  Future<void> _loadData() async {
+    // 1. البيانات الثابتة
+    List<VisitModel> staticVisits = [
+      VisitModel(
+        requestId: "SH-8821",
+        name: "أحمد المحمدي",
+        jobTitle: "فني كهرباء",
+        date: "12 أكتوبر 2023",
+        time: "10:30 صباحاً",
+        duration: "ساعة ونصف",
+        price: "450 ج.م",
+        paymentMethod: "نقدي",
+        location: "شارع النزهة، التجمع الخامس، القاهرة",
+        rating: "4.9",
+        isVerified: true,
+        imageUrl: '',
+        description:
+            "انقطاع متكرر في التيار الكهربائي في منطقة المطبخ عند تشغيل أكثر من جهاز، مع وجود رائحة احتراق بسيطة بالقرب من لوحة المفاتيح الرئيسية.",
+        solution:
+            "تم استبدال مفتاح الأمان (Circuit Breaker) بآخر أصلي سعة 32 أمبير، وإعادة توزيع الأحمال على خطوط منفصلة لتجنب زيادة الحمل مستقبلاً.",
+        laborCost: "350 ج.م",
+        materialsCost: "420 ج.م",
+        experience: "8 سنوات",
+        totalServices: "1,240 خدمة",
+        afterTaskImages: [], // لا يوجد صور ثابتة هنا
+        technicianNotes:
+            "مواظبة ممتازة جداً وملتزم بنظافة المكان بعد الانتهاء من العمل. ينصح به بشدة في الأعمال المعقدة.",
+      ),
+      VisitModel(
+        requestId: "MM-9932",
+        name: "محمود الشافعي",
+        jobTitle: "فني سباكة",
+        date: "5 أكتوبر 2023",
+        time: "02:00 مساءً",
+        duration: "45 دقيقة",
+        price: "320 ج.م",
+        paymentMethod: "فيزا",
+        location: "مدينتي، منطقة B3، مبنى 14",
+        rating: "4.8",
+        isVerified: true,
+        imageUrl: '',
+        description: "تسريب مياه أسفل حوض الحمام.",
+        solution: "تم تغيير الوصلات المرنة وتثبيت مانع تسرب جديد.",
+        laborCost: "200 ج.م",
+        materialsCost: "120 ج.م",
+        experience: "5 سنوات",
+        totalServices: "850 خدمة",
+        afterTaskImages: [],
+        technicianNotes: "العميل متعاون وتم إنهاء العمل في الوقت المحدد.",
+      ),
+    ];
 
-  Future<void> _loadCompletedRequests() async {
-    final String phone = UserSession.instance.phone.trim();
-    if (phone.isEmpty) {
-      setState(() {
-        _isLoading = false;
-      });
-      return;
-    }
+    List<VisitModel> firebaseVisits = [];
 
     try {
-      final QuerySnapshot snapshot = await FirebaseFirestore.instance
-          .collection('requests')
-          .where('userPhone', isEqualTo: phone)
-          .orderBy('createdAt', descending: true)
+      // 2. جلب البيانات ديناميكياً من Firebase
+      QuerySnapshot transactionsSnap = await FirebaseFirestore.instance
+          .collection('transactions')
           .get();
 
-      if (!mounted) return;
+      for (var doc in transactionsSnap.docs) {
+        var data = doc.data() as Map<String, dynamic>;
+        String techId = data['technicianId'] ?? '';
+        String reqId = data['requestId'] ?? '';
+        String amount = data['amount']?.toString() ?? '0';
+        String dateStr = data['dateStr'] ?? 'تاريخ غير محدد';
+        String serviceName = data['serviceName'] ?? 'خدمة عامة';
 
-      setState(() {
-        _completedRequests = snapshot.docs
-            .map((doc) => {'id': doc.id, ...(doc.data() as Map<String, dynamic>)})
-            .where((req) {
-              final status = (req['status'] ?? '').toString();
-              return status == 'completed' ||
-                  status == 'pending_cash' ||
-                  status == 'paid' ||
-                  (req['isPaid'] == true);
-            })
-            .toList();
-        _isLoading = false;
-      });
+        String techName = "فني غير محدد";
+        String experience = "غير محدد";
+        String location = "موقع غير محدد";
+        String description = "لا يوجد وصف";
+        String techNotes = "لم يتم ترك ملاحظات إضافية.";
+        List<String> taskImages = [];
+
+        // جلب بيانات الفني
+        if (techId.isNotEmpty) {
+          DocumentSnapshot techDoc = await FirebaseFirestore.instance
+              .collection('technicians')
+              .doc(techId)
+              .get();
+          if (techDoc.exists) {
+            var techData = techDoc.data() as Map<String, dynamic>;
+            techName = techData['fullName'] ?? techName;
+            experience = techData['experience'] ?? experience;
+          }
+        }
+
+        // جلب بيانات الطلب (مهم جداً لجلب الصور والملاحظات)
+        if (reqId.isNotEmpty) {
+          DocumentSnapshot reqDoc = await FirebaseFirestore.instance
+              .collection('requests')
+              .doc(reqId)
+              .get();
+          if (reqDoc.exists) {
+            var reqData = reqDoc.data() as Map<String, dynamic>;
+            location = reqData['governorate'] ?? location;
+            description = reqData['description'] ?? description;
+            techNotes = reqData['technicianNotes'] ?? techNotes;
+
+            // سحب الصور المرفوعة من صفحة CompleteTaskPage
+            if (reqData['afterTaskImages'] != null) {
+              taskImages = List<String>.from(reqData['afterTaskImages']);
+            }
+          }
+        }
+
+        firebaseVisits.add(
+          VisitModel(
+            requestId: reqId.isNotEmpty
+                ? reqId.substring(0, 5).toUpperCase()
+                : "0000",
+            name: techName,
+            jobTitle: serviceName,
+            date: dateStr,
+            time: "تم التنفيذ",
+            duration: "غير محدد",
+            price: "$amount ج.م",
+            location: location,
+            rating: "4.5",
+            isVerified: true,
+            imageUrl: '',
+            description: description,
+            solution: "تم إنجاز الخدمة بنجاح بناءً على تقرير الفني.",
+            laborCost: "$amount ج.م",
+            materialsCost: "0 ج.م",
+            experience: experience,
+            afterTaskImages: taskImages, // تمرير الصور ديناميكياً
+            technicianNotes: techNotes, // تمرير الملاحظات ديناميكياً
+          ),
+        );
+      }
     } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
-      // نقوم بتحميل قائمة فارغة عند حدوث أي خطأ في الاتصال
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('حدث خطأ أثناء تحميل الزيارات: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      debugPrint("Error fetching data: $e");
     }
-  }
 
-  DateTime? _requestDate(Map<String, dynamic> req) {
-    final dynamic rawPaidAt = req['paidAt'];
-    final dynamic rawCreatedAt = req['createdAt'];
-    final dynamic dateValue = rawPaidAt ?? rawCreatedAt;
-    if (dateValue is Timestamp) {
-      return dateValue.toDate();
-    }
-    if (dateValue is DateTime) {
-      return dateValue;
-    }
-    return null;
-  }
-
-  bool _dateMatchesFilter(DateTime? date) {
-    if (date == null) return selectedFilterIndex == 0;
-    final DateTime now = DateTime.now();
-    switch (selectedFilterIndex) {
-      case 1:
-        return date.year == now.year &&
-            date.month == now.month &&
-            date.day == now.day;
-      case 2:
-        final DateTime weekStart = DateTime(now.year, now.month, now.day)
-            .subtract(const Duration(days: 6));
-        return !date.isBefore(weekStart);
-      default:
-        return true;
-    }
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day} ${_arabicMonths[date.month - 1]} ${date.year}';
-  }
-
-  String _formatTime(DateTime date) {
-    int hour = date.hour;
-    final String period = hour >= 12 ? 'مساءً' : 'صباحاً';
-    hour = hour % 12 == 0 ? 12 : hour % 12;
-    final String minutes = date.minute.toString().padLeft(2, '0');
-    return '$hour:$minutes $period';
-  }
-
-  String _serviceName(Map<String, dynamic> req) {
-    return (req['title'] ?? req['serviceType'] ?? 'صيانة منزلية').toString();
-  }
-
-  String _technicianName(Map<String, dynamic> req) {
-    final String name = (req['acceptedTechnicianName'] ??
-            req['technicianName'] ??
-            '')
-        .toString();
-    return name.isNotEmpty ? name : (req['name'] ?? req['customerName'] ?? '').toString();
-  }
-
-  String _priceText(Map<String, dynamic> req) {
-    final dynamic priceValue = req['paidAmount'] ?? req['acceptedPrice'];
-    if (priceValue == null) return 'غير محدد';
-    return '$priceValue ج.م';
-  }
-
-  String _locationText(Map<String, dynamic> req) {
-    final List<String> parts = [
-      (req['region'] ?? req['userRegion'] ?? '').toString(),
-      (req['governorate'] ?? req['userGovernorate'] ?? '').toString(),
-    ];
-    final List<String> nonEmpty = parts.where((p) => p.isNotEmpty).toList();
-    return nonEmpty.isNotEmpty ? nonEmpty.join('، ') : 'غير محدد';
-  }
-
-  IconData _serviceIcon(String serviceName) {
-    if (serviceName.contains('كهرباء') || serviceName.contains('مكيف')) {
-      return Icons.bolt;
-    }
-    if (serviceName.contains('سباك') || serviceName.contains('حمام')) {
-      return Icons.plumbing;
-    }
-    if (serviceName.contains('نجار')) {
-      return Icons.chair;
-    }
-    if (serviceName.contains('دهان') || serviceName.contains('نقاش')) {
-      return Icons.format_paint;
-    }
-    return Icons.build;
+    setState(() {
+      allVisits = [...firebaseVisits, ...staticVisits]; // عرض الأحدث أولاً
+      isLoading = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Directionality(
-      textDirection: TextDirection.rtl, // واجهة من اليمين لليسار
+      textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF9F9F9),
-        appBar: _buildAppBar(),
-        body: SafeArea(
-          child: Column(
-            children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "سجل الزيارات",
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+        backgroundColor: const Color(0xFFF9FAFC),
+        body: isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: Color(0xFF0056D2)),
+              )
+            : SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20.0,
+                    vertical: 16.0,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 20),
+                      Text(
+                        "سجل الزيارات",
+                        style: GoogleFonts.cairo(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.black87,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      "جميع الفنيين الذين زاروا منزلك في مكان واحد",
-                      style: TextStyle(fontSize: 14, color: Colors.grey),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      Text(
+                        "جميع الفنيين الذين زاروا منزلك في مكان واحد",
+                        style: GoogleFonts.cairo(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      _buildSearchBar(),
+                      const SizedBox(height: 24),
+                      _buildFilterChips(),
+                      const SizedBox(height: 24),
+
+                      allVisits.isEmpty
+                          ? Center(
+                              child: Text(
+                                "لا توجد زيارات سابقة.",
+                                style: GoogleFonts.cairo(color: Colors.grey),
+                              ),
+                            )
+                          : ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: allVisits.length,
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(height: 20),
+                              itemBuilder: (context, index) {
+                                return _buildVisitCard(allVisits[index]);
+                              },
+                            ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 20),
-
-              _buildSearchBar(),
-              const SizedBox(height: 20),
-
-              _buildFilterChips(),
-              const SizedBox(height: 24),
-
-              Expanded(child: _buildContent()),
-            ],
-          ),
-        ),
       ),
     );
   }
 
-  Widget _buildContent() {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: Color(0xFF0056D2)),
-      );
-    }
-
-    final String query = _searchQuery.trim().toLowerCase();
-    final List<Map<String, dynamic>> filtered = _completedRequests
-        .where((req) => _dateMatchesFilter(_requestDate(req)))
-        .where((req) {
-          if (query.isEmpty) return true;
-          final String name = _technicianName(req).toLowerCase();
-          final String service = _serviceName(req).toLowerCase();
-          return name.contains(query) || service.contains(query);
-        })
-        .toList();
-
-    if (filtered.isEmpty) {
-      return ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        children: [
-          const SizedBox(height: 120),
-          Icon(
-            Icons.history,
-            size: 80,
-            color: Colors.grey.shade300,
-          ),
-          const SizedBox(height: 16),
-          const Center(
-            child: Text(
-              "لا توجد زيارات مكتملة بعد",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Center(
-            child: Text(
-              "عندما يكمل الفني زيارتك ستظهر هنا",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: filtered.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 16),
-      itemBuilder: (context, index) => _buildVisitCard(filtered[index]),
-    );
-  }
-
-  // الهيدر العلوي (AppBar)
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: const Color(0xFFF9F9F9),
-      elevation: 0,
-      centerTitle: true,
-      leadingWidth: 70,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Color(0xFF0056D2), size: 28),
-        onPressed: () {
-          Navigator.pop(context);
-        },
-      ),
-      title: const Text(
-        "بسيطة",
-        style: TextStyle(
-          color: Color(0xFF0056D2),
-          fontSize: 26,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
-      actions: [
-        IconButton(
-          icon: const Icon(
-            Icons.notifications_none,
-            color: Colors.black87,
-            size: 28,
-          ),
-          onPressed: () {},
-        ),
-      ],
-    );
-  }
-
-  // شريط البحث
   Widget _buildSearchBar() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withOpacity(0.02),
             blurRadius: 10,
+            spreadRadius: 2,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: TextField(
-        controller: _searchController,
-        onChanged: (value) {
-          setState(() {
-            _searchQuery = value;
-          });
-        },
+        style: GoogleFonts.cairo(),
         decoration: InputDecoration(
           hintText: "ابحث باسم الفني أو نوع الخدمة...",
-          hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+          hintStyle: GoogleFonts.cairo(
+            color: Colors.grey.shade400,
+            fontSize: 14,
+          ),
           prefixIcon: const Icon(Icons.search, color: Colors.grey),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
@@ -355,34 +325,34 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
     );
   }
 
-  // أزرار الفلترة
   Widget _buildFilterChips() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
         children: List.generate(filters.length, (index) {
           bool isSelected = selectedFilterIndex == index;
           return Padding(
-            padding: const EdgeInsets.only(left: 8.0),
+            padding: const EdgeInsets.only(left: 10.0),
             child: ChoiceChip(
               label: Text(
                 filters[index],
-                style: TextStyle(
+                style: GoogleFonts.cairo(
                   color: isSelected ? Colors.white : Colors.black87,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                  fontSize: 14,
                 ),
               ),
               selected: isSelected,
+              showCheckmark: false,
               onSelected: (selected) {
-                setState(() {
-                  selectedFilterIndex = index;
-                });
+                setState(() => selectedFilterIndex = index);
               },
               backgroundColor: Colors.white,
               selectedColor: const Color(0xFF0056D2),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(25),
                 side: BorderSide(
                   color: isSelected ? Colors.transparent : Colors.grey.shade300,
                 ),
@@ -394,27 +364,386 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
     );
   }
 
-  // كارت زيارة الفني
-  Widget _buildVisitCard(Map<String, dynamic> req) {
-    final String requestId = (req['id'] ?? '').toString();
-    final String name = _technicianName(req);
-    final String serviceName = _serviceName(req);
-    final DateTime? visitDate = _requestDate(req);
-    final String date = visitDate != null ? _formatDate(visitDate) : 'غير محدد';
-    final String time =
-        visitDate != null ? _formatTime(visitDate) : 'غير محدد';
-    final int ratingValue = (req['clientRating'] as int?) ?? 0;
-    final String image = (req['image'] ?? '').toString();
-    final bool isNetworkImage = image.startsWith('http');
-
+  Widget _buildVisitCard(VisitModel visit) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // اليمين: الصورة مع الشارة
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      width: 65,
+                      height: 65,
+                      color: Colors.grey.shade200,
+                      child: const Icon(
+                        Icons.person,
+                        color: Colors.grey,
+                        size: 35,
+                      ),
+                    ),
+                  ),
+                  if (visit.isVerified)
+                    Positioned(
+                      top: -6,
+                      right: -6,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFFD700),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 16),
+              // المنتصف: الاسم والوظيفة
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      visit.name,
+                      style: GoogleFonts.cairo(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.bolt, size: 18, color: Colors.grey.shade700),
+                        const SizedBox(width: 4),
+                        Text(
+                          visit.jobTitle,
+                          style: GoogleFonts.cairo(
+                            fontSize: 14,
+                            color: Colors.grey.shade700,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // اليسار: الحالة والتقييم
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD4EDDA).withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      "اكتملت",
+                      style: GoogleFonts.cairo(
+                        color: const Color(0xFF155724),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Text(
+                        visit.rating,
+                        style: GoogleFonts.cairo(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.star,
+                        color: Color(0xFFFFD700),
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // تفاصيل الموعد والسعر في حاوية رمادية
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8F9FB),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    _buildDetailItem(Icons.calendar_today_outlined, visit.date),
+                    _buildDetailItem(Icons.access_time_outlined, visit.time),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    _buildDetailItem(Icons.timer_outlined, visit.duration),
+                    _buildDetailItem(
+                      Icons.payments_outlined,
+                      "${visit.price} (${visit.paymentMethod})",
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    _buildDetailItem(
+                      Icons.location_on_outlined,
+                      visit.location,
+                      isFullWidth: true,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Text(
+                      "تقييمك له",
+                      style: GoogleFonts.cairo(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Row(
+                      children: List.generate(5, (index) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 2.0),
+                          child: Icon(
+                            Icons.star_border,
+                            color: Color(0xFF0056D2),
+                            size: 24,
+                          ),
+                        );
+                      }),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          // الأزرار
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 50,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              DynamicVisitDetailsApp(visit: visit),
+                        ),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(
+                        color: Color(0xFF0056D2),
+                        width: 1.5,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: Text(
+                      "عرض التفاصيل",
+                      style: GoogleFonts.cairo(
+                        color: const Color(0xFF0056D2),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: SizedBox(
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0056D2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      "إعادة الحجز",
+                      style: GoogleFonts.cairo(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailItem(
+    IconData icon,
+    String text, {
+    bool isFullWidth = false,
+  }) {
+    Widget content = Row(
+      children: [
+        Icon(icon, size: 18, color: Colors.grey.shade600),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: GoogleFonts.cairo(
+              fontSize: 13,
+              color: Colors.black87,
+              fontWeight: FontWeight.w600,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+
+    return isFullWidth ? Expanded(child: content) : Expanded(child: content);
+  }
+}
+
+// =========================================================================
+// 3. الواجهة الفرعية: التفاصيل الشخصية للزيارة والفني (Dynamic Details)
+// =========================================================================
+class DynamicVisitDetailsApp extends StatelessWidget {
+  final VisitModel visit;
+
+  const DynamicVisitDetailsApp({super.key, required this.visit});
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF6F8FA),
+        appBar: _buildAppBar(context),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+          child: Column(
+            children: [
+              _buildTechnicianProfile(),
+              const SizedBox(height: 20),
+              _buildActionButtons(),
+              const SizedBox(height: 20),
+              _buildServiceDetails(),
+              const SizedBox(height: 20),
+              _buildFinancialSummary(),
+              const SizedBox(height: 20),
+              _buildVisitTracking(),
+              const SizedBox(height: 20),
+              _buildWarrantySection(),
+              const SizedBox(height: 20),
+              _buildInvoiceSection(),
+              const SizedBox(height: 20),
+              _buildPrivateNotesSection(),
+              const SizedBox(height: 20),
+              _buildStatisticsSection(),
+              const SizedBox(height: 20),
+              _buildReportButton(),
+              const SizedBox(height: 32),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    return AppBar(
+      backgroundColor: const Color(0xFFF6F8FA),
+      elevation: 0,
+      centerTitle: true,
+      leading: IconButton(
+        icon: const Icon(
+          Icons.arrow_back_ios_new_rounded,
+          color: Color(0xFF0056D2),
+          size: 22,
+        ),
+        onPressed: () => Navigator.pop(context),
+      ),
+      title: Text(
+        "تفاصيل الزيارة",
+        style: GoogleFonts.cairo(
+          color: const Color(0xFF0056D2),
+          fontSize: 20,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.share_outlined, color: Color(0xFF0056D2)),
+          onPressed: () {},
+        ),
+        IconButton(
+          icon: const Icon(Icons.notifications_none, color: Color(0xFF0056D2)),
+          onPressed: () {},
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTechnicianProfile() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -427,211 +756,826 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
             children: [
               Stack(
                 clipBehavior: Clip.none,
+                alignment: Alignment.bottomCenter,
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: isNetworkImage
-                        ? Image.network(
-                            image,
-                            width: 60,
-                            height: 60,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Image.asset(
-                              'assets/Container (22).png',
-                              width: 60,
-                              height: 60,
-                              fit: BoxFit.cover,
+                    borderRadius: BorderRadius.circular(18),
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      color: Colors.grey.shade200,
+                      child: const Icon(
+                        Icons.person,
+                        color: Colors.grey,
+                        size: 40,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: -10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFD700),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            visit.rating,
+                            style: GoogleFonts.cairo(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: Colors.black87,
                             ),
-                          )
-                        : Image.asset(
-                            'assets/Container (22).png',
-                            width: 60,
-                            height: 60,
-                            fit: BoxFit.cover,
                           ),
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.star,
+                            size: 14,
+                            color: Colors.black87,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 20),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          _serviceIcon(serviceName),
-                          size: 16,
-                          color: Colors.grey.shade700,
-                        ),
-                        const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            serviceName,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade700,
+                            visit.name,
+                            style: GoogleFonts.cairo(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
                             ),
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE8F0FE),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            "طلب #${visit.requestId}",
+                            style: GoogleFonts.cairo(
+                              color: const Color(0xFF0056D2),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "${visit.jobTitle} • خبير تشطيبات",
+                      style: GoogleFonts.cairo(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE5F8ED),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      "اكتملت",
-                      style: TextStyle(
-                        color: Color(0xFF00B050),
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+            ],
+          ),
+          const SizedBox(height: 30),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8F9FB),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
+                  child: Column(
                     children: [
                       Text(
-                        ratingValue > 0 ? ratingValue.toString() : '—',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                        "الخبرة",
+                        style: GoogleFonts.cairo(
+                          color: Colors.grey.shade500,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      const Icon(Icons.star, color: Colors.amber, size: 18),
+                      const SizedBox(height: 4),
+                      Text(
+                        visit.experience,
+                        style: GoogleFonts.cairo(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
+                      ),
                     ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8F9FB),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        "إجمالي الخدمات",
+                        style: GoogleFonts.cairo(
+                          color: Colors.grey.shade500,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        visit.totalServices,
+                        style: GoogleFonts.cairo(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _buildCircleAction(Icons.star_border),
+        _buildCircleAction(Icons.phone_outlined),
+        _buildCircleAction(Icons.email_outlined),
+        _buildCircleAction(Icons.sync),
+      ],
+    );
+  }
+
+  Widget _buildCircleAction(IconData icon) {
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFF0056D2), width: 1.5),
+        color: Colors.white,
+      ),
+      child: Icon(icon, color: const Color(0xFF0056D2), size: 28),
+    );
+  }
+
+  Widget _buildServiceDetails() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0056D2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.bolt, color: Colors.white, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                "تفاصيل الخدمة",
+                style: GoogleFonts.cairo(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            "وصف المشكلة",
+            style: GoogleFonts.cairo(
+              fontSize: 13,
+              color: Colors.grey.shade500,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            visit.description,
+            style: GoogleFonts.cairo(
+              fontSize: 15,
+              height: 1.6,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.grey.shade200, width: 1.5),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "الحل المنفذ",
+                  style: GoogleFonts.cairo(
+                    fontSize: 13,
+                    color: const Color(0xFF0056D2),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  visit.solution,
+                  style: GoogleFonts.cairo(
+                    fontSize: 14,
+                    height: 1.6,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          // عرض الصور
+          visit.afterTaskImages.isNotEmpty
+              ? SizedBox(
+                  height: 120,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: visit.afterTaskImages.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(left: 12.0),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.network(
+                            visit.afterTaskImages[index],
+                            width: 120,
+                            height: 120,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                _buildErrorImagePlaceholder(),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                )
+              : Row(
+                  children: [
+                    Expanded(
+                      child: _buildFallbackImage(
+                        'assets/image_334268.png',
+                        'قبل الإصلاح',
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildFallbackImage(
+                        'assets/image_33426b.png',
+                        'بعد الإصلاح',
+                      ),
+                    ),
+                  ],
+                ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFallbackImage(String assetPath, String label) {
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            height: 120,
+            width: double.infinity,
+            color: Colors.grey.shade200,
+            child: const Center(
+              child: Icon(Icons.image, color: Colors.grey, size: 40),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 10,
+          right: 10,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0056D2).withOpacity(0.9),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              label,
+              style: GoogleFonts.cairo(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildErrorImagePlaceholder() {
+    return Container(
+      width: 120,
+      height: 120,
+      color: Colors.grey.shade200,
+      child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+    );
+  }
+
+  Widget _buildFinancialSummary() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "الملخص المالي والوقت",
+            style: GoogleFonts.cairo(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatBox(
+                  "وقت التنفيذ",
+                  visit.duration,
+                  isHighlighted: true,
+                  highlightTextColor: const Color(0xFF0056D2),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(child: _buildStatBox("تكلفة العمالة", visit.laborCost)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatBox(
+                  "الإجمالي",
+                  visit.price,
+                  isHighlighted: true,
+                  highlightColor: const Color(0xFFD3E3FF),
+                  highlightTextColor: const Color(0xFF0056D2),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildStatBox("تكلفة المواد", visit.materialsCost),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatBox(
+    String title,
+    String value, {
+    bool isHighlighted = false,
+    Color? highlightColor,
+    Color? highlightTextColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      decoration: BoxDecoration(
+        color: isHighlighted
+            ? (highlightColor ?? const Color(0xFFF0F5FF))
+            : const Color(0xFFF8F9FB),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.cairo(
+              color: isHighlighted
+                  ? (highlightTextColor ?? const Color(0xFF0056D2))
+                  : Colors.grey.shade600,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: GoogleFonts.cairo(
+              color: isHighlighted
+                  ? (highlightTextColor ?? const Color(0xFF0056D2))
+                  : Colors.black87,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVisitTracking() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "تتبع الزيارة",
+            style: GoogleFonts.cairo(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 20),
+          _buildTimelineStep(
+            "تم قبول الطلب",
+            "تم التوزيع لـ أحمد المحمدي",
+            "10:15 ص",
+            true,
+            isFirst: true,
+          ),
+          _buildTimelineStep(
+            "وصول الفني",
+            "تم البدء في المعاينة والإصلاح",
+            "10:30 ص",
+            true,
+          ),
+          _buildTimelineStep(
+            "اكتمال المهمة",
+            "تم الدفع وإغلاق البلاغ",
+            "11:40 ص",
+            true,
+          ),
+          _buildTimelineStep(
+            "تم التقييم",
+            "شكراً لثقتكم! تم تقييمكم",
+            "12:00 م",
+            true,
+            isLast: true,
+            icon: Icons.star,
+            iconColor: const Color(0xFFFFD700),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineStep(
+    String title,
+    String subtitle,
+    String time,
+    bool isCompleted, {
+    bool isFirst = false,
+    bool isLast = false,
+    IconData? icon,
+    Color? iconColor,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 50,
+          child: Text(
+            time,
+            style: GoogleFonts.cairo(
+              fontSize: 12,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Column(
+          children: [
+            if (!isFirst)
+              Container(
+                width: 2,
+                height: 25,
+                color: isCompleted
+                    ? const Color(0xFF0056D2)
+                    : Colors.grey.shade300,
+              ),
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isCompleted
+                    ? (icon != null ? Colors.white : const Color(0xFF0056D2))
+                    : Colors.white,
+                border: Border.all(
+                  color: isCompleted
+                      ? (iconColor ?? const Color(0xFF0056D2))
+                      : Colors.grey.shade300,
+                  width: 2,
+                ),
+              ),
+              child: icon != null
+                  ? Icon(icon, size: 14, color: iconColor)
+                  : (isCompleted
+                        ? const Icon(Icons.check, size: 12, color: Colors.white)
+                        : null),
+            ),
+            if (!isLast)
+              Container(
+                width: 2,
+                height: 25,
+                color: isCompleted
+                    ? const Color(0xFF0056D2)
+                    : Colors.grey.shade300,
+              ),
+          ],
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(
+              top: isFirst ? 0 : (isLast ? 0 : 8),
+              bottom: isLast ? 0 : 10,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.cairo(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.cairo(
+                    fontSize: 13,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWarrantySection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F8FF),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.shield_outlined,
+                color: Color(0xFF0056D2),
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                "الضمان",
+                style: GoogleFonts.cairo(
+                  color: const Color(0xFF0056D2),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "الحالة",
+                style: GoogleFonts.cairo(
+                  color: Colors.grey.shade700,
+                  fontSize: 14,
+                ),
+              ),
+              Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF00C853),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    "ساري",
+                    style: GoogleFonts.cairo(
+                      color: const Color(0xFF00C853),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 16),
-
-          // صندوق التفاصيل الرمادي
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    _buildDetailItem(Icons.calendar_today_outlined, date),
-                    _buildDetailItem(Icons.access_time_outlined, time),
-                  ],
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "المدة",
+                style: GoogleFonts.cairo(
+                  color: Colors.grey.shade700,
+                  fontSize: 14,
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    _buildDetailItem(
-                      Icons.payments_outlined,
-                      _priceText(req),
-                    ),
-                    _buildDetailItem(
-                      Icons.person_outline,
-                      'فني مختص',
-                    ),
-                  ],
+              ),
+              Text(
+                visit.warrantyDuration,
+                style: GoogleFonts.cairo(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    _buildDetailItem(
-                      Icons.location_on_outlined,
-                      _locationText(req),
-                      isFullWidth: true,
-                    ),
-                  ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "تاريخ الانتهاء",
+                style: GoogleFonts.cairo(
+                  color: Colors.grey.shade700,
+                  fontSize: 14,
                 ),
-                const SizedBox(height: 12),
-                // قسم تقييمك له (النجوم المفرغة كما في الصورة)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      "تقييمك له",
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.black87,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => _showRatingDialog(requestId, ratingValue),
-                      child: Row(
-                        children: List.generate(
-                          5,
-                          (index) => Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 2.0),
-                            child: Icon(
-                              index < ratingValue
-                                  ? Icons.star
-                                  : Icons.star_border,
-                              color: const Color(0xFF0056D2),
-                              size: 24,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+              ),
+              Text(
+                visit.warrantyEndDate,
+                style: GoogleFonts.cairo(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
                 ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: OutlinedButton(
+              onPressed: () {},
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFF0056D2), width: 1.5),
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: Text(
+                "فتح مطالبة ضمان",
+                style: GoogleFonts.cairo(
+                  color: const Color(0xFF0056D2),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
 
-          // الأزرار السفلية
+  Widget _buildInvoiceSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEBEBEB),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.receipt_long_outlined, color: Colors.black87),
+              const SizedBox(width: 10),
+              Text(
+                "الفاتورة الإلكترونية",
+                style: GoogleFonts.cairo(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            "فاتورة رقم #INV-9901 جاهزة للتحميل.",
+            style: GoogleFonts.cairo(fontSize: 13, color: Colors.grey.shade700),
+          ),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
                 child: SizedBox(
                   height: 45,
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const BasseytaApp(),
-                        ),
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFF0056D2)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  child: ElevatedButton.icon(
+                    onPressed: () {},
+                    icon: const Icon(
+                      Icons.share_outlined,
+                      size: 18,
+                      color: Colors.black87,
+                    ),
+                    label: Text(
+                      "مشاركة",
+                      style: GoogleFonts.cairo(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    child: const Text(
-                      "عرض التفاصيل",
-                      style: TextStyle(
-                        color: Color(0xFF0056D2),
-                        fontWeight: FontWeight.bold,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                   ),
@@ -641,28 +1585,25 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
               Expanded(
                 child: SizedBox(
                   height: 45,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const RequestServiceScreen(),
-                        ),
-                      );
-                    },
+                  child: ElevatedButton.icon(
+                    onPressed: () {},
+                    icon: const Icon(
+                      Icons.download_rounded,
+                      size: 18,
+                      color: Colors.black87,
+                    ),
+                    label: Text(
+                      "PDF",
+                      style: GoogleFonts.cairo(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0056D2),
+                      backgroundColor: Colors.white,
+                      elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      "إعادة الحجز",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
@@ -675,150 +1616,195 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
     );
   }
 
-  // دالة مساعدة لعناصر التفاصيل
-  Widget _buildDetailItem(
-    IconData icon,
-    String text, {
-    bool isFullWidth = false,
-  }) {
-    Widget content = Row(
-      children: [
-        Icon(icon, size: 16, color: Colors.grey.shade600),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(fontSize: 13, color: Colors.black87),
-            overflow: TextOverflow.ellipsis,
+  Widget _buildPrivateNotesSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7E6),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.speaker_notes_outlined,
+                color: Color(0xFFB8860B),
+                size: 22,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                "ملاحظاتي الخاصة",
+                style: GoogleFonts.cairo(
+                  color: const Color(0xFFB8860B),
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              visit.technicianNotes.isNotEmpty
+                  ? '"${visit.technicianNotes}"'
+                  : '"لم تقم بكتابة ملاحظات إضافية لهذه الزيارة."',
+              style: GoogleFonts.cairo(
+                fontSize: 14,
+                color: Colors.black87,
+                height: 1.6,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.edit, size: 16, color: Color(0xFF0056D2)),
+              label: Text(
+                "تعديل الملاحظات",
+                style: GoogleFonts.cairo(
+                  color: const Color(0xFF0056D2),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatisticsSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Text(
+              "إحصائيات التعامل",
+              style: GoogleFonts.cairo(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "مرات الزيارة",
+                style: GoogleFonts.cairo(
+                  color: Colors.grey.shade700,
+                  fontSize: 14,
+                ),
+              ),
+              Text(
+                "3 زيارات",
+                style: GoogleFonts.cairo(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "إجمالي المدفوع",
+                style: GoogleFonts.cairo(
+                  color: Colors.grey.shade700,
+                  fontSize: 14,
+                ),
+              ),
+              Text(
+                "2,450 ج.م",
+                style: GoogleFonts.cairo(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "آخر زيارة",
+                style: GoogleFonts.cairo(
+                  color: Colors.grey.shade700,
+                  fontSize: 14,
+                ),
+              ),
+              Text(
+                "منذ شهر",
+                style: GoogleFonts.cairo(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReportButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: OutlinedButton.icon(
+        onPressed: () {},
+        icon: const Icon(
+          Icons.info_outline,
+          color: Color(0xFFD32F2F),
+          size: 20,
+        ),
+        label: Text(
+          "إبلاغ عن مشكلة في هذه الزيارة",
+          style: GoogleFonts.cairo(
+            color: const Color(0xFFD32F2F),
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
           ),
         ),
-      ],
-    );
-
-    return Expanded(child: content);
-  }
-
-  Future<void> _showRatingDialog(String requestId, int currentRating) async {
-    int selectedRating = currentRating;
-    final int? result = await showDialog<int>(
-      context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (dialogContext, setDialogState) {
-            return Directionality(
-              textDirection: TextDirection.rtl,
-              child: AlertDialog(
-                title: const Text(
-                  "تقييمك له",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      "كيف تقيم تجربتك مع الفني؟",
-                      style: TextStyle(fontSize: 14, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        5,
-                        (index) => IconButton(
-                          icon: Icon(
-                            index < selectedRating
-                                ? Icons.star
-                                : Icons.star_border,
-                            color: const Color(0xFFFFC107),
-                            size: 36,
-                          ),
-                          onPressed: () {
-                            setDialogState(() {
-                              selectedRating = index + 1;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(dialogContext, null);
-                    },
-                    child: const Text("إلغاء"),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(dialogContext, selectedRating);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0056D2),
-                    ),
-                    child: const Text("حفظ التقييم"),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-
-    if (result == null || result <= 0 || !mounted) return;
-
-    try {
-      await FirebaseFirestore.instance
-          .collection('requests')
-          .doc(requestId)
-          .update({
-            'clientRating': result,
-            'clientRatedAt': FieldValue.serverTimestamp(),
-          });
-
-      await _reloadRequest(requestId, result);
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('تم حفظ تقييمك بنجاح'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(
+            color: Color(0xFFFFCDD2),
+            width: 1.5,
+            style: BorderStyle.solid,
+          ),
+          backgroundColor: const Color(0xFFFFF5F5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('حدث خطأ أثناء حفظ التقييم: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
-  }
-
-  Future<void> _reloadRequest(String requestId, int rating) async {
-    try {
-      final DocumentSnapshot doc = await FirebaseFirestore.instance
-          .collection('requests')
-          .doc(requestId)
-          .get();
-      if (!mounted || !doc.exists) return;
-      final data = doc.data() as Map<String, dynamic>;
-      final int index = _completedRequests.indexWhere(
-        (r) => r['id'] == requestId,
-      );
-      setState(() {
-        _completedRequests[index]['clientRating'] = rating;
-        _completedRequests[index] = {
-          'id': requestId,
-          ...data,
-        };
-      });
-    } catch (e) {
-      // تجاهل أخطاء إعادة التحميل
-    }
+      ),
+    );
   }
 }

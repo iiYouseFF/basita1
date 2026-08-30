@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // [إضافة جديدة]
 
 // استدعاء ملف جلسة المستخدم لجلب معلوماته عند حفظ البطاقة
 import 'package:basita1/core/session/user_session.dart';
@@ -43,15 +44,11 @@ class ClientRequestModel {
       return 0.0;
     }
 
-    // [تصحيح المشكلة الأولى]:
-    // تجاهلنا حقل finalTotal تماماً لأنه كان يجمع الميزانية (Budget) مع سعر الخدمة بالخطأ.
-    // الاعتماد الأساسي سيكون على السعر النهائي الذي قدمه الفني.
     double finalPrice = parsePrice(data['finalPrice']);
     double acceptedPrice = parsePrice(data['acceptedPrice']);
     double servicePrice = parsePrice(data['servicePrice']);
     double priceVal = parsePrice(data['price']);
 
-    // أولوية السعر: السعر النهائي > السعر المقبول > سعر الخدمة > السعر العادي
     double correctTotal = finalPrice > 0
         ? finalPrice
         : (acceptedPrice > 0
@@ -71,7 +68,7 @@ class ClientRequestModel {
           data['techId'] ??
           data['assignedTechnicianId'] ??
           '',
-      finalTotal: correctTotal, // إرسال السعر المصحح بدون الميزانية
+      finalTotal: correctTotal,
       status: data['status'] ?? 'pending',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
     );
@@ -91,6 +88,70 @@ class ClientRequestsScreen extends StatefulWidget {
 class _ClientRequestsScreenState extends State<ClientRequestsScreen> {
   final Color primaryBlue = const Color(0xFF0056D2);
   final Color bgLight = const Color(0xFFF8F9FA);
+
+  // [إضافة جديدة]: قائمة لحفظ الـ IDs المخفية محلياً
+  List<String> _hiddenRequestIds = [];
+  bool _isLoadingIds = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHiddenIds(); // جلب الـ IDs المخفية أول ما الصفحة تفتح
+  }
+
+  // [إضافة جديدة]: دالة لجلب الطلبات المحذوفة محلياً من الذاكرة
+  Future<void> _loadHiddenIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _hiddenRequestIds = prefs.getStringList('hidden_client_requests') ?? [];
+      _isLoadingIds = false;
+    });
+  }
+
+  // [إضافة جديدة]: دالة لإخفاء الطلبات المكتملة محلياً فقط
+  Future<void> _hideCompletedRequestsLocally(
+    List<ClientRequestModel> allCurrentRequests,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // فلترة الطلبات عشان نجيب الـ IDs بتاعت الطلبات المكتملة فقط
+    final completedIds = allCurrentRequests
+        .where((req) => req.status == 'completed' || req.status == 'paid')
+        .map((req) => req.id)
+        .toList();
+
+    if (completedIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'لا يوجد طلبات مكتملة لمسحها',
+            style: GoogleFonts.cairo(),
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _hiddenRequestIds.addAll(completedIds);
+      _hiddenRequestIds = _hiddenRequestIds.toSet().toList(); // منع التكرار
+    });
+
+    await prefs.setStringList('hidden_client_requests', _hiddenRequestIds);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'تم إخفاء السجل بنجاح من التطبيق',
+            style: GoogleFonts.cairo(),
+          ),
+          backgroundColor: primaryBlue,
+        ),
+      );
+    }
+  }
 
   bool _isAwaitingPayment(String status) {
     return [
@@ -186,202 +247,251 @@ class _ClientRequestsScreenState extends State<ClientRequestsScreen> {
             ),
           ),
           centerTitle: true,
+          // [إضافة جديدة]: زر المسح في الـ AppBar
+          actions: [
+            if (!_isLoadingIds)
+              StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: FirebaseFirestore.instance
+                    .collection('requests')
+                    .where(
+                      Filter.or(
+                        Filter('userId', isEqualTo: currentUserId),
+                        Filter('userPhone', isEqualTo: currentUserPhone),
+                        Filter('phone', isEqualTo: currentUserPhone),
+                      ),
+                    )
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  // نجيب الداتا عشان لو ضغط على الزرار يمسح المكتمل منها
+                  final docs = snapshot.data?.docs ?? [];
+                  final allRequests = docs
+                      .map((doc) => ClientRequestModel.fromFirestore(doc))
+                      .toList();
+
+                  return IconButton(
+                    icon: const Icon(
+                      Icons.delete_sweep_rounded,
+                      color: Colors.red,
+                    ),
+                    tooltip: 'مسح السجل المكتمل',
+                    onPressed: () => _hideCompletedRequestsLocally(allRequests),
+                  );
+                },
+              ),
+          ],
         ),
-        body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-          stream: FirebaseFirestore.instance
-              .collection('requests')
-              .where(
-                Filter.or(
-                  Filter('userId', isEqualTo: currentUserId),
-                  Filter('userPhone', isEqualTo: currentUserPhone),
-                  Filter('phone', isEqualTo: currentUserPhone),
-                ),
-              )
-              .snapshots(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
+        body: _isLoadingIds
+            ? const Center(
                 child: CircularProgressIndicator(color: Color(0xFF0056D2)),
-              );
-            }
-
-            if (snapshot.hasError) {
-              return Center(
-                child: Text(
-                  'حدث خطأ أثناء تحميل البيانات',
-                  style: GoogleFonts.cairo(color: Colors.red),
-                ),
-              );
-            }
-
-            final docs = snapshot.data?.docs ?? [];
-
-            if (docs.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.assignment_outlined,
-                      size: 64,
-                      color: Colors.grey.shade400,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      "لا توجد طلبات حالية",
-                      style: GoogleFonts.cairo(
-                        fontSize: 16,
-                        color: const Color(0xFF6C757D),
-                        fontWeight: FontWeight.bold,
+              )
+            : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: FirebaseFirestore.instance
+                    .collection('requests')
+                    .where(
+                      Filter.or(
+                        Filter('userId', isEqualTo: currentUserId),
+                        Filter('userPhone', isEqualTo: currentUserPhone),
+                        Filter('phone', isEqualTo: currentUserPhone),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            final requests = docs
-                .map((doc) => ClientRequestModel.fromFirestore(doc))
-                .toList();
-
-            return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: requests.length,
-              itemBuilder: (context, index) {
-                final request = requests[index];
-                final bool isReadyToPay = _isAwaitingPayment(request.status);
-
-                return GestureDetector(
-                  onTap: () => _handleCardTap(request),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isReadyToPay
-                            ? primaryBlue
-                            : const Color(0xFFDEE2E6),
-                        width: isReadyToPay ? 1.5 : 1.0,
+                    )
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF0056D2),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                request.serviceName,
-                                style: GoogleFonts.cairo(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF1D1D1D),
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _getStatusBgColor(request.status),
-                                borderRadius: BorderRadius.circular(100),
-                              ),
-                              child: Text(
-                                _getStatusLabel(request.status),
-                                style: GoogleFonts.cairo(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: _getStatusTextColor(request.status),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.person_outline,
-                              size: 16,
-                              color: Color(0xFF6C757D),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              "الفني: ${request.technicianName}",
-                              style: GoogleFonts.cairo(
-                                fontSize: 14,
-                                color: const Color(0xFF6C757D),
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (isReadyToPay) ...[
-                          const SizedBox(height: 12),
-                          const Divider(),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                "المطلوب سداده:",
-                                style: GoogleFonts.cairo(
-                                  fontSize: 14,
-                                  color: const Color(0xFF1D1D1D),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                "${request.finalTotal.toInt()} ج.م",
-                                style: GoogleFonts.cairo(
-                                  fontSize: 18,
-                                  color: primaryBlue,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
+                    );
+                  }
+
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Text(
+                        'حدث خطأ أثناء تحميل البيانات',
+                        style: GoogleFonts.cairo(color: Colors.red),
+                      ),
+                    );
+                  }
+
+                  final docs = snapshot.data?.docs ?? [];
+
+                  // [إضافة جديدة]: فلترة البيانات لاستبعاد الطلبات المخفية محلياً
+                  final visibleDocs = docs
+                      .where((doc) => !_hiddenRequestIds.contains(doc.id))
+                      .toList();
+
+                  if (visibleDocs.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.assignment_outlined,
+                            size: 64,
+                            color: Colors.grey.shade400,
                           ),
                           const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: () => _handleCardTap(request),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: primaryBlue,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: Text(
-                                "ادفع الآن",
-                                style: GoogleFonts.cairo(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                          Text(
+                            "لا توجد طلبات حالية",
+                            style: GoogleFonts.cairo(
+                              fontSize: 16,
+                              color: const Color(0xFF6C757D),
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-        ),
+                      ),
+                    );
+                  }
+
+                  final requests = visibleDocs
+                      .map((doc) => ClientRequestModel.fromFirestore(doc))
+                      .toList();
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: requests.length,
+                    itemBuilder: (context, index) {
+                      final request = requests[index];
+                      final bool isReadyToPay = _isAwaitingPayment(
+                        request.status,
+                      );
+
+                      return GestureDetector(
+                        onTap: () => _handleCardTap(request),
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isReadyToPay
+                                  ? primaryBlue
+                                  : const Color(0xFFDEE2E6),
+                              width: isReadyToPay ? 1.5 : 1.0,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      request.serviceName,
+                                      style: GoogleFonts.cairo(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFF1D1D1D),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _getStatusBgColor(request.status),
+                                      borderRadius: BorderRadius.circular(100),
+                                    ),
+                                    child: Text(
+                                      _getStatusLabel(request.status),
+                                      style: GoogleFonts.cairo(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: _getStatusTextColor(
+                                          request.status,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.person_outline,
+                                    size: 16,
+                                    color: Color(0xFF6C757D),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "الفني: ${request.technicianName}",
+                                    style: GoogleFonts.cairo(
+                                      fontSize: 14,
+                                      color: const Color(0xFF6C757D),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (isReadyToPay) ...[
+                                const SizedBox(height: 12),
+                                const Divider(),
+                                const SizedBox(height: 8),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      "المطلوب سداده:",
+                                      style: GoogleFonts.cairo(
+                                        fontSize: 14,
+                                        color: const Color(0xFF1D1D1D),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Text(
+                                      "${request.finalTotal.toInt()} ج.م",
+                                      style: GoogleFonts.cairo(
+                                        fontSize: 18,
+                                        color: primaryBlue,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: () => _handleCardTap(request),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: primaryBlue,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      "ادفع الآن",
+                                      style: GoogleFonts.cairo(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
       ),
     );
   }
@@ -455,7 +565,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  // دالة بناء فورم البطاقة الجديدة لمنع التكرار واستدعائها في حالات متعددة
   Widget _buildNewCardForm() {
     return Form(
       key: _formKey,
@@ -544,11 +653,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Future<void> _processPayment() async {
-    // [تصحيح المشكلة الثانية]: إجبار العميل على إضافة أو إختيار بطاقة
     if (_selectedMethod == 0) {
-      // إذا لم يختار بطاقة، أو كان هناك طلب لاستخدام بطاقة جديدة (أو لا يملك بطاقات أساساً)
       if (_selectedSavedCardId == null || _useNewCard) {
-        // نتحقق بقوة من صحة بيانات البطاقة الجديدة قبل المرور للخطوة التالية
         if (_formKey.currentState == null ||
             !_formKey.currentState!.validate()) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -560,7 +666,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               backgroundColor: Colors.red,
             ),
           );
-          return; // منع عملية الدفع بالكامل
+          return;
         }
 
         if (_saveNewCard) {
@@ -987,7 +1093,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   final docs = snapshot.data?.docs ?? [];
 
                   if (docs.isEmpty) {
-                    // إجبار المستخدم على رؤية وتعبئة استمارة البطاقة إن لم يمتلك بطاقات محفوظة
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1007,7 +1112,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     );
                   }
 
-                  // فرز البطاقات: البطاقة الأساسية أولاً ثم الأحدث
                   List<QueryDocumentSnapshot<Map<String, dynamic>>> sortedDocs =
                       List.from(docs);
                   sortedDocs.sort((a, b) {
@@ -1050,8 +1154,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       ...sortedDocs.map((doc) {
                         final data = doc.data();
                         final docId = doc.id;
-                        final last4 = (data['cardLast4'] ?? data['cardNumber'] ?? '0000').toString();
-                        final displayLast4 = last4.length >= 4 ? last4.substring(last4.length - 4) : last4;
+                        final last4 =
+                            (data['cardLast4'] ?? data['cardNumber'] ?? '0000')
+                                .toString();
+                        final displayLast4 = last4.length >= 4
+                            ? last4.substring(last4.length - 4)
+                            : last4;
                         final cardHolder = data['cardHolder'] ?? '';
                         final expiryDate = data['expiryDate'] ?? '';
                         final cardType = data['cardType'] ?? 'visa';
@@ -1880,7 +1988,9 @@ class _AddCardBottomSheetState extends State<_AddCardBottomSheet> {
       }
 
       await cardsCollection.add({
-        'cardLast4': cleanNumber.length >= 4 ? cleanNumber.substring(cleanNumber.length - 4) : cleanNumber,
+        'cardLast4': cleanNumber.length >= 4
+            ? cleanNumber.substring(cleanNumber.length - 4)
+            : cleanNumber,
         'cardHolder': _holderController.text.trim(),
         'expiryDate': _expiryController.text.trim(),
         'isDefault': _isDefault,

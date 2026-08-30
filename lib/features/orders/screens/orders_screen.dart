@@ -9,6 +9,7 @@ import 'package:basita1/features/profile/screens/profile2.dart';
 import 'package:basita1/features/orders/screens/complete_task_page.dart';
 import 'package:basita1/core/session/user_data_session.dart';
 import 'package:basita1/core/services/order_accept_service.dart';
+import 'package:basita1/features/booking/screens/appointments_screen.dart';
 
 // ==========================================
 // الصفحة الرئيسية للطلبات (RequestsPage)
@@ -714,7 +715,9 @@ class _RequestsPageState extends State<RequestsPage> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const BasiytaApp()),
+                MaterialPageRoute(
+                  builder: (context) => const AppointmentsScreen(),
+                ),
               );
             },
           ),
@@ -2446,13 +2449,15 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
               },
             ),
             _buildNavItem(
-              "المحفظة",
-              Icons.account_balance_wallet_outlined,
+              "المواعيد",
+              Icons.calendar_today_outlined,
               isActive: false,
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const BasiytaApp()),
+                  MaterialPageRoute(
+                    builder: (context) => const AppointmentsScreen(),
+                  ),
                 );
               },
             ),

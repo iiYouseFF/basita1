@@ -85,11 +85,12 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
       }
       if (!mounted || _transactionId == null) return;
 
-      final Uri uri = InstaPayRepository.kInstaPayAppLink;
+      final Uri uri = Uri.parse('https://ipn.eg/S/shamsnagy222gmail.co/instapay/4cWVQp');
       final bool launched = await launchUrl(
         uri,
         mode: LaunchMode.externalApplication,
       );
+      
       if (mounted) setState(() => _isProcessing = false);
       if (!mounted) return;
 
@@ -109,7 +110,7 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'تعذر فتح تطبيق InstaPay، تأكد من تثبيته من المتجر',
+                'تعذر فتح الرابط، تأكد من تثبيت تطبيق InstaPay',
                 style: GoogleFonts.cairo(),
               ),
               backgroundColor: Colors.orange,
