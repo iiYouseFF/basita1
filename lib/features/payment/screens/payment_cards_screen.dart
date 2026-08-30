@@ -1,12 +1,13 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+// removed: firebase_auth
 import 'package:google_fonts/google_fonts.dart';
 
 // استدعاء ملف جلسة المستخدم لجلب معلوماته عند حفظ البطاقة
 import 'package:basita1/core/session/user_session.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 class PaymentCardsScreen extends StatefulWidget {
   const PaymentCardsScreen({super.key});
@@ -18,7 +19,7 @@ class PaymentCardsScreen extends StatefulWidget {
 class _PaymentCardsScreenState extends State<PaymentCardsScreen> {
   // التحقق من معرف المستخدم عبر Firebase Auth أو UserSession لضمان عدم حدوث خطأ تسجيل الدخول
   String get _userId {
-    final authUid = FirebaseAuth.instance.currentUser?.uid;
+    final authUid = MockAuth.currentUser?.uid;
     if (authUid != null && authUid.isNotEmpty) {
       return authUid;
     }
@@ -26,20 +27,20 @@ class _PaymentCardsScreenState extends State<PaymentCardsScreen> {
   }
 
   bool get _isLoggedIn {
-    final authUid = FirebaseAuth.instance.currentUser?.uid;
+    final authUid = MockAuth.currentUser?.uid;
     final sessionPhone = UserSession.instance.phone.trim();
     return (authUid != null && authUid.isNotEmpty) || sessionPhone.isNotEmpty;
   }
 
   // تحديد مسار الـ Collection ليكون مجموعة رئيسية منفصلة باسم PaymentCards[cite: 23]
   CollectionReference get _cardsCollection =>
-      FirebaseFirestore.instance.collection('PaymentCards');
+      MockFirestore.collection('PaymentCards');
 
   // تعيين بطاقة كبطاقة أساسية للمستخدم الحالي فقط[cite: 23]
   Future<void> _setDefaultCard(String cardId) async {
     if (!_isLoggedIn) return;
 
-    final batch = FirebaseFirestore.instance.batch();
+    final batch = MockFirestore.batch();
 
     // نجلب فقط بطاقات هذا المستخدم لتعديل حالتها[cite: 23]
     final snapshot = await _cardsCollection
@@ -531,7 +532,7 @@ class _AddCardBottomSheetState extends State<_AddCardBottomSheet> {
       final cardType = cleanNumber.startsWith('4') ? 'visa' : 'mastercard';
 
       // الإشارة إلى المجموعة الرئيسية PaymentCards[cite: 23]
-      final cardsCollection = FirebaseFirestore.instance.collection(
+      final cardsCollection = MockFirestore.collection(
         'PaymentCards',
       );
 
@@ -541,7 +542,7 @@ class _AddCardBottomSheetState extends State<_AddCardBottomSheet> {
             .where('userId', isEqualTo: widget.userId)
             .get();
 
-        final batch = FirebaseFirestore.instance.batch();
+        final batch = MockFirestore.batch();
         for (var doc in snapshot.docs) {
           batch.update(doc.reference, {'isDefault': false});
         }
@@ -555,7 +556,7 @@ class _AddCardBottomSheetState extends State<_AddCardBottomSheet> {
         'expiryDate': _expiryController.text.trim(),
         'isDefault': _isDefault,
         'cardType': cardType,
-        'createdAt': FieldValue.serverTimestamp(),
+        'createdAt': DateTime.now(),
         'userId': widget.userId,
         'userName': UserSession.instance.name,
         'userPhone': UserSession.instance.phone,

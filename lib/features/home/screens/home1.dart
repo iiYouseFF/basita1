@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:flutter/services.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+// removed: firebase_auth
 import 'package:basita1/features/orders/screens/orders_screen.dart';
 import 'package:basita1/features/orders/screens/sale_screen.dart';
 import 'package:basita1/features/profile/screens/profile2.dart';
@@ -11,6 +11,7 @@ import 'package:basita1/features/home/screens/smart_map_screen.dart';
 import 'package:basita1/features/technician/screens/technician_dashboard.dart';
 import 'package:basita1/features/booking/screens/appointments_screen.dart';
 import 'package:basita1/features/chat/screens/technician_chats_app.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 class MainTechnicianScreen extends StatefulWidget {
   const MainTechnicianScreen({super.key});
@@ -32,12 +33,12 @@ class _MainTechnicianScreenState extends State<MainTechnicianScreen> {
   static const Color activeGreen = Color(0xFF10B981);
 
   /// جلب معرّف الفني ديناميكياً
-  /// يقبل رقم الهاتف من FirebaseAuth أو UserDataSession ويقوم بتنسيقه ليطابق Firestore
+  /// يقبل رقم الهاتف من dynamic أو UserDataSession ويقوم بتنسيقه ليطابق Firestore
   String get _technicianDocId {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = MockAuth.currentUser;
     String rawPhone = user?.phoneNumber ?? '';
 
-    // إذا كان رقم الهاتف فارغاً في FirebaseAuth، نجرب جلب القيمة من Session
+    // إذا كان رقم الهاتف فارغاً في dynamic، نجرب جلب القيمة من Session
     if (rawPhone.isEmpty) {
       rawPhone = UserDataSession.phone;
     }
@@ -65,7 +66,7 @@ class _MainTechnicianScreenState extends State<MainTechnicianScreen> {
     final String currentTechId = _technicianDocId;
     if (currentTechId.isNotEmpty) {
       try {
-        final doc = await FirebaseFirestore.instance
+        final doc = await MockFirestore
             .collection('technicians')
             .doc(currentTechId)
             .get();
@@ -91,7 +92,7 @@ class _MainTechnicianScreenState extends State<MainTechnicianScreen> {
 
     if (currentTechId.isNotEmpty) {
       try {
-        await FirebaseFirestore.instance
+        await MockFirestore
             .collection('technicians')
             .doc(currentTechId)
             .update({'isAvailable': isAvailable});
@@ -309,9 +310,9 @@ class _MainTechnicianScreenState extends State<MainTechnicianScreen> {
   Widget _buildStatsGrid(BuildContext context) {
     final String currentTechId = _technicianDocId;
 
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+    return StreamBuilder<dynamic>(
       stream: currentTechId.isNotEmpty
-          ? FirebaseFirestore.instance
+          ? MockFirestore
                 .collection('technicians')
                 .doc(currentTechId)
                 .snapshots()
@@ -636,7 +637,7 @@ class _MainTechnicianScreenState extends State<MainTechnicianScreen> {
 
     return StreamBuilder<QuerySnapshot>(
       stream: currentTechId.isNotEmpty
-          ? FirebaseFirestore.instance
+          ? MockFirestore
                 .collection('transactions')
                 .where('technicianId', isEqualTo: currentTechId)
                 .snapshots()

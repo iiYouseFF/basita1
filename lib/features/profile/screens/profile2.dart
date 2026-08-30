@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+// removed: firebase_auth
 import 'package:google_fonts/google_fonts.dart'; // إضافة مكتبة Google Fonts
 import 'package:basita1/core/session/user_data_session.dart';
 import 'package:basita1/features/orders/screens/orders_screen.dart';
@@ -9,6 +9,7 @@ import 'package:basita1/features/orders/screens/sale_screen.dart';
 import 'package:basita1/features/home/screens/home1.dart';
 import 'package:basita1/features/auth/screens/account_type_screen.dart';
 import 'package:basita1/features/booking/screens/appointments_screen.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -28,7 +29,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
   /// جلب معرّف الفني ديناميكياً ليطابق قاعدة البيانات
   String get _technicianDocId {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = MockAuth.currentUser;
     String rawPhone = user?.phoneNumber ?? '';
 
     if (rawPhone.isEmpty) {
@@ -314,9 +315,9 @@ class _AccountScreenState extends State<AccountScreen> {
   Widget _buildWalletCard() {
     final String currentTechId = _technicianDocId;
 
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+    return StreamBuilder<dynamic>(
       stream: currentTechId.isNotEmpty
-          ? FirebaseFirestore.instance
+          ? MockFirestore
                 .collection('technicians')
                 .doc(currentTechId)
                 .snapshots()

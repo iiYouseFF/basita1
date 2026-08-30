@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
 import 'package:geocoding/geocoding.dart';
 import 'package:basita1/core/services/order_accept_service.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 /// طلب وارد يتم جلب البيانات منه مباشرة من Firestore.
 class _MapOrder {
@@ -570,7 +571,7 @@ class _TechnicianMapScreenState extends State<SmartMapScreen> {
   // ------------------------------------------------------------
   Widget _buildOrdersStream() {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
+      stream: MockFirestore
           .collection('requests')
           .where('status', isEqualTo: 'pending')
           .orderBy('createdAt', descending: true)

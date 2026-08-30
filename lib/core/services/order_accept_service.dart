@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:basita1/core/session/user_data_session.dart';
 import 'package:basita1/core/repositories/chat_repository.dart';
 import 'package:basita1/core/repositories/appointment_repository.dart';
 
-/// تحويل السعر النصي (مثال: "٣٥٠ ج.م") إلى رقم عشري.
+// Previously directly wrote to Firestore `offers`/`requests` and dynamic `appointments`.
+// Now mock-only; external backend will handle transactional accept.
+// See docs/backend-prd.html § Service Requests & Offers — POST /service-requests/{id}/offers and /service-requests/{id}/accept
 double? parsePriceText(String? price) {
   if (price == null || price.isEmpty) return null;
   final normalized = price
@@ -23,19 +23,12 @@ double? parsePriceText(String? price) {
   return match != null ? double.tryParse(match.group(1)!) : null;
 }
 
-/// خدمة قبول الطلبات الموحدة.
-/// تُستخدم في صفحة الطلبات وصفحة الطلبات الجديدة والخريطة لضمان استخدام
-/// نفس منطق القبول (إنشاء عرض + تحديث الطلب + إنشاء محادثة + حجز موعد).
 class OrderAcceptService {
-  static String get _currentUserId => UserDataSession.phone.isNotEmpty
-      ? UserDataSession.phone
-      : (FirebaseAuth.instance.currentUser?.uid ?? 'unknown_uid');
+  static String get _currentUserId =>
+      UserDataSession.phone.isNotEmpty ? UserDataSession.phone : 'mock_uid';
+  static String get _currentUserName =>
+      UserDataSession.fullName.isNotEmpty ? UserDataSession.fullName : 'بسيطة | الفني';
 
-  static String get _currentUserName => UserDataSession.fullName.isNotEmpty
-      ? UserDataSession.fullName
-      : (FirebaseAuth.instance.currentUser?.displayName ?? 'بسيطة | الفني');
-
-  /// قبول الطلب بالسعر المعروض، أو بتقديم عرض سعر آخر عند تمرير [offerPrice].
   static Future<void> acceptRequest({
     required String requestId,
     required String clientPhone,
@@ -57,62 +50,25 @@ class OrderAcceptService {
     final finalPrice = (offerPrice != null && offerPrice.trim().isNotEmpty)
         ? offerPrice.trim()
         : requestPrice;
-    final finalMessage = (message != null && message.trim().isNotEmpty)
-        ? message.trim()
-        : 'أوافق على طلبك بالسعر المعروض.';
-    final finalDuration = (duration != null && duration.trim().isNotEmpty)
-        ? duration.trim()
-        : 'غير محدد';
-    final finalArrivalTime =
-        (arrivalTime != null && arrivalTime.trim().isNotEmpty)
-        ? arrivalTime.trim()
-        : 'غير محدد';
-    final finalWarranty = (warranty != null && warranty.trim().isNotEmpty)
-        ? warranty.trim()
-        : 'غير محدد';
 
-    // 1) إنشاء العرض في Firebase
-    await FirebaseFirestore.instance.collection('offers').add({
-      'requestId': requestId,
-      'technicianId': uid,
-      'technicianName': techName,
-      'price': finalPrice,
-      'duration': finalDuration,
-      'arrivalTime': finalArrivalTime,
-      'warranty': finalWarranty,
-      'message': finalMessage,
-      'provideMaterials': provideMaterials,
-      'priceIncludesMaterials': priceIncludesMaterials,
-      'rating': 4.9,
-      'reviewsCount': 15,
-      'experienceYears': 4,
-      'isVerified': true,
-      'imagePath': 'assets/Container (8).png',
-      'status': 'pending',
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    // TODO(backend): POST /service-requests/$requestId/offers
+    // await ApiClient().post('/service-requests/$requestId/offers', body: {
+    //   'technicianId': uid, 'technicianName': techName, 'price': finalPrice, ...
+    // });
+    // TODO(backend): PATCH /service-requests/$requestId {status: 'offer_submitted'}
+    debugPrint('[OrderAcceptService] MOCK accept $requestId price=$finalPrice tech=$uid ($techName) — backend not connected');
 
-    // 2) تحديث حالة الطلب إلى "offer_submitted"
-    await FirebaseFirestore.instance.collection('requests').doc(requestId).set({
-      'status': 'offer_submitted',
-      'hasOffers': true,
-      'technicianName': techName,
-      'technicianId': uid,
-      'acceptedPrice': finalPrice,
-      'acceptedAt': FieldValue.serverTimestamp(),
-      'clientAccepted': false,
-      'lastOfferTime': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    try {
+      await ChatRepository().getOrCreateRoom(
+        clientId: clientPhone,
+        technicianId: uid,
+        requestId: requestId,
+        serviceType: serviceType,
+      );
+    } catch (e) {
+      debugPrint('[OrderAcceptService] chat mock: $e');
+    }
 
-    // 3) إنشاء/تحديث المحادثة
-    await ChatRepository().getOrCreateRoom(
-      clientId: clientPhone,
-      technicianId: uid,
-      requestId: requestId,
-      serviceType: serviceType,
-    );
-
-    // 4) إنشاء موعد (Supabase) ليظهر فوراً في مواعيد الفني
     try {
       await AppointmentRepository().upsertAppointmentOnAccept(
         requestId: requestId,
@@ -124,7 +80,7 @@ class OrderAcceptService {
         price: parsePriceText(finalPrice),
       );
     } catch (e) {
-      debugPrint("Error creating appointment: $e");
+      debugPrint('[OrderAcceptService] appointment mock: $e');
     }
   }
 }

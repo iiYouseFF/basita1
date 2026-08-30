@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// removed: firebase_auth
+// removed: cloud_firestore - see docs/backend-prd.html
 import 'package:google_fonts/google_fonts.dart';
 import 'package:basita1/features/profile/screens/personal_data_screen.dart';
 import 'package:basita1/core/session/user_session.dart';
@@ -11,6 +11,7 @@ import 'package:basita1/features/auth/screens/account_verification_screen.dart';
 import 'package:basita1/features/payment/screens/payment_cards_screen.dart';
 import 'package:basita1/features/feedback/screens/coming_soon_screen.dart';
 import 'package:basita1/features/payment/screens/bills_screen.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -31,10 +32,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   // الاستماع المباشر لمجموعة 'verified' المستقلة للتحقق من حالة التوثيق
   Stream<QuerySnapshot> get _verifiedQueryStream {
-    String? fbUid = FirebaseAuth.instance.currentUser?.uid;
+    String? fbUid = MockAuth.currentUser?.uid;
     String phone = UserSession.instance.phone.trim();
 
-    Query query = FirebaseFirestore.instance.collection('verified');
+    Query query = MockFirestore.collection('verified');
     if (fbUid != null && fbUid.isNotEmpty) {
       query = query.where('userId', isEqualTo: fbUid);
     } else if (phone.isNotEmpty) {
@@ -520,7 +521,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       child: InkWell(
         onTap: () async {
           UserSession.instance.clearSession();
-          await FirebaseAuth.instance.signOut();
+          await MockAuth.signOut();
 
           if (!mounted) return;
           Navigator.pushAndRemoveUntil(

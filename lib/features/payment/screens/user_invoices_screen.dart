@@ -1,10 +1,11 @@
 // اسم الملف: user_invoices_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+// removed: firebase_auth
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart' as intl;
+import 'package:basita1/core/network/mock_backend.dart';
 
 // ==========================================
 // 1. نموذج بيانات الفاتورة (Invoice Model)
@@ -134,7 +135,7 @@ class _UserInvoicesListScreenState extends State<UserInvoicesListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final String currentUserId = MockAuth.currentUser?.uid ?? '';
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -158,7 +159,7 @@ class _UserInvoicesListScreenState extends State<UserInvoicesListScreen> {
           ),
         ),
         body: StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
+          stream: MockFirestore
               .collection('requests')
               .where('userId', isEqualTo: currentUserId)
               // جلب الطلبات التي لها فواتير فقط أو انتهت

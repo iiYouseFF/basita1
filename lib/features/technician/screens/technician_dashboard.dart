@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
 
 // تأكد من مسار ملف UserDataSession الخاص بك
 import 'package:basita1/core/session/user_data_session.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 class TechnicianDashboardS extends StatefulWidget {
   const TechnicianDashboardS({super.key});
@@ -84,7 +85,7 @@ class _TechnicianDashboardSState extends State<TechnicianDashboardS> {
         backgroundColor: bgLight,
         // قراءة حية من Firestore بناءً على رقم التليفون
         body: StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseFirestore.instance
+          stream: MockFirestore
               .collection('technicians')
               .doc(currentPhone)
               .snapshots(),

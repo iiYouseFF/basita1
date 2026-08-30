@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+// removed: firebase_auth
 import 'dart:io';
 import 'dart:math';
 
@@ -12,12 +12,13 @@ import 'package:basita1/features/chat/screens/chat_screen.dart';
 import 'package:basita1/features/profile/screens/profile_screen.dart';
 import 'package:basita1/features/booking/screens/request_service_screen.dart';
 import 'package:basita1/core/session/user_session.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 // دالة مساعدة ذكية لجلب مرجع وثيقة المستخدم الحقيقية في فايربيز (تمنع ضياع الـ Session والرجوع للتسجيل)
-Future<DocumentReference<Map<String, dynamic>>?> _getRealUserDocRef() async {
-  String? uid = FirebaseAuth.instance.currentUser?.uid;
+Future<dynamic>? _getRealUserDocRef() async {
+  String? uid = MockAuth.currentUser?.uid;
   if (uid != null) {
-    final doc = await FirebaseFirestore.instance
+    final doc = await MockFirestore
         .collection('users')
         .doc(uid)
         .get();
@@ -27,12 +28,12 @@ Future<DocumentReference<Map<String, dynamic>>?> _getRealUserDocRef() async {
   String phone = UserSession.instance.phone.trim();
   if (phone.isEmpty) {
     if (uid != null) {
-      return FirebaseFirestore.instance.collection('users').doc(uid);
+      return MockFirestore.collection('users').doc(uid);
     }
     return null;
   }
 
-  final query = await FirebaseFirestore.instance
+  final query = await MockFirestore
       .collection('users')
       .where('phone', isEqualTo: phone)
       .get();
@@ -42,7 +43,7 @@ Future<DocumentReference<Map<String, dynamic>>?> _getRealUserDocRef() async {
   }
 
   String fallbackUid = uid ?? "user_${phone.replaceAll(RegExp(r'[^0-9]'), '')}";
-  return FirebaseFirestore.instance.collection('users').doc(fallbackUid);
+  return MockFirestore.collection('users').doc(fallbackUid);
 }
 
 // =========================================================================
@@ -53,7 +54,7 @@ class FamilyGateScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<DocumentReference<Map<String, dynamic>>?>(
+    return FutureBuilder<dynamic>(
       future: _getRealUserDocRef(),
       builder: (context, userDocSnapshot) {
         if (userDocSnapshot.connectionState == ConnectionState.waiting) {
@@ -70,7 +71,7 @@ class FamilyGateScreen extends StatelessWidget {
         }
 
         // استخدام StreamBuilder المباشر على وثيقة المستخدم لضمان عدم ضياع الحالة أبداً
-        return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+        return StreamBuilder<dynamic>(
           stream: userDocSnapshot.data!.snapshots(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -118,7 +119,7 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
 
   String get currentUserName => UserSession.instance.name.isNotEmpty
       ? UserSession.instance.name
-      : (FirebaseAuth.instance.currentUser?.displayName ?? "مستخدم");
+      : (MockAuth.currentUser?.displayName ?? "مستخدم");
 
   String get currentUserPhone => UserSession.instance.phone.trim();
 
@@ -133,7 +134,7 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
 
     setState(() => isLoading = true);
     try {
-      DocumentSnapshot familyDoc = await FirebaseFirestore.instance
+      DocumentSnapshot familyDoc = await MockFirestore
           .collection('families')
           .doc(code)
           .get();
@@ -144,7 +145,7 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
         String currentUserId = userRef.id;
 
         // إضافة المستخدم كعضو في العائلة
-        await FirebaseFirestore.instance
+        await MockFirestore
             .collection('families')
             .doc(code)
             .collection('members')
@@ -153,16 +154,16 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
               'name': currentUserName,
               'role': 'عضو',
               'isOnline': true,
-              'joinedAt': FieldValue.serverTimestamp(),
+              'joinedAt': DateTime.now(),
               'imageUrl': UserSession.instance.profileImagePath ?? '',
-            }, SetOptions(merge: true));
+            }, MockSetOptions(merge: true));
 
         // ربط العائلة بملف المستخدم
         await userRef.set({
           'familyId': code,
           'name': currentUserName,
           'phone': UserSession.instance.phone,
-        }, SetOptions(merge: true));
+        }, MockSetOptions(merge: true));
 
         if (mounted) {
           Navigator.pushReplacement(
@@ -378,9 +379,9 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
       if (userRef == null) throw "تعذر تحديد بيانات المستخدم";
       String currentUserId = userRef.id;
 
-      final batch = FirebaseFirestore.instance.batch();
+      final batch = MockFirestore.batch();
 
-      final familyRef = FirebaseFirestore.instance
+      final familyRef = MockFirestore
           .collection('families')
           .doc(familyCode);
 
@@ -390,7 +391,7 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
             ? familyName
             : "عائلة $currentUserName",
         'adminId': currentUserId, // القائد
-        'createdAt': FieldValue.serverTimestamp(),
+        'createdAt': DateTime.now(),
         'monthlySpend': 0,
         'activeRequests': 0,
         'familyPoints': 100,
@@ -402,7 +403,7 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
         'name': currentUserName,
         'role': 'مسؤول العائلة',
         'isOnline': true,
-        'joinedAt': FieldValue.serverTimestamp(),
+        'joinedAt': DateTime.now(),
         'imageUrl': UserSession.instance.profileImagePath ?? '',
       });
 
@@ -410,7 +411,7 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
         'familyId': familyCode,
         'name': currentUserName,
         'phone': UserSession.instance.phone,
-      }, SetOptions(merge: true));
+      }, MockSetOptions(merge: true));
 
       await batch.commit();
 
@@ -436,7 +437,7 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
     if (currentUserPhone.isEmpty) return const SizedBox.shrink();
 
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
+      stream: MockFirestore
           .collection('family_invitations')
           .where('toPhone', isEqualTo: currentUserPhone)
           .where('status', isEqualTo: 'pending')
@@ -533,7 +534,7 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
                           child: ElevatedButton(
                             onPressed: () async {
                               // تحديث حالة الدعوة
-                              await FirebaseFirestore.instance
+                              await MockFirestore
                                   .collection('family_invitations')
                                   .doc(inviteId)
                                   .update({'status': 'accepted'});
@@ -561,7 +562,7 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
                           child: OutlinedButton(
                             onPressed: () async {
                               // رفض ومسح الدعوة
-                              await FirebaseFirestore.instance
+                              await MockFirestore
                                   .collection('family_invitations')
                                   .doc(inviteId)
                                   .delete();
@@ -957,7 +958,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
           child: currentUserId == null
               ? const Center(child: CircularProgressIndicator())
               : StreamBuilder<DocumentSnapshot>(
-                  stream: FirebaseFirestore.instance
+                  stream: MockFirestore
                       .collection('families')
                       .doc(widget.familyCode)
                       .snapshots(),
@@ -1089,7 +1090,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
                   ),
                   const SizedBox(height: 6),
                   StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
+                    stream: MockFirestore
                         .collection('families')
                         .doc(widget.familyCode)
                         .collection('members')
@@ -1301,7 +1302,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
 
   Widget _buildMembersList(bool isAdmin, String adminId) {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
+      stream: MockFirestore
           .collection('families')
           .doc(widget.familyCode)
           .collection('members')
@@ -1610,13 +1611,12 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
                                     String currentUserName =
                                         UserSession.instance.name.isNotEmpty
                                         ? UserSession.instance.name
-                                        : (FirebaseAuth
-                                                  .instance
+                                        : (MockFirestore
                                                   .currentUser
                                                   ?.displayName ??
                                               "القائد");
 
-                                    await FirebaseFirestore.instance
+                                    await MockFirestore
                                         .collection('family_invitations')
                                         .add({
                                           'toPhone': phone,
@@ -1627,7 +1627,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
                                           'inviterName': currentUserName,
                                           'status': 'pending',
                                           'createdAt':
-                                              FieldValue.serverTimestamp(),
+                                              DateTime.now(),
                                         });
 
                                     if (context.mounted) {
@@ -1820,16 +1820,16 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
     );
 
     if (confirm == true) {
-      final batch = FirebaseFirestore.instance.batch();
+      final batch = MockFirestore.batch();
 
       // إزالة من Users
-      final targetUserRef = FirebaseFirestore.instance
+      final targetUserRef = MockFirestore
           .collection('users')
           .doc(memberId);
-      batch.update(targetUserRef, {'familyId': FieldValue.delete()});
+      batch.update(targetUserRef, {'familyId': MockFieldValue.delete()});
 
       // إزالة من Members
-      final memberRef = FirebaseFirestore.instance
+      final memberRef = MockFirestore
           .collection('families')
           .doc(widget.familyCode)
           .collection('members')
@@ -1887,7 +1887,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
     if (confirm != true || currentUserId == null) return;
 
     // جلب عدد الأعضاء الحاليين قبل المغادرة
-    var membersQuery = await FirebaseFirestore.instance
+    var membersQuery = await MockFirestore
         .collection('families')
         .doc(widget.familyCode)
         .collection('members')
@@ -1895,16 +1895,16 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
 
     int currentMembersCount = membersQuery.docs.length;
 
-    final batch = FirebaseFirestore.instance.batch();
+    final batch = MockFirestore.batch();
 
     // مسح المستخدم الحالي من الـ users
-    final userRef = FirebaseFirestore.instance
+    final userRef = MockFirestore
         .collection('users')
         .doc(currentUserId);
-    batch.update(userRef, {'familyId': FieldValue.delete()});
+    batch.update(userRef, {'familyId': MockFieldValue.delete()});
 
     // مسحه من members العائلة
-    final memberRef = FirebaseFirestore.instance
+    final memberRef = MockFirestore
         .collection('families')
         .doc(widget.familyCode)
         .collection('members')
@@ -1913,7 +1913,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
 
     // لو ده كان آخر فرد، امسح العائلة كلها
     if (currentMembersCount <= 1) {
-      final familyRef = FirebaseFirestore.instance
+      final familyRef = MockFirestore
           .collection('families')
           .doc(widget.familyCode);
       batch.delete(familyRef);

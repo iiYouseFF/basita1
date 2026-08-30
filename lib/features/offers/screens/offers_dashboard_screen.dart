@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
 import 'package:basita1/features/home/screens/home_screen.dart';
 import 'package:basita1/features/chat/screens/chat_screen.dart';
 import 'package:basita1/features/profile/screens/profile_screen.dart';
 import 'package:basita1/features/family/screens/family_join_screen.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 // ==========================================
 // 1. نموذج بيانات العرض (OfferModel)
@@ -41,7 +42,7 @@ class OfferModel {
   });
 
   factory OfferModel.fromMap(Map<String, dynamic> map, String docId) {
-    // جلب صورة الفني ديناميكياً من قاعدة البيانات أو من بيانات الجلسة (UserDataSession / Supabase) لضمان عدم وجود قيم وهمية
+    // جلب صورة الفني ديناميكياً من قاعدة البيانات أو من بيانات الجلسة (UserDataSession / dynamic) لضمان عدم وجود قيم وهمية
     String resolvedImage =
         map['imagePath'] ??
         map['profileImage'] ??
@@ -97,12 +98,12 @@ class _AvailableOffersScreenState extends State<AvailableOffersScreen> {
   // دالة قبول العرض الحقيقي وتحديث Firebase
   Future<void> _acceptOffer(BuildContext context, OfferModel offer) async {
     try {
-      await FirebaseFirestore.instance
+      await MockFirestore
           .collection('offers')
           .doc(offer.offerId)
           .update({'status': 'accepted'});
 
-      await FirebaseFirestore.instance
+      await MockFirestore
           .collection('requests')
           .doc(widget.requestId)
           .update({
@@ -147,7 +148,7 @@ class _AvailableOffersScreenState extends State<AvailableOffersScreen> {
         backgroundColor: bgLightGrey,
         appBar: _buildTopAppBar(context),
         body: StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseFirestore.instance
+          stream: MockFirestore
               .collection('requests')
               .doc(widget.requestId)
               .snapshots(),
@@ -164,7 +165,7 @@ class _AvailableOffersScreenState extends State<AvailableOffersScreen> {
             }
 
             return StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
+              stream: MockFirestore
                   .collection('offers')
                   .where('requestId', isEqualTo: widget.requestId)
                   .snapshots(),
@@ -1043,12 +1044,12 @@ class _DynamicNegotiationScreenState extends State<DynamicNegotiationScreen> {
     });
 
     try {
-      await FirebaseFirestore.instance
+      await MockFirestore
           .collection('offers')
           .doc(widget.offer.offerId)
           .update({'status': 'accepted', 'finalPrice': currentPrice});
 
-      await FirebaseFirestore.instance
+      await MockFirestore
           .collection('requests')
           .doc(widget.requestId)
           .update({
@@ -1091,7 +1092,7 @@ class _DynamicNegotiationScreenState extends State<DynamicNegotiationScreen> {
     });
 
     try {
-      await FirebaseFirestore.instance
+      await MockFirestore
           .collection('offers')
           .doc(widget.offer.offerId)
           .update({'status': 'rejected'});

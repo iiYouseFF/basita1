@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+// removed: supabase_flutter
 import 'package:basita1/core/repositories/appointment_repository.dart';
 import 'package:basita1/core/models/appointment.dart';
 import 'package:basita1/core/session/user_data_session.dart';
@@ -9,6 +9,7 @@ import 'package:basita1/features/home/screens/home1.dart';
 import 'package:basita1/features/profile/screens/profile2.dart';
 import 'package:basita1/features/orders/screens/orders_screen.dart';
 import 'package:basita1/features/chat/screens/chat_screen.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 class AppointmentsScreen extends StatefulWidget {
   const AppointmentsScreen({super.key});
@@ -599,7 +600,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     final url =
         'https://www.google.com/maps/dir/?api=1&destination=$latitude,$longitude';
     try {
-      await Supabase.instance.client.functions.invoke(
+      await MockSupabase.functions.invoke(
         'open_url',
         body: {'url': url},
       );

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
 import 'package:basita1/core/repositories/instapay_repository.dart';
 import 'package:basita1/core/repositories/payment_log_repository.dart';
 import 'package:basita1/core/session/user_session.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 class InstaPayScreen extends StatefulWidget {
   final double amount;
@@ -157,7 +158,7 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
           technicianId: widget.technicianId,
         );
 
-        await FirebaseFirestore.instance
+        await MockFirestore
             .collection('requests')
             .doc(widget.requestId)
             .update({'status': 'completed', 'paymentMethod': 'instapay'});

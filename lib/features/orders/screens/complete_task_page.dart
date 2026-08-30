@@ -2,14 +2,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+// removed: supabase_flutter
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:basita1/features/payment/screens/instapay_screen.dart';
 import 'package:basita1/core/repositories/chat_repository.dart';
 import 'package:basita1/core/repositories/appointment_repository.dart';
 import 'package:basita1/core/session/user_data_session.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 // ==========================================
 // نموذج بيانات الطلب الديناميكي الشامل
@@ -158,12 +159,12 @@ class _CompleteTaskPageState extends State<CompleteTaskPage> {
 
   Future<void> _saveDraft() async {
     try {
-      await FirebaseFirestore.instance
+      await MockFirestore
           .collection('requests')
           .doc(widget.request.id)
           .update({
             'draftNotes': _notesController.text,
-            'draftSavedAt': FieldValue.serverTimestamp(),
+            'draftSavedAt': DateTime.now(),
           });
 
       if (mounted) {
@@ -190,7 +191,7 @@ class _CompleteTaskPageState extends State<CompleteTaskPage> {
     List<String> uploadedImageUrls = [];
 
     try {
-      final supabase = Supabase.instance.client;
+      final supabase = MockSupabase;
 
       for (File img in _selectedImages) {
         final fileName =
@@ -204,7 +205,7 @@ class _CompleteTaskPageState extends State<CompleteTaskPage> {
         uploadedImageUrls.add(imageUrl);
       }
 
-      await FirebaseFirestore.instance
+      await MockFirestore
           .collection('requests')
           .doc(widget.request.id)
           .update({
@@ -213,7 +214,7 @@ class _CompleteTaskPageState extends State<CompleteTaskPage> {
             'status': 'task_finished_pending_invoice',
           });
 
-      // إتمام الموعد في قاعدة المواعيد (Supabase) وعرض موقع الفني والعميل
+      // إتمام الموعد في قاعدة المواعيد (dynamic) وعرض موقع الفني والعميل
       await _completeAppointmentWithLocations();
 
       setState(() {
@@ -1229,7 +1230,7 @@ class _FinalInvoiceScreenState extends State<FinalInvoiceScreen> {
       ];
       String selectedPayment = paymentMethods[_selectedPaymentMethodIndex];
 
-      await FirebaseFirestore.instance
+      await MockFirestore
           .collection('requests')
           .doc(widget.request.id)
           .update({
@@ -1240,7 +1241,7 @@ class _FinalInvoiceScreenState extends State<FinalInvoiceScreen> {
             'materialsCost': widget.totalAmount - widget.laborCost,
             'paymentMethod': selectedPayment,
             'invoiceNumber': invoiceNumber,
-            'invoiceIssuedAt': FieldValue.serverTimestamp(),
+            'invoiceIssuedAt': DateTime.now(),
           });
 
       if (mounted) {

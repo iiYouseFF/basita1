@@ -1,35 +1,33 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:basita1/core/config/app_config.dart';
-import 'package:basita1/core/config/env.dart';
+import 'package:basita1/core/network/api_config.dart';
 
 void main() {
-  group('AppConfig — Phase 2 OTP flag', () {
-    test('useMockOtp defaults to true (PROMPT.MD mock required)', () {
-      // No --dart-define passed in CI, so default true
+  group('AppConfig — OTP flag (external backend)', () {
+    test('useMockOtp defaults to true (mock OTP for dev)', () {
       expect(AppConfig.useMockOtp, isTrue);
     });
 
-    test('Env.supabaseUrl points to new project eczybgjywdppvyyygnrd', () {
-      expect(Env.supabaseUrl, contains('eczybgjywdppvyyygnrd'));
-      expect(Env.supabaseUrl, startsWith('https://'));
+    test('ApiConfig.baseUrl is set', () {
+      expect(ApiConfig.baseUrl, isNotEmpty);
+      expect(ApiConfig.baseUrl, startsWith('https://'));
     });
 
-    test('Env.supabaseAnonKey is legacy JWT and not empty', () {
-      expect(Env.supabaseAnonKey, isNotEmpty);
-      expect(Env.supabaseAnonKey.split('.'), hasLength(3));
+    test('ApiConfig.baseUrl default is placeholder', () {
+      // In CI without dart-define, default is https://api.basita.example.com
+      expect(ApiConfig.baseUrl, contains('basita'));
     });
   });
 
-  group('Edge Functions contract', () {
-    test('expected function names are documented', () {
-      const expected = ['send-notification', 'process-payment', 'daily-reset'];
-      expect(expected, contains('send-notification'));
-      expect(expected, contains('process-payment'));
-      expect(expected, contains('daily-reset'));
-      expect(expected, hasLength(3));
+  group('External backend contract', () {
+    test('expected endpoints are documented in PRD', () {
+      const expected = ['/auth/request-otp', '/service-requests', '/chat/rooms', '/payments', '/posts', '/storage/upload'];
+      expect(expected, contains('/auth/request-otp'));
+      expect(expected, contains('/service-requests'));
+      expect(expected, contains('/payments'));
     });
 
-    test('send-notification input shape', () {
+    test('send-notification input shape (now POST /push/send)', () {
       final payload = {
         'userId': 'uid123',
         'userType': 'user',
@@ -43,11 +41,11 @@ void main() {
       expect(payload['body'], isNotEmpty);
     });
 
-    test('process-payment input shape', () {
+    test('process-payment input shape (now POST /payments)', () {
       final payload = {
         'amount': 250,
         'currency': 'EGP',
-        'paymentMethodId': 'pm_123',
+        'paymentMethod': 'card',
         'requestId': 'req_001',
         'userId': 'user_123',
         'technicianId': '01012345678',

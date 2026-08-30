@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+// removed: supabase_flutter
 import 'package:path/path.dart' as p;
 import 'package:geolocator/geolocator.dart'; // 👈 استيراد مكتبة الموقع
 import 'package:geocoding/geocoding.dart'; // 👈 استيراد مكتبة تحويل الإحداثيات لعنوان
@@ -11,6 +11,7 @@ import 'package:geocoding/geocoding.dart'; // 👈 استيراد مكتبة ت�
 import 'package:basita1/core/session/user_data_session.dart';
 import 'package:basita1/features/auth/screens/login_screen1.dart';
 import 'package:basita1/features/auth/screens/id_verification_screen1.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 class TechnicianOnboardingScreen extends StatefulWidget {
   const TechnicianOnboardingScreen({super.key});
@@ -223,22 +224,22 @@ class _TechnicianOnboardingScreenState
           '0020$cleanPhone',
         ];
 
-        var query1 = await FirebaseFirestore.instance
+        var query1 = await MockFirestore
             .collection('technicians')
             .where('phoneNumber', whereIn: possibleFormats)
             .get();
 
-        var query2 = await FirebaseFirestore.instance
+        var query2 = await MockFirestore
             .collection('technicians')
             .where('phone', whereIn: possibleFormats)
             .get();
 
-        var docByPhone = await FirebaseFirestore.instance
+        var docByPhone = await MockFirestore
             .collection('technicians')
             .doc(standardizedPhone) // نبحث بالرقم الموحد
             .get();
 
-        var docByPhoneWithCode = await FirebaseFirestore.instance
+        var docByPhoneWithCode = await MockFirestore
             .collection('technicians')
             .doc('+20$cleanPhone')
             .get();
@@ -272,7 +273,7 @@ class _TechnicianOnboardingScreenState
             final fileName =
                 '${DateTime.now().millisecondsSinceEpoch}_tech_$standardizedPhone$fileExtension';
 
-            final supabase = Supabase.instance.client;
+            final supabase = MockSupabase;
 
             await supabase.storage
                 .from('user_profiles')
@@ -289,7 +290,7 @@ class _TechnicianOnboardingScreenState
                 .from('user_profiles')
                 .getPublicUrl(fileName);
           } catch (e) {
-            throw Exception('فشل رفع صورة الفني إلى Supabase: $e');
+            throw Exception('فشل رفع صورة الفني إلى dynamic: $e');
           }
         }
 

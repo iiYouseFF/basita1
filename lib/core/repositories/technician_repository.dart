@@ -1,108 +1,38 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:basita1/core/network/api_client.dart';
 
-/// Firestore repository for technicians (doc ID = phone per firestore.rules).
+/// Real backend: GET /technicians, GET /technicians/:phone, PUT /technicians/:phone
+/// Also GET /technicians/:phone/wallet
 class TechnicianRepository {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final ApiClient _api = ApiClient();
 
-  CollectionReference<Map<String, dynamic>> get _col =>
-      _firestore.collection('technicians');
-
-  Future<DocumentSnapshot<Map<String, dynamic>>> getTechnician(
-    String phone,
-  ) async {
+  Future<Map<String, dynamic>?> getTechnician(String phone) async {
     try {
-      return await _col.doc(phone).get();
-    } catch (e) {
-      // ignore: avoid_print
-      print('[TechnicianRepository.getTechnician] $e');
-      rethrow;
+      final res = await _api.get('/technicians/$phone');
+      return (res['data'] as Map<String, dynamic>?) ?? res;
+    } catch (_) {
+      return null;
     }
   }
 
-  Stream<DocumentSnapshot<Map<String, dynamic>>> watchTechnician(String phone) {
-    return _col.doc(phone).snapshots();
+  Stream<Map<String, dynamic>?> watchTechnician(String phone) async* {
+    yield await getTechnician(phone);
   }
 
-  /// Create or merge technician profile (phone is doc ID).
   Future<void> createOrUpdateTechnician({
     required String phone,
     required Map<String, dynamic> data,
   }) async {
-    try {
-      await _col.doc(phone).set({
-        ...data,
-        'phone': phone,
-        'updatedAt': FieldValue.serverTimestamp(),
-        if (!data.containsKey('createdAt'))
-          'createdAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    } catch (e) {
-      // ignore: avoid_print
-      print('[TechnicianRepository.createOrUpdate] $e');
-      rethrow;
-    }
+    await _api.put('/technicians/$phone', body: data);
   }
 
-  Future<void> updateTechnician(String phone, Map<String, dynamic> data) async {
-    try {
-      await _col.doc(phone).update({
-        ...data,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    } catch (e) {
-      // ignore: avoid_print
-      print('[TechnicianRepository.update] $e');
-      rethrow;
-    }
-  }
-
-  /// Increment wallet/earnings atomically.
-  Future<void> creditWallet(
-    String phone,
-    double amount, {
-    String? requestId,
-  }) async {
-    try {
-      await _col.doc(phone).update({
-        'walletBalance': FieldValue.increment(amount),
-        'totalEarnings': FieldValue.increment(amount),
-        'todayEarnings': FieldValue.increment(amount),
-        'todayOrdersCount': FieldValue.increment(1),
-        'lastEarningTimestamp': FieldValue.serverTimestamp(),
-        if (requestId != null) 'lastRequestId': requestId,
-      });
-    } catch (e) {
-      // ignore: avoid_print
-      print('[TechnicianRepository.creditWallet] $e');
-      rethrow;
-    }
-  }
-
-  Stream<QuerySnapshot<Map<String, dynamic>>> watchByGovernorate(
-    String governorate, {
-    String? specialty,
-  }) {
-    var q = _col.where('governorate', isEqualTo: governorate);
-    if (specialty != null) q = q.where('specialty', isEqualTo: specialty);
-    return q.snapshots();
-  }
-
-  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> searchTechnicians({
-    String? governorate,
-    String? specialty,
-    int limit = 20,
-  }) async {
-    try {
-      var q = _col.limit(limit) as Query<Map<String, dynamic>>;
-      if (governorate != null)
-        q = q.where('governorate', isEqualTo: governorate);
-      if (specialty != null) q = q.where('specialty', isEqualTo: specialty);
-      final snap = await q.get();
-      return snap.docs;
-    } catch (e) {
-      // ignore: avoid_print
-      print('[TechnicianRepository.search] $e');
-      rethrow;
-    }
+  Future<List<dynamic>> searchTechnicians({String? governorate, String? specialty}) async {
+    final res = await _api.get('/technicians', query: {
+      if (governorate != null) 'governorate': governorate,
+      if (specialty != null) 'specialty': specialty,
+    });
+    final d = res['data'];
+    if (d is List) return d;
+    if (d is Map && d['technicians'] is List) return d['technicians'];
+    return [];
   }
 }

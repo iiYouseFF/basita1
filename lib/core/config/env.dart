@@ -1,17 +1,15 @@
-// Basita env — reads from --dart-define, falls back to dev defaults.
-// Usage: flutter run --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... --dart-define=USE_MOCK_OTP=true
-abstract class Env {
-  // New Supabase project eczybgjywdppvyyygnrd (eu-west-1)
-  static const supabaseUrl = String.fromEnvironment(
-    'SUPABASE_URL',
-    defaultValue: 'https://eczybgjywdppvyyygnrd.supabase.co',
-  );
-  static const supabaseAnonKey = String.fromEnvironment(
-    'SUPABASE_ANON_KEY',
-    defaultValue:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjenliZ2p5d2RwcHZ5eXlnbnJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMDUyNDksImV4cCI6MjEwMzU4MTI0OX0.yFLpoefAdH7JOAgnJxakI-C6f8CWhidsWzy-sushly8',
-  );
+// REMOVED — Firebase/dynamic env is no longer used.
+// The external backend is configured via `lib/core/network/api_config.dart`
+// using --dart-define=API_BASE_URL and --dart-define=API_KEY.
+//
+// This stub is kept only to avoid breaking imports in files that haven't
+// been migrated yet. New code should NOT import this file.
 
-  // Legacy fallback (old project wduombkxwcqhipdumxmn) — kept for reference, not used
-  static const legacySupabaseUrl = 'https://wduombkxwcqhipdumxmn.supabase.co';
+@Deprecated('Use ApiConfig from lib/core/network/api_config.dart instead')
+abstract class Env {
+  @Deprecated('Use ApiConfig.baseUrl')
+  static const supabaseUrl = '';
+  @Deprecated('No longer used')
+  static const supabaseAnonKey = '';
+  static const legacySupabaseUrl = '';
 }

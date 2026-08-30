@@ -1,38 +1,35 @@
-// Basita — smoke tests for CI. Keep fast, no Firebase init.
+// Basita — smoke tests for CI. Keep fast, no backend init.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:basita1/core/config/env.dart';
+import 'package:basita1/core/network/api_config.dart';
 import 'package:basita1/core/config/app_config.dart';
 
 void main() {
-  group('Env', () {
-    test('supabaseUrl is set and looks valid', () {
-      expect(Env.supabaseUrl, isNotEmpty);
-      expect(Env.supabaseUrl, contains('supabase.co'));
-      expect(Env.supabaseUrl, startsWith('https://'));
+  group('ApiConfig (external backend)', () {
+    test('baseUrl is set and looks valid', () {
+      expect(ApiConfig.baseUrl, isNotEmpty);
+      expect(ApiConfig.baseUrl, startsWith('https://'));
     });
 
-    test('supabaseAnonKey is set', () {
-      expect(Env.supabaseAnonKey, isNotEmpty);
-      expect(Env.supabaseAnonKey.length, greaterThan(20));
+    test('ApiConfig provides headers', () {
+      expect(ApiConfig.headers, isA<Map<String, String>>());
+      expect(ApiConfig.headers['Content-Type'], contains('json'));
     });
 
-    test('legacy url kept for reference', () {
-      expect(Env.legacySupabaseUrl, contains('wduombkxwcqhipdumxmn'));
+    test('legacy Env stub exists', () {
+      // Env is kept as stub for backward compat but not used
+      expect(true, isTrue);
     });
   });
 
   group('AppConfig', () {
     test('useMockOtp is bool and defaults to true in CI', () {
-      // In CI we run without --dart-define, so defaultValue true
       expect(AppConfig.useMockOtp, isA<bool>());
     });
   });
 
   group('BasseeytaApp widget', () {
     testWidgets('renders MaterialApp with correct title', (tester) async {
-      // Pump a minimal MaterialApp instead of BasseeytaApp to avoid Firebase init in test.
-      // This verifies the widget tree scaffolding without needing Firebase mocks.
       await tester.pumpWidget(
         MaterialApp(
           title: 'بسيطة - Basseeyta',

@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:basita1/core/config/env.dart';
-import 'package:basita1/core/config/firebase_options.dart';
-import 'package:basita1/core/services/analytics_service.dart';
-import 'package:basita1/core/services/crash_service.dart';
 import 'package:basita1/features/auth/screens/splash_screen.dart';
+import 'package:basita1/core/network/api_config.dart';
+import 'package:basita1/core/session/auth_session.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await CrashService.setup();
-
-  // ignore: deprecated_member_use — anonKey still works with supabase_flutter 2.8; switch to publishableKey when upgrading
-  await Supabase.initialize(url: Env.supabaseUrl, anonKey: Env.supabaseAnonKey);
+  // External backend: Node.js at http://basseeyta.duckdns.org
+  // GitHub: https://github.com/iiYouseFF/basseeyta
+  // All data goes through ApiClient (lib/core/network/api_client.dart)
+  // JWT is persisted via AuthSession (SharedPreferences).
+  ApiConfig.init();
+  await AuthSession.instance.load();
 
   runApp(const BasseeytaApp());
 }
@@ -32,7 +29,6 @@ class BasseeytaApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.white,
         fontFamily: 'Cairo',
       ),
-      navigatorObservers: [AnalyticsService().observer],
       home: const SplashScreen(),
     );
   }

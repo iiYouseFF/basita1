@@ -1,48 +1,82 @@
 # Basita (بسيطة) — Home Services Platform
 
-> Flutter · Firebase (Auth, Firestore, FCM, Analytics, Crashlytics) + Supabase (PostgreSQL, Storage, Edge Functions)
+> Flutter frontend → Node.js backend · Live API: **http://basseeyta.duckdns.org** · Backend repo: **https://github.com/iiYouseFF/basseeyta**
 
 [![CI](https://github.com/iiYouseFF/basita1/actions/workflows/ci.yml/badge.svg)](https://github.com/iiYouseFF/basita1/actions/workflows/ci.yml)
+[![Backend CI](https://github.com/iiYouseFF/basseeyta/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/iiYouseFF/basseeyta/actions)
 
-**Supabase:** `eczybgjywdppvyyygnrd` (eu-west-1, PG 17) · **Firebase:** `bassyta-851a5` · **Branch:** `feat/backend-phase-4-hardening`
+**Status:** Frontend wired to live Node API. PRD at `docs/backend-prd.html` · API docs at `http://basseeyta.duckdns.org/api-docs.json`
 
 ---
 
 ## Quick Start
 
+### Frontend (this repo)
+
 ```bash
-# 1. Get packages
 flutter pub get
 
-# 2. Run with mock OTP (dev, any 6 digits passes per PROMPT.MD)
-flutter run --dart-define=SUPABASE_URL=https://eczybgjywdppvyyygnrd.supabase.co \
-            --dart-define=SUPABASE_ANON_KEY=eyJhbGciOi... \
-            --dart-define=USE_MOCK_OTP=true
+# Against live backend (recommended) — any 6 digits pass when backend USE_MOCK_OTP=true
+flutter run --dart-define=API_BASE_URL=http://basseeyta.duckdns.org --dart-define=USE_MOCK_OTP=true
 
-# 3. Run with real Firebase Phone Auth (prod)
-flutter run --dart-define=USE_MOCK_OTP=false
+# Or mock-only (no network)
+flutter run --dart-define=USE_MOCK_OTP=true
+
+# Health check
+curl http://basseeyta.duckdns.org/health
+# {"status":"ok","version":"1.0.0","db":"connected","env":"production"}
 ```
 
-No hard-coded keys in `lib/main.dart` — all via `lib/core/config/env.dart` (`String.fromEnvironment`).
+Config via `lib/core/network/api_config.dart`:
+- `API_BASE_URL` — default `http://basseeyta.duckdns.org` (override with `--dart-define`)
+- `API_KEY` — optional bearer (now `AuthSession.token` from `/auth/verify-otp`)
+- `USE_MOCK_OTP` — `true` ⇒ Flutter + backend accept any 6 digits; `false` ⇒ real Firebase OTP
+
+**Note:** Live API is `http` (not `https`). Android has `usesCleartextTraffic=true` (`android/app/src/main/AndroidManifest.xml:11`), iOS has `NSAllowsArbitraryLoads` (`ios/Runner/Info.plist`).
+
+### Backend (Node.js repo)
+
+Repo: **https://github.com/iiYouseFF/basseeyta** — Express 4 + Socket.io 4 + Supabase PG 17 + Firebase Admin + BullMQ + Redis
+
+```bash
+git clone https://github.com/iiYouseFF/basseeyta
+cd basseeyta
+cp .env.example .env  # set SUPABASE_URL, JWT_SECRET, etc.
+npm install
+npm run dev    # http://localhost:3000  (or VPS : PM2 + Nginx)
+npm test       # 37 tests
+curl http://localhost:3000/health
+curl http://basseeyta.duckdns.org/api-docs.json  # 88 endpoints
+```
 
 ---
 
 ## Architecture
 
-- **Frontend:** Flutter Clean Architecture (`lib/core` + `lib/features/*/ {data,domain,presentation}`)
-- **Backend - Relational:** Supabase PostgreSQL (9 tables), Storage (5 buckets), Edge Functions (3), Realtime
-- **Backend - Document/Realtime:** Firebase Firestore (11 collections), Auth (Phone OTP), FCM, Analytics, Crashlytics
-- See `docs/ARCHITECTURE.md` and `BACKEND_PLAN.md` (and interactive `backend-plan.html`)
+```
+Flutter (lib/main.dart → ApiConfig + AuthSession)
+    │
+    ├─ lib/core/network/api_client.dart  (http, JWT bearer, 30s timeout)
+    ├─ lib/core/session/auth_session.dart (SharedPreferences JWT)
+    ├─ lib/core/repositories/*  (now real: Auth, Requests, Chat, Payments, etc. → http://basseeyta.duckdns.org)
+    │
+    └─► Node.js Express at http://basseeyta.duckdns.org
+         ├─ Supabase PG 17 (9+ tables + RLS) — sql/migrations/
+         ├─ Supabase Storage (5 buckets: profiles, account_verification, request, task_images, community_posts)
+         ├─ Firebase Admin (Phone OTP + FCM)
+         ├─ BullMQ + Redis (cron workers)
+         └─ Socket.io (/chat, /notifications, /requests)
+```
 
-### Responsibility Split
+**Old backend removed:**
 
-| Concern | Owner | Why |
-|---------|-------|-----|
-| Phone OTP | Firebase Auth | SMS deliverability Egypt |
-| Profiles / Requests / Offers / Chat / Posts | Firestore | Realtime `snapshots()` |
-| Notifications / Reviews / Promos / Tickets / Search / Payments / Appointments / Chat (supabase mirror) | Supabase PG | Joins, tsvector, cron |
-| Files | Supabase Storage | `profiles`, `request`, `task_images`, `community_posts`, `account_verification` |
-| Payments / Push | Edge Functions → Stripe/Fawry & FCM | Secrets not on client |
+| Previously | Now |
+|---|---|
+| `firebase_*`, `supabase_flutter` in `pubspec.yaml` | Replaced by `http` + `ApiConfig` |
+| `firebase_options.dart`, `env.dart`, `firebase.json`, `firestore.*` | Stubbed / archived to `docs/archive_*` |
+| `lib/main.dart` Firebase/Supabase init | Now `ApiConfig.init()` + `AuthSession.load()` |
+| Repos with `MockFirestore` | Now `AuthRepository`, `RequestRepository` etc. call live API; fallback mock if `USE_MOCK_OTP` |
+| `MockAuth.verifyPhoneNumber` in `login_screen`/`otp_screen` | Now `AuthRepository.requestOtp`/`verifyOtp` → JWT |
 
 ---
 
@@ -51,49 +85,70 @@ No hard-coded keys in `lib/main.dart` — all via `lib/core/config/env.dart` (`S
 ```
 lib/
 ├── core/
-│   ├── config/ {env.dart, app_config.dart, firebase_options.dart}
-│   ├── models/ {app_notification, review, promo_code, support_ticket, payment_log, appointment, chat_*}
-│   ├── repositories/ {notification, review, promo_code, support_ticket, search, payment_log, appointment, chat, request, technician}
-│   ├── services/ {supabase_service, storage_service, analytics_service, crash_service, order_accept_service}
-│   └── session/ {user_session, user_data_session}
-├── features/ {auth, booking, chat, community, family, home, offers, orders, payment, profile, technician, visits, ...}
-└── main.dart  # Firebase + Supabase init + Crashlytics + Analytics observer
+│   ├── network/ { api_client.dart, api_config.dart (→ basseeyta.duckdns.org), mock_backend.dart (fallback) }
+│   ├── repositories/ { auth_repository.dart, request_repository.dart, chat_repository.dart, notification_repository.dart, technician_repository.dart, appointment_repository.dart, payment_log_repository.dart, promo_code_repository.dart, review_repository.dart, search_repository.dart, support_ticket_repository.dart, instapay_repository.dart } // wired to live API
+│   ├── services/ { storage_service.dart → POST /storage/upload, supabase_service (shim), analytics/crash (no-op) }
+│   └── session/ { auth_session.dart (JWT), user_session.dart, user_data_session.dart }
+├── features/ { auth (login/otp now real), booking, chat, community, family, home, offers, orders, payment, profile, technician, visits }
+└── main.dart  # ApiConfig + AuthSession
+
+Backend repo: https://github.com/iiYouseFF/basseeyta
+├── src/modules/ auth, service-requests, offers, chat, storage, payments, community, search, notifications, support, reviews, visits, appointments, family, verification, ai
+├── src/config/ env, supabase, firebase, redis
+├── sql/migrations/ 001..006
+└── docs/ API docs, VPS setup
 ```
 
 ---
 
-## Backend Setup (already deployed on `eczybgjywdppvyyygnrd`)
+## Live API — 88 Endpoints
 
-- **Tables (9, RLS):** `notifications`, `reviews`, `promo_codes`, `support_tickets`, `search_index` (GIN), `payment_logs`, `appointments` (+ backfilled `request_id/client_id`), `chat_rooms`, `chat_messages`
-- **Extensions:** `pgcrypto`, `uuid-ossp`, `pg_cron 1.6.4`, `pg_trgm 1.6`, `http 1.6`, `vector 0.8.2`
-- **RPCs:** `search_entities(q, etype, gov, lim)`, `increment_used_count(pid)`
-- **Buckets (5):** `profiles` public 5MB, `account_verification` private 10MB, `request`/`task_images` private 10MB, `community_posts` public 5MB
-- **Edge Functions (ACTIVE):** `send-notification` (JWT), `process-payment` (JWT, mock), `daily-reset` (no JWT, cron)
-- **Firestore indexes:** 7 composites in `firestore.indexes.json`
-- **Rules:** `firestore.rules` — posts now `authorId==uid` on create/update/delete
+Base: `http://basseeyta.duckdns.org` — Docs: `http://basseeyta.duckdns.org/api-docs.json`
 
-Run `flutter test --coverage` (17 tests) and `dart format --set-exit-if-changed --output=none .` — CI at `.github/workflows/ci.yml` runs analyze + test + verify-backend + build-check.
+| Module | Key endpoints |
+|---|---|
+| Auth & Users (11) | `POST /auth/request-otp`, `POST /auth/verify-otp` → JWT, `POST /auth/register`, `POST /auth/technicians/register`, `GET /users/me`, `GET /users?phone=`, `GET /technicians/:phone` |
+| Service Requests (8) | `POST /service-requests`, `POST /service-requests/carpentry|plumbing|painting|electrical`, `GET /service-requests?userId&status&governorate`, `PATCH /service-requests/:id/status` |
+| Offers (3) | `POST /service-requests/:id/offers`, `GET /service-requests/:id/offers`, `PATCH /offers/:id` (transactional: offer→request→chat→appointment→push) |
+| Chat (6) | `POST /chat/rooms`, `GET /chat/rooms?userId=`, `GET /chat/rooms/:id/messages`, `POST /chat/rooms/:id/messages` (+ Socket.io `join_room`, `send_message`) |
+| Storage (3) | `POST /storage/upload` (multipart `bucket,documentId,file`), `GET /storage/:bucket/:path`, `DELETE` |
+| Payments (10) | `POST /payment-cards` (cardLast4 only), `POST /payments` (6-step atomic), `POST /payments/instapay`, `GET /promo-codes/validate` |
+| Community (5) | `POST /posts`, `GET /posts?category=`, `POST /posts/:id/like` |
+| Search (3) | `GET /search?q=سباكة&entityType=technician&governorate=القاهرة`, `POST /search/index` |
+| Notifications (6) | `GET /notifications?userId=`, `POST /notifications`, `POST /push/send` → FCM |
+| Others | `POST /support-tickets`, `POST /reviews`, `GET /visits`, `POST /appointments`, `GET /users/:uid/family-members`, `POST /verification`, `POST /ai/assistant`, `POST /jobs/:name` (CRON_SECRET) |
+
+**E2E happy path:** register → upload → request → tech register → GET pending → offer → `PATCH /offers/:id` accepted → chat → pay → review
+
+```bash
+# Flutter switch (already default)
+flutter run --dart-define=API_BASE_URL=http://basseeyta.duckdns.org --dart-define=USE_MOCK_OTP=true
+```
 
 ---
 
-## Environment
+## Verification
 
-| Env | SUPABASE_URL | USE_MOCK_OTP | Notes |
-|-----|--------------|--------------|-------|
-| Dev | `https://eczybgjywdppvyyygnrd.supabase.co` | `true` | Mock per PROMPT.MD |
-| Prod | same | `false` | Real `verifyPhoneNumber` + SHA certs/APNs required |
+```bash
+flutter pub get
+dart analyze          # 0 errors
+flutter test          # 17/17 passed (auth, requests, notifications, etc.)
 
-Secrets (`STRIPE_SECRET_KEY`, `FCM_SERVICE_ACCOUNT`, `CRON_SECRET`) → `supabase secrets set` (not in repo). `vault` for sensitive.
+# Live API smoke
+curl http://basseeyta.duckdns.org/health
+curl http://basseeyta.duckdns.org/service-requests
+curl http://basseeyta.duckdns.org/api-docs.json | jq '.totalEndpoints'  # 88
+```
 
 ---
 
 ## Docs
 
-- `BACKEND_PLAN.md` — full 17-section plan with SQL, RLS, edge code
-- `BACKEND_SERVICES.md` — auto-generated services spec
-- `WORK_LOG.md` — work log (updated 2026-08-29, 7→9 tables, new project ref)
-- `backend-plan.html` — interactive tracker (open in browser, localStorage)
-- `docs/ARCHITECTURE.md` — distilled architecture
+- **Live API docs:** `http://basseeyta.duckdns.org/api-docs.json` (88 endpoints) + `https://github.com/iiYouseFF/basseeyta#api` (README table)
+- **Flutter PRD (frontend-only spec):** `docs/backend-prd.html` (and `backend-prd.html` at root) — printable, 17 sections, now references `http://basseeyta.duckdns.org`
+- **Backend PRD & plan:** `https://github.com/iiYouseFF/basseeyta/blob/main/docs/BASITA_BACKEND_PLAN.md`, `docs/PROJECT_DETAILS.md`
+- Old `BACKEND_PLAN.md`, `BACKEND_SERVICES.md`, `backend-plan.html`, `firestore.*` → `docs/archive_*` (kept for reference)
+- `WORK_LOG.md` — work log
 
 ## License
 

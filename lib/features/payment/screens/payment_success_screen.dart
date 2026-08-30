@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
 import 'package:google_fonts/google_fonts.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 // =====================================================================
 // صفحة تأكيد نجاح الدفع وتفاصيل الخدمة (PaymentSuccessScreen)
@@ -73,8 +74,8 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
           ),
           centerTitle: true,
         ),
-        body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-          stream: FirebaseFirestore.instance
+        body: StreamBuilder<dynamic>(
+          stream: MockFirestore
               .collection('requests')
               .doc(widget.requestId)
               .snapshots(),

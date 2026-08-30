@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+// removed: firebase_auth
 import 'package:basita1/features/home/screens/home1.dart';
 import 'package:basita1/features/ai_assistant/screens/ai1_screen.dart';
 import 'package:basita1/features/orders/screens/sale_screen.dart';
@@ -9,6 +9,7 @@ import 'package:basita1/features/profile/screens/profile2.dart';
 import 'package:basita1/features/orders/screens/complete_task_page.dart';
 import 'package:basita1/core/session/user_data_session.dart';
 import 'package:basita1/core/services/order_accept_service.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 // ==========================================
 // الصفحة الرئيسية للطلبات (RequestsPage)
@@ -119,7 +120,7 @@ class _RequestsPageState extends State<RequestsPage> {
               _buildTabs(),
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
+                  stream: MockFirestore
                       .collection('requests')
                       .orderBy('createdAt', descending: true)
                       .snapshots(),
@@ -293,7 +294,7 @@ class _RequestsPageState extends State<RequestsPage> {
               Text(
                 UserDataSession.fullName.isNotEmpty
                     ? UserDataSession.fullName
-                    : (FirebaseAuth.instance.currentUser?.displayName ??
+                    : (MockAuth.currentUser?.displayName ??
                           'بسيطة | الفني'),
                 style: GoogleFonts.cairo(
                   fontSize: 18,
@@ -1623,21 +1624,19 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                                   try {
                                     final uid = UserDataSession.phone.isNotEmpty
                                         ? UserDataSession.phone
-                                        : (FirebaseAuth
-                                                  .instance
+                                        : (MockFirestore
                                                   .currentUser
                                                   ?.uid ??
                                               'unknown_uid');
                                     final techName =
                                         UserDataSession.fullName.isNotEmpty
                                         ? UserDataSession.fullName
-                                        : (FirebaseAuth
-                                                  .instance
+                                        : (MockFirestore
                                                   .currentUser
                                                   ?.displayName ??
                                               'بسيطة | الفني');
 
-                                    await FirebaseFirestore.instance
+                                    await MockFirestore
                                         .collection('offers')
                                         .add({
                                           'requestId': widget.request.id,
@@ -1660,10 +1659,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                                               'assets/Container (8).png',
                                           'status': 'pending',
                                           'createdAt':
-                                              FieldValue.serverTimestamp(),
+                                              DateTime.now(),
                                         });
 
-                                    await FirebaseFirestore.instance
+                                    await MockFirestore
                                         .collection('requests')
                                         .doc(widget.request.id)
                                         .set({
@@ -1671,8 +1670,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                                           'status': 'offer_submitted',
                                           'clientAccepted': false,
                                           'lastOfferTime':
-                                              FieldValue.serverTimestamp(),
-                                        }, SetOptions(merge: true));
+                                              DateTime.now(),
+                                        }, MockSetOptions(merge: true));
 
                                     setModalState(() {
                                       isSubmitting = false;
@@ -1847,7 +1846,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
     });
 
     try {
-      await FirebaseFirestore.instance
+      await MockFirestore
           .collection('requests')
           .doc(widget.request.id)
           .update({'workStarted': true, 'status': 'in_progress'});
@@ -1893,7 +1892,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
         backgroundColor: const Color(0xFFF8F9FA),
         appBar: _buildAppBar(),
         body: StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseFirestore.instance
+          stream: MockFirestore
               .collection('requests')
               .doc(widget.request.id)
               .snapshots(),
@@ -2074,7 +2073,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
       title: Text(
         UserDataSession.fullName.isNotEmpty
             ? UserDataSession.fullName
-            : (FirebaseAuth.instance.currentUser?.displayName ??
+            : (MockAuth.currentUser?.displayName ??
                   'بسيطة | الفني'),
         style: const TextStyle(
           fontSize: 18,

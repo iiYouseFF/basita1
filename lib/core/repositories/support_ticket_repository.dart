@@ -1,36 +1,37 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:basita1/core/models/support_ticket.dart';
+import 'package:basita1/core/network/api_client.dart';
 
+/// Real backend: POST/GET /support-tickets, PATCH /support-tickets/:id
 class SupportTicketRepository {
-  final SupabaseClient _client = Supabase.instance.client;
+  final ApiClient _api = ApiClient();
+
+  Map<String, dynamic> _normalize(Map<String, dynamic> j) => {
+        'id': j['id'] ?? '',
+        'user_id': j['userId'] ?? j['user_id'] ?? '',
+        'user_type': j['userType'] ?? j['user_type'] ?? 'user',
+        'subject': j['subject'] ?? '',
+        'description': j['description'] ?? '',
+        'status': j['status'] ?? 'open',
+        'priority': j['priority'] ?? 'medium',
+        'admin_reply': j['adminReply'] ?? j['admin_reply'],
+        'created_at': j['createdAt'] ?? j['created_at'],
+        'updated_at': j['updatedAt'] ?? j['updated_at'],
+      };
 
   Future<List<SupportTicket>> getUserTickets(String userId) async {
-    try {
-      final data = await _client
-          .from('support_tickets')
-          .select()
-          .eq('user_id', userId)
-          .order('created_at', ascending: false);
-      return data.map((json) => SupportTicket.fromJson(json)).toList();
-    } catch (e) {
-      // ignore: avoid_print
-      print('[SupportTicketRepository.getUserTickets] $e');
-      rethrow;
-    }
+    final res = await _api.get('/support-tickets', query: {'userId': userId});
+    final data = res['data'];
+    final list = data is List ? data : (data is Map && data['tickets'] is List ? data['tickets'] : []);
+    return (list as List).map((e) => SupportTicket.fromJson(_normalize(Map<String, dynamic>.from(e)))).toList();
   }
 
   Future<SupportTicket?> getTicket(String ticketId) async {
     try {
-      final data = await _client
-          .from('support_tickets')
-          .select()
-          .eq('id', ticketId)
-          .maybeSingle();
-      return data != null ? SupportTicket.fromJson(data) : null;
-    } catch (e) {
-      // ignore: avoid_print
-      print('[SupportTicketRepository.getTicket] $e');
-      rethrow;
+      final res = await _api.get('/support-tickets/$ticketId');
+      final data = (res['data'] as Map<String, dynamic>?) ?? res;
+      return SupportTicket.fromJson(_normalize(Map<String, dynamic>.from(data)));
+    } catch (_) {
+      return null;
     }
   }
 
@@ -41,36 +42,18 @@ class SupportTicketRepository {
     required String description,
     String priority = 'medium',
   }) async {
-    try {
-      final data = await _client
-          .from('support_tickets')
-          .insert({
-            'user_id': userId,
-            'user_type': userType,
-            'subject': subject,
-            'description': description,
-            'priority': priority,
-          })
-          .select()
-          .single();
-      return SupportTicket.fromJson(data);
-    } catch (e) {
-      // ignore: avoid_print
-      print('[SupportTicketRepository.createTicket] $e');
-      rethrow;
-    }
+    final res = await _api.post('/support-tickets', body: {
+      'userId': userId,
+      'userType': userType,
+      'subject': subject,
+      'description': description,
+      'priority': priority,
+    });
+    final data = (res['data'] as Map<String, dynamic>?)?['ticket'] ?? res['data'] ?? res;
+    return SupportTicket.fromJson(_normalize(Map<String, dynamic>.from(data as Map)));
   }
 
   Future<void> closeTicket(String ticketId) async {
-    try {
-      await _client
-          .from('support_tickets')
-          .update({'status': 'closed'})
-          .eq('id', ticketId);
-    } catch (e) {
-      // ignore: avoid_print
-      print('[SupportTicketRepository.closeTicket] $e');
-      rethrow;
-    }
+    await _api.patch('/support-tickets/$ticketId', body: {'status': 'closed'});
   }
 }

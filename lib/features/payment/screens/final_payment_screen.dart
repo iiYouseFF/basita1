@@ -1,14 +1,15 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+// removed: firebase_auth
 import 'package:google_fonts/google_fonts.dart';
 import 'package:basita1/core/services/supabase_service.dart';
 import 'package:basita1/core/repositories/payment_log_repository.dart';
 
 // استدعاء ملف جلسة المستخدم لجلب معلوماته عند حفظ البطاقة
 import 'package:basita1/core/session/user_session.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 // ==========================================
 // 1. نموذج بيانات طلب العميل (Client Request Model)
@@ -169,7 +170,7 @@ class _ClientRequestsScreenState extends State<ClientRequestsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final String currentUserId = MockAuth.currentUser?.uid ?? '';
     final String currentUserPhone = UserSession.instance.phone;
 
     return Directionality(
@@ -189,8 +190,8 @@ class _ClientRequestsScreenState extends State<ClientRequestsScreen> {
           ),
           centerTitle: true,
         ),
-        body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-          stream: FirebaseFirestore.instance
+        body: StreamBuilder<dynamic>(
+          stream: MockFirestore
               .collection('requests')
               .where(
                 Filter.or(
@@ -432,7 +433,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   final _cvvController = TextEditingController();
 
   String get _userId {
-    final authUid = FirebaseAuth.instance.currentUser?.uid;
+    final authUid = MockAuth.currentUser?.uid;
     if (authUid != null && authUid.isNotEmpty) {
       return authUid;
     }
@@ -575,13 +576,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 ? 'visa'
                 : 'mastercard';
 
-            await FirebaseFirestore.instance.collection('PaymentCards').add({
+            await MockFirestore.collection('PaymentCards').add({
               'cardLast4': cardLast4,
               'cardHolder': _holderController.text.trim(),
               'expiryDate': _expiryController.text.trim(),
               'isDefault': false,
               'cardType': cardType,
-              'createdAt': FieldValue.serverTimestamp(),
+              'createdAt': DateTime.now(),
               'userId': _userId,
               'userName': UserSession.instance.name,
               'userPhone': UserSession.instance.phone,
@@ -650,7 +651,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       await Future.delayed(const Duration(milliseconds: 800));
 
       if (widget.requestId.isNotEmpty) {
-        final reqRef = FirebaseFirestore.instance
+        final reqRef = MockFirestore
             .collection('requests')
             .doc(widget.requestId);
 
@@ -670,7 +671,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         Map<String, dynamic> updateData = {
           'status': isCash ? 'pending_cash' : 'completed',
           'isPaid': !isCash,
-          'paidAt': FieldValue.serverTimestamp(),
+          'paidAt': DateTime.now(),
           'paymentMethod': methodTitle,
           'paidAmount': widget.amount,
         };
@@ -680,7 +681,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         await reqRef.update(updateData);
 
         if (techId.isNotEmpty) {
-          final techRef = FirebaseFirestore.instance
+          final techRef = MockFirestore
               .collection('technicians')
               .doc(techId);
 
@@ -709,15 +710,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
             }
 
             Map<String, dynamic> updates = {
-              'totalEarnings': FieldValue.increment(widget.amount),
+              'totalEarnings': MockFieldValue.increment(widget.amount),
               'todayEarnings': currentTodayEarnings,
               'todayOrdersCount': currentTodayOrders,
               'lastEarningDateStr': todayStr,
-              'lastEarningTimestamp': FieldValue.serverTimestamp(),
+              'lastEarningTimestamp': DateTime.now(),
             };
 
             if (!isCash) {
-              updates['walletBalance'] = FieldValue.increment(widget.amount);
+              updates['walletBalance'] = MockFieldValue.increment(widget.amount);
             }
 
             await techRef.update(updates);
@@ -728,12 +729,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
               'todayEarnings': widget.amount,
               'todayOrdersCount': 1,
               'lastEarningDateStr': todayStr,
-              'lastEarningTimestamp': FieldValue.serverTimestamp(),
+              'lastEarningTimestamp': DateTime.now(),
             };
-            await techRef.set(setData, SetOptions(merge: true));
+            await techRef.set(setData, MockSetOptions(merge: true));
           }
 
-          await FirebaseFirestore.instance.collection('transactions').add({
+          await MockFirestore.collection('transactions').add({
             'technicianId': techId,
             'requestId': widget.requestId,
             'serviceName': widget.serviceName,
@@ -741,7 +742,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             'isPositive': !isCash,
             'type': isCash ? 'cash_collection' : 'income',
             'paymentMethod': methodTitle,
-            'createdAt': FieldValue.serverTimestamp(),
+            'createdAt': DateTime.now(),
             'dateStr': todayStr,
           });
         }
@@ -1011,8 +1012,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
               const Divider(height: 1),
               const SizedBox(height: 16),
 
-              StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream: FirebaseFirestore.instance
+              StreamBuilder<dynamic>(
+                stream: MockFirestore
                     .collection('PaymentCards')
                     .where('userId', isEqualTo: _userId)
                     .snapshots(),
@@ -1050,11 +1051,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   }
 
                   // فرز البطاقات: البطاقة الأساسية أولاً ثم الأحدث
-                  List<QueryDocumentSnapshot<Map<String, dynamic>>> sortedDocs =
-                      List.from(docs);
+                  List<dynamic> sortedDocs = List.from(docs);
                   sortedDocs.sort((a, b) {
-                    final aData = a.data();
-                    final bData = b.data();
+                    final aData = a.data() as Map<String, dynamic>;
+                    final bData = b.data() as Map<String, dynamic>;
                     final aDefault = aData['isDefault'] ?? false;
                     final bDefault = bData['isDefault'] ?? false;
                     if (aDefault && !bDefault) return -1;
@@ -1066,7 +1066,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   });
 
                   if (_selectedSavedCardId == null && !_useNewCard) {
-                    QueryDocumentSnapshot<Map<String, dynamic>> defaultDoc =
+                    dynamic defaultDoc =
                         sortedDocs.first;
                     for (var d in sortedDocs) {
                       if (d.data()['isDefault'] == true) {
@@ -1911,7 +1911,7 @@ class _AddCardBottomSheetState extends State<_AddCardBottomSheet> {
       final cleanNumber = _numberController.text.replaceAll(' ', '');
       final cardType = cleanNumber.startsWith('4') ? 'visa' : 'mastercard';
 
-      final cardsCollection = FirebaseFirestore.instance.collection(
+      final cardsCollection = MockFirestore.collection(
         'PaymentCards',
       );
 
@@ -1920,7 +1920,7 @@ class _AddCardBottomSheetState extends State<_AddCardBottomSheet> {
             .where('userId', isEqualTo: widget.userId)
             .get();
 
-        final batch = FirebaseFirestore.instance.batch();
+        final batch = MockFirestore.batch();
         for (var doc in snapshot.docs) {
           batch.update(doc.reference, {'isDefault': false});
         }
@@ -1935,7 +1935,7 @@ class _AddCardBottomSheetState extends State<_AddCardBottomSheet> {
         'expiryDate': _expiryController.text.trim(),
         'isDefault': _isDefault,
         'cardType': cardType,
-        'createdAt': FieldValue.serverTimestamp(),
+        'createdAt': DateTime.now(),
         'userId': widget.userId,
         'userName': UserSession.instance.name,
         'userPhone': UserSession.instance.phone,

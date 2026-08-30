@@ -1,6 +1,4 @@
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UserDataSession {
   static String fullName = "";
@@ -21,7 +19,7 @@ class UserDataSession {
     String imagePath = "",
   }) {
     fullName = name;
-    phone = phoneNumber; // أهم حاجة: دا الرقم اللي هيترفع بيه
+    phone = phoneNumber;
     experience = exp;
     specialty = spec;
     governorate = gov;
@@ -29,62 +27,20 @@ class UserDataSession {
     profileImagePath = imagePath;
   }
 
-  // 1. الدالة الجديدة: رفع الصورة إلى Supabase والحصول على الرابط
+  // Previously uploaded to dynamic Storage `profiles` bucket.
+  // Now mock — see docs/backend-prd.html § Storage
   static Future<void> uploadImageToSupabase(File imageFile) async {
-    try {
-      final supabase = Supabase.instance.client;
-
-      // استخراج امتداد الملف (مثلاً: jpg, png)
-      final fileExt = imageFile.path.split('.').last;
-
-      // إنشاء اسم فريد للملف باستخدام رقم الهاتف والوقت الحالي لمنع التكرار
-      final fileName =
-          'profile_${phone}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
-
-      // رفع الصورة إلى الباكت (Bucket) المسمى 'profiles' في Supabase
-      // تأكد من أنك أنشأت Bucket بهذا الاسم وجعلته Public في إعدادات Supabase
-      await supabase.storage
-          .from('profiles')
-          .upload(
-            fileName,
-            imageFile,
-            fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
-          );
-
-      // الحصول على الرابط العام (Public URL) للصورة المرفوعة
-      final String publicUrl = supabase.storage
-          .from('profiles')
-          .getPublicUrl(fileName);
-
-      // تحديث المتغير ليحمل الرابط (URL) بدلاً من المسار المحلي
-      profileImagePath = publicUrl;
-    } catch (e) {
-      throw Exception("فشل رفع الصورة إلى Supabase: $e");
-    }
+    await Future.delayed(const Duration(milliseconds: 400));
+    // TODO(backend): POST /storage/upload {bucket: 'profiles', file: imageFile}
+    // mock URL:
+    final fileName = 'profile_${phone}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    profileImagePath = 'https://cdn.basita.example.com/profiles/$fileName';
   }
 
-  // 2. رفع البيانات إلى Firebase (الآن سيرفع رابط الصورة من الإنترنت)
+  // Previously Firestore `technicians/{phone}`.
   static Future<void> uploadDataToFirebase() async {
-    try {
-      // هنا بيتم إنشاء المستند (Document) باسم رقم الهاتف مباشرة
-      await FirebaseFirestore.instance.collection('technicians').doc(phone).set(
-        {
-          'fullName': fullName,
-          'phone': phone,
-          'experience': experience,
-          'specialty': specialty,
-          'governorate': governorate,
-          'area': area,
-          'profileImagePath': profileImagePath, // <--- سيحتوي على رابط Supabase
-          'createdAt': FieldValue.serverTimestamp(),
-          'role': 'technician', // يفضل إضافة الدور لتسهيل التمييز لاحقاً
-          'isVerified': false, // حالة التوثيق المبدئية
-        },
-        SetOptions(merge: true),
-      );
-    } catch (e) {
-      throw Exception("فشل رفع البيانات إلى فايربيس: $e");
-    }
+    await Future.delayed(const Duration(milliseconds: 400));
+    // TODO(backend): PUT /technicians/{phone}
   }
 
   static void clearSession() {

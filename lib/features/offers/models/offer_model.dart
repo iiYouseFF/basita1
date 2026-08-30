@@ -1,5 +1,5 @@
 // ملف: offer_model.dart
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 class OfferModel {
   final String id;
@@ -30,11 +30,13 @@ class OfferModel {
     this.timestamp,
   });
 
-  // استخراج البيانات من Firebase
-  factory OfferModel.fromFirestore(DocumentSnapshot doc) {
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+  // استخراج البيانات من external backend (mock)
+  factory OfferModel.fromFirestore(dynamic doc) {
+    final Map<String, dynamic> data = doc is Map
+        ? Map<String, dynamic>.from(doc)
+        : (doc.data() as Map<String, dynamic>? ?? {});
     return OfferModel(
-      id: doc.id,
+      id: doc is Map ? (doc['id'] ?? '') : (doc.id ?? ''),
       technicianId: data['technicianId'] ?? '',
       name: data['name'] ?? 'فني مجهول',
       rating: (data['rating'] ?? 0.0).toDouble(),
@@ -45,9 +47,11 @@ class OfferModel {
       imagePath: data['imagePath'] ?? 'assets/images/default_avatar.png',
       isVerified: data['isVerified'] ?? false,
       hasGreenArrivalTag: data['hasGreenArrivalTag'] ?? false,
-      timestamp: data['timestamp'] != null
-          ? (data['timestamp'] as Timestamp).toDate()
-          : DateTime.now(),
+      timestamp: data['timestamp'] is DateTime
+          ? data['timestamp'] as DateTime
+          : (data['timestamp'] is Timestamp
+              ? (data['timestamp'] as dynamic).toDate() as DateTime
+              : DateTime.now()),
     );
   }
 
@@ -64,7 +68,7 @@ class OfferModel {
       'imagePath': imagePath,
       'isVerified': isVerified,
       'hasGreenArrivalTag': hasGreenArrivalTag,
-      'timestamp': FieldValue.serverTimestamp(), // الوقت الفعلي من السيرفر
+      'timestamp': DateTime.now(), // الوقت الفعلي من السيرفر
     };
   }
 }

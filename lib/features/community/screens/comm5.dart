@@ -1,10 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
 import 'package:image_picker/image_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'; // 👈 استيراد مكتبة Supabase
+// removed: supabase_flutter
 import 'package:basita1/core/session/user_session.dart'; // استدعاء ملف الـ UserSession الموحد في تطبيقك
+import 'package:basita1/core/network/mock_backend.dart';
 
 // ==========================================
 // 1. Data Models (نموذج بيانات المنشور لمجتمع التشطيبات)
@@ -48,7 +49,7 @@ class FinishesPostModel {
       'comments': comments,
       'isQuestion': isQuestion,
       'likedBy': likedBy,
-      'createdAt': FieldValue.serverTimestamp(),
+      'createdAt': DateTime.now(),
     };
   }
 
@@ -154,7 +155,7 @@ class _FinishesCommunityScreenState extends State<FinishesCommunityScreen>
               onPressed: () async {
                 Navigator.pop(ctx);
                 try {
-                  await FirebaseFirestore.instance
+                  await MockFirestore
                       .collection('post_Finishes')
                       .doc(postId)
                       .delete();
@@ -225,7 +226,7 @@ class _FinishesCommunityScreenState extends State<FinishesCommunityScreen>
                   const Divider(),
                   Expanded(
                     child: StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
+                      stream: MockFirestore
                           .collection('post_Finishes')
                           .doc(postId)
                           .collection('comments')
@@ -313,7 +314,7 @@ class _FinishesCommunityScreenState extends State<FinishesCommunityScreen>
                             ),
                             onPressed: () {
                               if (commentController.text.trim().isNotEmpty) {
-                                FirebaseFirestore.instance
+                                MockFirestore
                                     .collection('post_Finishes')
                                     .doc(postId)
                                     .collection('comments')
@@ -323,13 +324,13 @@ class _FinishesCommunityScreenState extends State<FinishesCommunityScreen>
                                           UserSession.instance.name.isNotEmpty
                                           ? UserSession.instance.name
                                           : 'مستخدم',
-                                      'createdAt': FieldValue.serverTimestamp(),
+                                      'createdAt': DateTime.now(),
                                     });
-                                FirebaseFirestore.instance
+                                MockFirestore
                                     .collection('post_Finishes')
                                     .doc(postId)
                                     .update({
-                                      'comments': FieldValue.increment(1),
+                                      'comments': MockFieldValue.increment(1),
                                     });
                                 commentController.clear();
                               }
@@ -493,7 +494,7 @@ class _FinishesCommunityScreenState extends State<FinishesCommunityScreen>
         ),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
+            stream: MockFirestore
                 .collection('post_Finishes')
                 .orderBy('createdAt', descending: true)
                 .snapshots(),
@@ -589,7 +590,7 @@ class _FinishesCommunityScreenState extends State<FinishesCommunityScreen>
         ),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
+            stream: MockFirestore
                 .collection('post_Finishes')
                 .orderBy('createdAt', descending: true)
                 .snapshots(),
@@ -843,7 +844,7 @@ class _FinishesCommunityScreenState extends State<FinishesCommunityScreen>
             post.content,
             style: GoogleFonts.cairo(fontSize: 14, height: 1.5),
           ),
-          // 👇 عرض الصورة بأمان (سواء رابط سحابي من Supabase أو ملف محلي)
+          // 👇 عرض الصورة بأمان (سواء رابط سحابي من dynamic أو ملف محلي)
           if (post.imagePath != null && post.imagePath!.isNotEmpty) ...[
             const SizedBox(height: 12),
             ClipRRect(
@@ -873,18 +874,18 @@ class _FinishesCommunityScreenState extends State<FinishesCommunityScreen>
               InkWell(
                 onTap: () {
                   if (post.id != null && currentUserName.isNotEmpty) {
-                    final postRef = FirebaseFirestore.instance
+                    final postRef = MockFirestore
                         .collection('post_Finishes')
                         .doc(post.id);
                     if (isLiked) {
                       postRef.update({
-                        'likes': FieldValue.increment(-1),
-                        'likedBy': FieldValue.arrayRemove([currentUserName]),
+                        'likes': MockFieldValue.increment(-1),
+                        'likedBy': MockFieldValue.arrayRemove([currentUserName]),
                       });
                     } else {
                       postRef.update({
-                        'likes': FieldValue.increment(1),
-                        'likedBy': FieldValue.arrayUnion([currentUserName]),
+                        'likes': MockFieldValue.increment(1),
+                        'likedBy': MockFieldValue.arrayUnion([currentUserName]),
                       });
                     }
                   }
@@ -981,7 +982,7 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
 }
 
 // ==========================================
-// 3. Create Finishes Post Screen (إنشاء منشور التشطيبات مع Supabase)
+// 3. Create Finishes Post Screen (إنشاء منشور التشطيبات مع dynamic)
 // ==========================================
 class CreateFinishesPostScreen extends StatefulWidget {
   const CreateFinishesPostScreen({super.key});
@@ -1031,7 +1032,7 @@ class _CreateFinishesPostScreenState extends State<CreateFinishesPostScreen> {
     }
   }
 
-  // 👇 رفع الصورة إلى Supabase Storage وحفظ الرابط السحابي في فايربيز
+  // 👇 رفع الصورة إلى dynamic Storage وحفظ الرابط السحابي في فايربيز
   Future<void> _publishPost() async {
     if (_contentController.text.trim().isEmpty &&
         _titleController.text.trim().isEmpty &&
@@ -1046,12 +1047,12 @@ class _CreateFinishesPostScreenState extends State<CreateFinishesPostScreen> {
     try {
       String? imageUrl;
 
-      // 1. رفع الصورة إلى Supabase Storage إذا تم اختيار صورة
+      // 1. رفع الصورة إلى dynamic Storage إذا تم اختيار صورة
       if (_selectedImage != null) {
         final fileName =
             'finishes_post_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
-        await Supabase.instance.client.storage
+        await MockSupabase.storage
             .from('community_images')
             .upload(
               fileName,
@@ -1059,8 +1060,8 @@ class _CreateFinishesPostScreenState extends State<CreateFinishesPostScreen> {
               fileOptions: const FileOptions(contentType: 'image/jpeg'),
             );
 
-        // 2. الحصول على رابط الصورة المباشر من Supabase
-        imageUrl = Supabase.instance.client.storage
+        // 2. الحصول على رابط الصورة المباشر من dynamic
+        imageUrl = MockSupabase.storage
             .from('community_images')
             .getPublicUrl(fileName);
       }
@@ -1080,7 +1081,7 @@ class _CreateFinishesPostScreenState extends State<CreateFinishesPostScreen> {
       );
 
       // 4. الحفظ في مجموعة التشطيبات بفايربيز
-      await FirebaseFirestore.instance
+      await MockFirestore
           .collection('post_Finishes')
           .add(newPost.toMap());
 
@@ -1490,7 +1491,7 @@ class _CreateFinishesQuestionScreenState
         likedBy: [],
       );
 
-      await FirebaseFirestore.instance
+      await MockFirestore
           .collection('post_Finishes')
           .add(newQuestion.toMap());
 

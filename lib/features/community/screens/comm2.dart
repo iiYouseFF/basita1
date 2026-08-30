@@ -1,10 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
 import 'package:image_picker/image_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'; // 👈 استيراد مكتبة Supabase
+// removed: supabase_flutter
 import 'package:basita1/core/session/user_session.dart'; // استدعاء ملف الـ UserSession الموحد في تطبيقك
+import 'package:basita1/core/network/mock_backend.dart';
 
 // ==========================================
 // 1. Data Models (نموذج بيانات المنشور)
@@ -48,7 +49,7 @@ class ElectricityPostModel {
       'comments': comments,
       'isQuestion': isQuestion,
       'likedBy': likedBy,
-      'createdAt': FieldValue.serverTimestamp(),
+      'createdAt': DateTime.now(),
     };
   }
 
@@ -154,7 +155,7 @@ class _ElectricityCommunityScreenState extends State<ElectricityCommunityScreen>
               onPressed: () async {
                 Navigator.pop(ctx);
                 try {
-                  await FirebaseFirestore.instance
+                  await MockFirestore
                       .collection('post_electricity')
                       .doc(postId)
                       .delete();
@@ -225,7 +226,7 @@ class _ElectricityCommunityScreenState extends State<ElectricityCommunityScreen>
                   const Divider(),
                   Expanded(
                     child: StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
+                      stream: MockFirestore
                           .collection('post_electricity')
                           .doc(postId)
                           .collection('comments')
@@ -313,7 +314,7 @@ class _ElectricityCommunityScreenState extends State<ElectricityCommunityScreen>
                             ),
                             onPressed: () {
                               if (commentController.text.trim().isNotEmpty) {
-                                FirebaseFirestore.instance
+                                MockFirestore
                                     .collection('post_electricity')
                                     .doc(postId)
                                     .collection('comments')
@@ -323,13 +324,13 @@ class _ElectricityCommunityScreenState extends State<ElectricityCommunityScreen>
                                           UserSession.instance.name.isNotEmpty
                                           ? UserSession.instance.name
                                           : 'مستخدم',
-                                      'createdAt': FieldValue.serverTimestamp(),
+                                      'createdAt': DateTime.now(),
                                     });
-                                FirebaseFirestore.instance
+                                MockFirestore
                                     .collection('post_electricity')
                                     .doc(postId)
                                     .update({
-                                      'comments': FieldValue.increment(1),
+                                      'comments': MockFieldValue.increment(1),
                                     });
                                 commentController.clear();
                               }
@@ -490,7 +491,7 @@ class _ElectricityCommunityScreenState extends State<ElectricityCommunityScreen>
         ),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
+            stream: MockFirestore
                 .collection('post_electricity')
                 .orderBy('createdAt', descending: true)
                 .snapshots(),
@@ -583,7 +584,7 @@ class _ElectricityCommunityScreenState extends State<ElectricityCommunityScreen>
         ),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
+            stream: MockFirestore
                 .collection('post_electricity')
                 .orderBy('createdAt', descending: true)
                 .snapshots(),
@@ -868,18 +869,18 @@ class _ElectricityCommunityScreenState extends State<ElectricityCommunityScreen>
               InkWell(
                 onTap: () {
                   if (post.id != null && currentUserName.isNotEmpty) {
-                    final postRef = FirebaseFirestore.instance
+                    final postRef = MockFirestore
                         .collection('post_electricity')
                         .doc(post.id);
                     if (isLiked) {
                       postRef.update({
-                        'likes': FieldValue.increment(-1),
-                        'likedBy': FieldValue.arrayRemove([currentUserName]),
+                        'likes': MockFieldValue.increment(-1),
+                        'likedBy': MockFieldValue.arrayRemove([currentUserName]),
                       });
                     } else {
                       postRef.update({
-                        'likes': FieldValue.increment(1),
-                        'likedBy': FieldValue.arrayUnion([currentUserName]),
+                        'likes': MockFieldValue.increment(1),
+                        'likedBy': MockFieldValue.arrayUnion([currentUserName]),
                       });
                     }
                   }
@@ -976,7 +977,7 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
 }
 
 // ==========================================
-// 3. Create Post Screen (إنشاء منشورات الكهرباء مع رفع الصورة لـ Supabase)
+// 3. Create Post Screen (إنشاء منشورات الكهرباء مع رفع الصورة لـ dynamic)
 // ==========================================
 class CreateElectricityPostScreen extends StatefulWidget {
   const CreateElectricityPostScreen({super.key});
@@ -1027,7 +1028,7 @@ class _CreateElectricityPostScreenState
     }
   }
 
-  // 👇 دالة نشر المنشور مع رفع الصورة إلى Supabase Storage والحصول على رابطها السحابي
+  // 👇 دالة نشر المنشور مع رفع الصورة إلى dynamic Storage والحصول على رابطها السحابي
   Future<void> _publishPost() async {
     if (_contentController.text.trim().isEmpty &&
         _titleController.text.trim().isEmpty &&
@@ -1042,12 +1043,12 @@ class _CreateElectricityPostScreenState
     try {
       String? imageUrl;
 
-      // 1. رفع الصورة إلى Supabase Storage إذا تم اختيار صورة
+      // 1. رفع الصورة إلى dynamic Storage إذا تم اختيار صورة
       if (_selectedImage != null) {
         final fileName =
             'electricity_post_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
-        await Supabase.instance.client.storage
+        await MockSupabase.storage
             .from('community_images')
             .upload(
               fileName,
@@ -1055,8 +1056,8 @@ class _CreateElectricityPostScreenState
               fileOptions: const FileOptions(contentType: 'image/jpeg'),
             );
 
-        // 2. الحصول على رابط الصورة المباشر من Supabase
-        imageUrl = Supabase.instance.client.storage
+        // 2. الحصول على رابط الصورة المباشر من dynamic
+        imageUrl = MockSupabase.storage
             .from('community_images')
             .getPublicUrl(fileName);
       }
@@ -1076,7 +1077,7 @@ class _CreateElectricityPostScreenState
       );
 
       // 4. الحفظ في فايربيز (مجموعة الكهرباء)
-      await FirebaseFirestore.instance
+      await MockFirestore
           .collection('post_electricity')
           .add(newPost.toMap());
 
@@ -1495,7 +1496,7 @@ class _CreateElectricityQuestionScreenState
         likedBy: [],
       );
 
-      await FirebaseFirestore.instance
+      await MockFirestore
           .collection('post_electricity')
           .add(newQuestion.toMap());
 

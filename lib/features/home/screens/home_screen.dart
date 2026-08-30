@@ -2,8 +2,8 @@ import 'dart:io'; // للتعامل مع ملفات الصور المحلية إ
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // للتحكم في الخروج من التطبيق
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+// removed: firebase_auth
 
 import 'package:basita1/features/booking/screens/request_service_screen.dart';
 import 'package:basita1/features/profile/screens/profile_screen.dart';
@@ -19,6 +19,7 @@ import 'package:basita1/core/session/user_session.dart';
 import 'package:basita1/features/profile/screens/personal_data_screen.dart';
 import 'package:basita1/features/feedback/screens/coming_soon_screen.dart';
 import 'package:basita1/features/payment/screens/final_payment_screen.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 class SimpleHomeScreen extends StatefulWidget {
   const SimpleHomeScreen({super.key});
@@ -51,12 +52,12 @@ class _SimpleHomeScreenState extends State<SimpleHomeScreen> {
   Future<void> _fetchLatestUserData() async {
     try {
       String userPhone = UserSession.instance.phone.trim();
-      String? currentUid = FirebaseAuth.instance.currentUser?.uid;
+      String? currentUid = MockAuth.currentUser?.uid;
 
       QuerySnapshot? querySnapshot;
 
       if (currentUid != null && currentUid.isNotEmpty) {
-        var doc = await FirebaseFirestore.instance
+        var doc = await MockFirestore
             .collection('users')
             .doc(currentUid)
             .get();
@@ -67,7 +68,7 @@ class _SimpleHomeScreenState extends State<SimpleHomeScreen> {
       }
 
       if (userPhone.isNotEmpty) {
-        querySnapshot = await FirebaseFirestore.instance
+        querySnapshot = await MockFirestore
             .collection('users')
             .where('phone', isEqualTo: userPhone)
             .get();

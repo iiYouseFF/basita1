@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:basita1/core/network/mock_backend.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
 
 class PaintingBookingScreen extends StatefulWidget {
   const PaintingBookingScreen({super.key});
@@ -59,7 +60,7 @@ class _PaintingBookingScreenState extends State<PaintingBookingScreen> {
 
     try {
       // إنشاء كولكشن جديد باسم painting_requests
-      await FirebaseFirestore.instance.collection('painting_requests').add({
+      await MockFirestore.collection('painting_requests').add({
         'workType': 'نقاشة',
         'finishingType': selectedFinishingType,
         'paintType': selectedPaintType,
@@ -69,7 +70,7 @@ class _PaintingBookingScreenState extends State<PaintingBookingScreen> {
         'budget': _budgetController.text.trim(),
         'notes': _notesController.text.trim(),
         'status': 'pending', // حالة الطلب
-        'createdAt': FieldValue.serverTimestamp(),
+        'createdAt': DateTime.now(),
       });
 
       // TODO: قم بإلغاء التعليق عن الكود التالي وضع اسم صفحة النجاح الخاصة بك

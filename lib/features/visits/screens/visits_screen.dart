@@ -1,8 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
 import 'package:flutter/material.dart';
 import 'package:basita1/core/session/user_session.dart';
 import 'package:basita1/features/orders/screens/visit_details_page.dart';
 import 'package:basita1/features/booking/screens/request_service_screen.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 class BasseytaVisitsApp extends StatefulWidget {
   const BasseytaVisitsApp({super.key});
@@ -56,7 +57,7 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
     }
 
     try {
-      final QuerySnapshot snapshot = await FirebaseFirestore.instance
+      final QuerySnapshot snapshot = await MockFirestore
           .collection('requests')
           .where('userPhone', isEqualTo: phone)
           .orderBy('createdAt', descending: true)
@@ -764,12 +765,12 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
     if (result == null || result <= 0 || !mounted) return;
 
     try {
-      await FirebaseFirestore.instance
+      await MockFirestore
           .collection('requests')
           .doc(requestId)
           .update({
             'clientRating': result,
-            'clientRatedAt': FieldValue.serverTimestamp(),
+            'clientRatedAt': DateTime.now(),
           });
 
       await _reloadRequest(requestId, result);
@@ -796,7 +797,7 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
 
   Future<void> _reloadRequest(String requestId, int rating) async {
     try {
-      final DocumentSnapshot doc = await FirebaseFirestore.instance
+      final DocumentSnapshot doc = await MockFirestore
           .collection('requests')
           .doc(requestId)
           .get();

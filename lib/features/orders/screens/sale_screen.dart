@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+// removed: firebase_auth
 import 'package:google_fonts/google_fonts.dart';
 
 // استدعاء صفحات التنقل السفلية وبيانات الجلسة
 import 'package:basita1/core/session/user_data_session.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 class BasiytaApp extends StatelessWidget {
   const BasiytaApp({super.key});
@@ -35,10 +36,10 @@ class _WalletScreenState extends State<WalletScreen> {
 
   /// جلب معرّف الفني ديناميكياً بنفس الطريقة المستخدمة في الشاشة الرئيسية
   String get _technicianDocId {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = MockAuth.currentUser;
     String rawPhone = user?.phoneNumber ?? '';
 
-    // إذا كان رقم الهاتف فارغاً في FirebaseAuth، نجرب جلب القيمة من Session
+    // إذا كان رقم الهاتف فارغاً في dynamic، نجرب جلب القيمة من Session
     if (rawPhone.isEmpty) {
       rawPhone = UserDataSession.phone;
     }
@@ -64,9 +65,9 @@ class _WalletScreenState extends State<WalletScreen> {
       backgroundColor: bgLight,
       appBar: _buildAppBar(),
       // قراءة الداتا مباشرة من Transactions لضمان الديناميكية
-      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      body: StreamBuilder<dynamic>(
         stream: currentTechId.isNotEmpty
-            ? FirebaseFirestore.instance
+            ? MockFirestore
                   .collection('transactions')
                   .where('technicianId', isEqualTo: currentTechId)
                   .snapshots()
@@ -580,9 +581,9 @@ class _WalletScreenState extends State<WalletScreen> {
           ],
         ),
         const SizedBox(height: 4),
-        StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        StreamBuilder<dynamic>(
           stream: currentTechId.isNotEmpty
-              ? FirebaseFirestore.instance
+              ? MockFirestore
                     .collection('transactions')
                     .where('technicianId', isEqualTo: currentTechId)
                     .orderBy('createdAt', descending: true)

@@ -1,10 +1,13 @@
 import 'dart:async';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:basita1/core/models/chat_message.dart';
 import 'package:basita1/core/models/chat_room.dart';
+import 'package:basita1/core/network/api_client.dart';
 
+/// Real backend: Node.js Chat module at http://basseeyta.duckdns.org
+/// POST /chat/rooms, GET /chat/rooms?userId=, GET/POST /chat/rooms/:id/messages
+/// Also Socket.io namespaces: /chat (join_room, send_message)
 class ChatRepository {
-  final SupabaseClient _client = Supabase.instance.client;
+  final ApiClient _api = ApiClient();
 
   Future<ChatRoom?> getOrCreateRoom({
     required String clientId,
@@ -12,103 +15,60 @@ class ChatRepository {
     String? requestId,
     String? serviceType,
   }) async {
-    // 1. إن كان الطلب قام بإنشاء غرفة سابقة (placeholder بتقنية فارغة)،
-    //    نستخدم نفس الغرفة ونحدّث بيانات الفني بدلاً من إنشاء غرفة مكررة.
-    if (requestId != null && requestId.isNotEmpty) {
-      final byRequest = await _client
-          .from('chat_rooms')
-          .select()
-          .eq('request_id', requestId)
-          .eq('is_active', true)
-          .maybeSingle();
-
-      if (byRequest != null) {
-        await _client
-            .from('chat_rooms')
-            .update({'technician_id': technicianId})
-            .eq('id', byRequest['id']);
-        if (serviceType != null && serviceType != byRequest['service_type']) {
-          await _client
-              .from('chat_rooms')
-              .update({'service_type': serviceType})
-              .eq('id', byRequest['id']);
-        }
-        final updated = await _client
-            .from('chat_rooms')
-            .select()
-            .eq('id', byRequest['id'])
-            .single();
-        return ChatRoom.fromJson(updated);
-      }
-    }
-
-    final existing = await _client
-        .from('chat_rooms')
-        .select()
-        .eq('client_id', clientId)
-        .eq('technician_id', technicianId)
-        .eq('is_active', true)
-        .maybeSingle();
-
-    if (existing != null) return ChatRoom.fromJson(existing);
-
-    final data = await _client
-        .from('chat_rooms')
-        .insert({
-          'client_id': clientId,
-          'technician_id': technicianId,
-          'request_id': requestId,
-          'service_type': serviceType,
-        })
-        .select()
-        .single();
-    return ChatRoom.fromJson(data);
+    final res = await _api.post('/chat/rooms', body: {
+      'clientId': clientId,
+      'technicianId': technicianId,
+      if (requestId != null) 'requestId': requestId,
+      if (serviceType != null) 'serviceType': serviceType,
+    });
+    final data = (res['data'] as Map<String, dynamic>?)?['room'] ?? res['data'] ?? res;
+    if (data is Map<String, dynamic>) return ChatRoom.fromJson(_normalizeRoom(data));
+    return null;
   }
 
+  Map<String, dynamic> _normalizeRoom(Map<String, dynamic> j) => {
+        'id': j['id'] ?? j['_id'] ?? '',
+        'client_id': j['clientId'] ?? j['client_id'] ?? '',
+        'technician_id': j['technicianId'] ?? j['technician_id'] ?? '',
+        'request_id': j['requestId'] ?? j['request_id'],
+        'service_type': j['serviceType'] ?? j['service_type'],
+        'is_active': j['isActive'] ?? j['is_active'] ?? true,
+        'created_at': j['createdAt'] ?? j['created_at'],
+        'updated_at': j['updatedAt'] ?? j['updated_at'],
+      };
+
+  Map<String, dynamic> _normalizeMsg(Map<String, dynamic> j) => {
+        'id': j['id'] ?? '',
+        'room_id': j['roomId'] ?? j['room_id'] ?? '',
+        'sender_id': j['senderId'] ?? j['sender_id'] ?? '',
+        'sender_type': j['senderType'] ?? j['sender_type'] ?? 'user',
+        'message': j['message'] ?? j['text'] ?? '',
+        'is_read': j['isRead'] ?? j['is_read'] ?? false,
+        'created_at': j['createdAt'] ?? j['created_at'],
+      };
+
   Future<List<ChatRoom>> getUserChatRooms(String userId) async {
-    final data = await _client
-        .from('chat_rooms')
-        .select()
-        .or('client_id.eq.$userId,technician_id.eq.$userId')
-        .eq('is_active', true)
-        .order('updated_at', ascending: false);
-    return data.map((json) => ChatRoom.fromJson(json)).toList();
+    final res = await _api.get('/chat/rooms', query: {'userId': userId});
+    final data = res['data'];
+    final list = data is List ? data : (data is Map && data['rooms'] is List ? data['rooms'] : []);
+    return (list as List).map((e) => ChatRoom.fromJson(_normalizeRoom(Map<String, dynamic>.from(e)))).toList();
   }
 
   Future<List<ChatMessage>> getMessages(String roomId, {int limit = 50}) async {
-    final data = await _client
-        .from('chat_messages')
-        .select()
-        .eq('room_id', roomId)
-        .order('created_at', ascending: false)
-        .limit(limit);
-    return data.map((json) => ChatMessage.fromJson(json)).toList();
+    final res = await _api.get('/chat/rooms/$roomId/messages', query: {'limit': limit});
+    final data = res['data'];
+    final list = data is List ? data : (data is Map && data['messages'] is List ? data['messages'] : []);
+    return (list as List).map((e) => ChatMessage.fromJson(_normalizeMsg(Map<String, dynamic>.from(e)))).toList();
   }
 
-  Stream<List<ChatMessage>> watchMessages(String roomId) {
-    return _client
-        .from('chat_messages')
-        .stream(primaryKey: ['id'])
-        .eq('room_id', roomId)
-        .order('created_at', ascending: false)
-        .map((data) => data.map((json) => ChatMessage.fromJson(json)).toList());
+  // For now, realtime via polling + Socket.io will be added later.
+  // Keeping Stream as single-value for compatibility; UI can poll or use socket.
+  Stream<List<ChatMessage>> watchMessages(String roomId) async* {
+    yield await getMessages(roomId);
   }
 
-  Stream<List<ChatRoom>> watchUserChatRooms(String userId) {
-    return _client
-        .from('chat_rooms')
-        .stream(primaryKey: ['id'])
-        .order('updated_at', ascending: false)
-        .map(
-          (data) => data
-              .where(
-                (json) =>
-                    json['client_id'] == userId ||
-                    json['technician_id'] == userId,
-              )
-              .map((json) => ChatRoom.fromJson(json))
-              .toList(),
-        );
+  Stream<List<ChatRoom>> watchUserChatRooms(String userId) async* {
+    yield await getUserChatRooms(userId);
   }
 
   Future<void> sendMessage({
@@ -117,35 +77,22 @@ class ChatRepository {
     required String senderType,
     required String message,
   }) async {
-    await _client.from('chat_messages').insert({
-      'room_id': roomId,
-      'sender_id': senderId,
-      'sender_type': senderType,
+    await _api.post('/chat/rooms/$roomId/messages', body: {
+      'senderId': senderId,
+      'senderType': senderType,
       'message': message,
     });
-
-    await _client
-        .from('chat_rooms')
-        .update({'updated_at': DateTime.now().toIso8601String()})
-        .eq('id', roomId);
   }
 
   Future<void> markAsRead(String roomId, String currentUserId) async {
-    await _client
-        .from('chat_messages')
-        .update({'is_read': true})
-        .eq('room_id', roomId)
-        .neq('sender_id', currentUserId)
-        .eq('is_read', false);
+    await _api.patch('/chat/rooms/$roomId/read', body: {'userId': currentUserId});
   }
 
   Future<int> getUnreadCount(String roomId, String currentUserId) async {
-    final data = await _client
-        .from('chat_messages')
-        .select('id')
-        .eq('room_id', roomId)
-        .neq('sender_id', currentUserId)
-        .eq('is_read', false);
-    return data.length;
+    final res = await _api.get('/chat/rooms/$roomId/unread', query: {'userId': currentUserId});
+    final data = res['data'];
+    if (data is Map && data['count'] != null) return (data['count'] as num).toInt();
+    if (data is int) return data;
+    return 0;
   }
 }

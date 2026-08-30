@@ -3,13 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+// removed: firebase_auth
+// removed: supabase_flutter
 import 'package:basita1/core/repositories/request_repository.dart';
 import 'package:basita1/core/session/user_session.dart';
 import 'package:basita1/core/repositories/chat_repository.dart';
 import 'package:basita1/features/offers/screens/offers_dashboard_screen.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 class RequestServiceScreen extends StatefulWidget {
   const RequestServiceScreen({super.key});
@@ -84,7 +85,7 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
     });
 
     try {
-      final currentUser = FirebaseAuth.instance.currentUser;
+      final currentUser = MockAuth.currentUser;
       String uid = currentUser?.uid ?? "unknown_uid";
 
       String userName = UserSession.instance.name;
@@ -94,7 +95,7 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
 
       if (userName.isEmpty || userPhone.isEmpty) {
         try {
-          DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          DocumentSnapshot userDoc = await MockFirestore
               .collection('users')
               .doc(uid)
               .get();
@@ -131,7 +132,7 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
 
       List<String> imageUrls = [];
       if (_selectedImages.isNotEmpty) {
-        final supabase = Supabase.instance.client;
+        final supabase = MockSupabase;
         for (int i = 0; i < _selectedImages.length; i++) {
           try {
             final ts = DateTime.now().millisecondsSinceEpoch;
@@ -180,7 +181,7 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
         'images': imageUrls,
         'taskImages': imageUrls,
         'image': imageUrls.isNotEmpty ? imageUrls.first : null,
-        'createdAt': FieldValue.serverTimestamp(),
+        'createdAt': DateTime.now(),
       };
 
       // Use Clean Architecture repository (wraps Firestore, handles typed collections)
@@ -189,7 +190,7 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
         data: requestData,
       );
 
-      // Create initial chat placeholder (Supabase chat_rooms) — technician will be linked on accept
+      // Create initial chat placeholder (dynamic chat_rooms) — technician will be linked on accept
       try {
         await ChatRepository().getOrCreateRoom(
           clientId: userPhone.isNotEmpty ? userPhone : uid,
