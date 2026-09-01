@@ -18,10 +18,7 @@ import 'package:basita1/core/network/mock_backend.dart';
 Future<dynamic>? _getRealUserDocRef() async {
   String? uid = MockAuth.currentUser?.uid;
   if (uid != null) {
-    final doc = await MockFirestore
-        .collection('users')
-        .doc(uid)
-        .get();
+    final doc = await MockFirestore.collection('users').doc(uid).get();
     if (doc.exists) return doc.reference;
   }
 
@@ -33,10 +30,9 @@ Future<dynamic>? _getRealUserDocRef() async {
     return null;
   }
 
-  final query = await MockFirestore
-      .collection('users')
-      .where('phone', isEqualTo: phone)
-      .get();
+  final query = await MockFirestore.collection(
+    'users',
+  ).where('phone', isEqualTo: phone).get();
 
   if (query.docs.isNotEmpty) {
     return query.docs.first.reference;
@@ -134,10 +130,9 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
 
     setState(() => isLoading = true);
     try {
-      DocumentSnapshot familyDoc = await MockFirestore
-          .collection('families')
-          .doc(code)
-          .get();
+      DocumentSnapshot familyDoc = await MockFirestore.collection(
+        'families',
+      ).doc(code).get();
 
       if (familyDoc.exists) {
         final userRef = await _getRealUserDocRef();
@@ -145,18 +140,15 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
         String currentUserId = userRef.id;
 
         // إضافة المستخدم كعضو في العائلة
-        await MockFirestore
-            .collection('families')
-            .doc(code)
-            .collection('members')
-            .doc(currentUserId)
-            .set({
-              'name': currentUserName,
-              'role': 'عضو',
-              'isOnline': true,
-              'joinedAt': DateTime.now(),
-              'imageUrl': UserSession.instance.profileImagePath ?? '',
-            }, MockSetOptions(merge: true));
+        await MockFirestore.collection(
+          'families',
+        ).doc(code).collection('members').doc(currentUserId).set({
+          'name': currentUserName,
+          'role': 'عضو',
+          'isOnline': true,
+          'joinedAt': DateTime.now(),
+          'imageUrl': UserSession.instance.profileImagePath ?? '',
+        }, MockSetOptions(merge: true));
 
         // ربط العائلة بملف المستخدم
         await userRef.set({
@@ -381,9 +373,7 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
 
       final batch = MockFirestore.batch();
 
-      final familyRef = MockFirestore
-          .collection('families')
-          .doc(familyCode);
+      final familyRef = MockFirestore.collection('families').doc(familyCode);
 
       // حفظ البيانات الأساسية والقائد
       batch.set(familyRef, {
@@ -437,8 +427,7 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
     if (currentUserPhone.isEmpty) return const SizedBox.shrink();
 
     return StreamBuilder<QuerySnapshot>(
-      stream: MockFirestore
-          .collection('family_invitations')
+      stream: MockFirestore.collection('family_invitations')
           .where('toPhone', isEqualTo: currentUserPhone)
           .where('status', isEqualTo: 'pending')
           .snapshots(),
@@ -534,10 +523,9 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
                           child: ElevatedButton(
                             onPressed: () async {
                               // تحديث حالة الدعوة
-                              await MockFirestore
-                                  .collection('family_invitations')
-                                  .doc(inviteId)
-                                  .update({'status': 'accepted'});
+                              await MockFirestore.collection(
+                                'family_invitations',
+                              ).doc(inviteId).update({'status': 'accepted'});
                               // الانضمام للعائلة
                               _joinFamily(familyCode);
                             },
@@ -562,10 +550,9 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
                           child: OutlinedButton(
                             onPressed: () async {
                               // رفض ومسح الدعوة
-                              await MockFirestore
-                                  .collection('family_invitations')
-                                  .doc(inviteId)
-                                  .delete();
+                              await MockFirestore.collection(
+                                'family_invitations',
+                              ).doc(inviteId).delete();
                             },
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(color: Color(0xFFE74C3C)),
@@ -958,10 +945,9 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
           child: currentUserId == null
               ? const Center(child: CircularProgressIndicator())
               : StreamBuilder<DocumentSnapshot>(
-                  stream: MockFirestore
-                      .collection('families')
-                      .doc(widget.familyCode)
-                      .snapshots(),
+                  stream: MockFirestore.collection(
+                    'families',
+                  ).doc(widget.familyCode).snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
@@ -1090,11 +1076,9 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
                   ),
                   const SizedBox(height: 6),
                   StreamBuilder<QuerySnapshot>(
-                    stream: MockFirestore
-                        .collection('families')
-                        .doc(widget.familyCode)
-                        .collection('members')
-                        .snapshots(),
+                    stream: MockFirestore.collection(
+                      'families',
+                    ).doc(widget.familyCode).collection('members').snapshots(),
                     builder: (context, memberSnapshot) {
                       int count = memberSnapshot.hasData
                           ? memberSnapshot.data!.docs.length
@@ -1302,11 +1286,9 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
 
   Widget _buildMembersList(bool isAdmin, String adminId) {
     return StreamBuilder<QuerySnapshot>(
-      stream: MockFirestore
-          .collection('families')
-          .doc(widget.familyCode)
-          .collection('members')
-          .snapshots(),
+      stream: MockFirestore.collection(
+        'families',
+      ).doc(widget.familyCode).collection('members').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -1616,19 +1598,17 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
                                                   ?.displayName ??
                                               "القائد");
 
-                                    await MockFirestore
-                                        .collection('family_invitations')
-                                        .add({
-                                          'toPhone': phone,
-                                          'familyCode': widget.familyCode,
-                                          'familyName':
-                                              familyData['familyName'] ??
-                                              'عائلتي',
-                                          'inviterName': currentUserName,
-                                          'status': 'pending',
-                                          'createdAt':
-                                              DateTime.now(),
-                                        });
+                                    await MockFirestore.collection(
+                                      'family_invitations',
+                                    ).add({
+                                      'toPhone': phone,
+                                      'familyCode': widget.familyCode,
+                                      'familyName':
+                                          familyData['familyName'] ?? 'عائلتي',
+                                      'inviterName': currentUserName,
+                                      'status': 'pending',
+                                      'createdAt': DateTime.now(),
+                                    });
 
                                     if (context.mounted) {
                                       Navigator.pop(context);
@@ -1823,17 +1803,13 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
       final batch = MockFirestore.batch();
 
       // إزالة من Users
-      final targetUserRef = MockFirestore
-          .collection('users')
-          .doc(memberId);
+      final targetUserRef = MockFirestore.collection('users').doc(memberId);
       batch.update(targetUserRef, {'familyId': MockFieldValue.delete()});
 
       // إزالة من Members
-      final memberRef = MockFirestore
-          .collection('families')
-          .doc(widget.familyCode)
-          .collection('members')
-          .doc(memberId);
+      final memberRef = MockFirestore.collection(
+        'families',
+      ).doc(widget.familyCode).collection('members').doc(memberId);
       batch.delete(memberRef);
 
       await batch.commit();
@@ -1887,35 +1863,29 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
     if (confirm != true || currentUserId == null) return;
 
     // جلب عدد الأعضاء الحاليين قبل المغادرة
-    var membersQuery = await MockFirestore
-        .collection('families')
-        .doc(widget.familyCode)
-        .collection('members')
-        .get();
+    var membersQuery = await MockFirestore.collection(
+      'families',
+    ).doc(widget.familyCode).collection('members').get();
 
     int currentMembersCount = membersQuery.docs.length;
 
     final batch = MockFirestore.batch();
 
     // مسح المستخدم الحالي من الـ users
-    final userRef = MockFirestore
-        .collection('users')
-        .doc(currentUserId);
+    final userRef = MockFirestore.collection('users').doc(currentUserId);
     batch.update(userRef, {'familyId': MockFieldValue.delete()});
 
     // مسحه من members العائلة
-    final memberRef = MockFirestore
-        .collection('families')
-        .doc(widget.familyCode)
-        .collection('members')
-        .doc(currentUserId);
+    final memberRef = MockFirestore.collection(
+      'families',
+    ).doc(widget.familyCode).collection('members').doc(currentUserId);
     batch.delete(memberRef);
 
     // لو ده كان آخر فرد، امسح العائلة كلها
     if (currentMembersCount <= 1) {
-      final familyRef = MockFirestore
-          .collection('families')
-          .doc(widget.familyCode);
+      final familyRef = MockFirestore.collection(
+        'families',
+      ).doc(widget.familyCode);
       batch.delete(familyRef);
     }
 

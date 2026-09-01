@@ -191,8 +191,7 @@ class _ClientRequestsScreenState extends State<ClientRequestsScreen> {
           centerTitle: true,
         ),
         body: StreamBuilder<dynamic>(
-          stream: MockFirestore
-              .collection('requests')
+          stream: MockFirestore.collection('requests')
               .where(
                 Filter.or(
                   Filter('userId', isEqualTo: currentUserId),
@@ -651,9 +650,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
       await Future.delayed(const Duration(milliseconds: 800));
 
       if (widget.requestId.isNotEmpty) {
-        final reqRef = MockFirestore
-            .collection('requests')
-            .doc(widget.requestId);
+        final reqRef = MockFirestore.collection(
+          'requests',
+        ).doc(widget.requestId);
 
         final reqDoc = await reqRef.get();
         String techId = widget.technicianId;
@@ -681,9 +680,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         await reqRef.update(updateData);
 
         if (techId.isNotEmpty) {
-          final techRef = MockFirestore
-              .collection('technicians')
-              .doc(techId);
+          final techRef = MockFirestore.collection('technicians').doc(techId);
 
           final techSnap = await techRef.get();
 
@@ -718,7 +715,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
             };
 
             if (!isCash) {
-              updates['walletBalance'] = MockFieldValue.increment(widget.amount);
+              updates['walletBalance'] = MockFieldValue.increment(
+                widget.amount,
+              );
             }
 
             await techRef.update(updates);
@@ -1013,10 +1012,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
               const SizedBox(height: 16),
 
               StreamBuilder<dynamic>(
-                stream: MockFirestore
-                    .collection('PaymentCards')
-                    .where('userId', isEqualTo: _userId)
-                    .snapshots(),
+                stream: MockFirestore.collection(
+                  'PaymentCards',
+                ).where('userId', isEqualTo: _userId).snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
@@ -1066,8 +1064,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   });
 
                   if (_selectedSavedCardId == null && !_useNewCard) {
-                    dynamic defaultDoc =
-                        sortedDocs.first;
+                    dynamic defaultDoc = sortedDocs.first;
                     for (var d in sortedDocs) {
                       if (d.data()['isDefault'] == true) {
                         defaultDoc = d;
@@ -1911,9 +1908,7 @@ class _AddCardBottomSheetState extends State<_AddCardBottomSheet> {
       final cleanNumber = _numberController.text.replaceAll(' ', '');
       final cardType = cleanNumber.startsWith('4') ? 'visa' : 'mastercard';
 
-      final cardsCollection = MockFirestore.collection(
-        'PaymentCards',
-      );
+      final cardsCollection = MockFirestore.collection('PaymentCards');
 
       if (_isDefault) {
         final snapshot = await cardsCollection

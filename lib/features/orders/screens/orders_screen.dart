@@ -120,10 +120,9 @@ class _RequestsPageState extends State<RequestsPage> {
               _buildTabs(),
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
-                  stream: MockFirestore
-                      .collection('requests')
-                      .orderBy('createdAt', descending: true)
-                      .snapshots(),
+                  stream: MockFirestore.collection(
+                    'requests',
+                  ).orderBy('createdAt', descending: true).snapshots(),
                   builder: (context, snapshot) {
                     List<RequestModel> combinedList = List.from(
                       _localRequestsList,
@@ -294,8 +293,7 @@ class _RequestsPageState extends State<RequestsPage> {
               Text(
                 UserDataSession.fullName.isNotEmpty
                     ? UserDataSession.fullName
-                    : (MockAuth.currentUser?.displayName ??
-                          'بسيطة | الفني'),
+                    : (MockAuth.currentUser?.displayName ?? 'بسيطة | الفني'),
                 style: GoogleFonts.cairo(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -1624,9 +1622,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                                   try {
                                     final uid = UserDataSession.phone.isNotEmpty
                                         ? UserDataSession.phone
-                                        : (MockFirestore
-                                                  .currentUser
-                                                  ?.uid ??
+                                        : (MockFirestore.currentUser?.uid ??
                                               'unknown_uid');
                                     final techName =
                                         UserDataSession.fullName.isNotEmpty
@@ -1636,42 +1632,37 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                                                   ?.displayName ??
                                               'بسيطة | الفني');
 
-                                    await MockFirestore
-                                        .collection('offers')
-                                        .add({
-                                          'requestId': widget.request.id,
-                                          'technicianId': uid,
-                                          'technicianName': techName,
-                                          'price': _priceController.text,
-                                          'duration': _durationController.text,
-                                          'arrivalTime':
-                                              _arrivalController.text,
-                                          'warranty': _warrantyController.text,
-                                          'message': _messageController.text,
-                                          'provideMaterials': provideMaterials,
-                                          'priceIncludesMaterials':
-                                              priceIncludesMaterials,
-                                          'rating': 4.9,
-                                          'reviewsCount': 15,
-                                          'experienceYears': 4,
-                                          'isVerified': true,
-                                          'imagePath':
-                                              'assets/Container (8).png',
-                                          'status': 'pending',
-                                          'createdAt':
-                                              DateTime.now(),
-                                        });
+                                    await MockFirestore.collection(
+                                      'offers',
+                                    ).add({
+                                      'requestId': widget.request.id,
+                                      'technicianId': uid,
+                                      'technicianName': techName,
+                                      'price': _priceController.text,
+                                      'duration': _durationController.text,
+                                      'arrivalTime': _arrivalController.text,
+                                      'warranty': _warrantyController.text,
+                                      'message': _messageController.text,
+                                      'provideMaterials': provideMaterials,
+                                      'priceIncludesMaterials':
+                                          priceIncludesMaterials,
+                                      'rating': 4.9,
+                                      'reviewsCount': 15,
+                                      'experienceYears': 4,
+                                      'isVerified': true,
+                                      'imagePath': 'assets/Container (8).png',
+                                      'status': 'pending',
+                                      'createdAt': DateTime.now(),
+                                    });
 
-                                    await MockFirestore
-                                        .collection('requests')
-                                        .doc(widget.request.id)
-                                        .set({
-                                          'hasOffers': true,
-                                          'status': 'offer_submitted',
-                                          'clientAccepted': false,
-                                          'lastOfferTime':
-                                              DateTime.now(),
-                                        }, MockSetOptions(merge: true));
+                                    await MockFirestore.collection(
+                                      'requests',
+                                    ).doc(widget.request.id).set({
+                                      'hasOffers': true,
+                                      'status': 'offer_submitted',
+                                      'clientAccepted': false,
+                                      'lastOfferTime': DateTime.now(),
+                                    }, MockSetOptions(merge: true));
 
                                     setModalState(() {
                                       isSubmitting = false;
@@ -1846,10 +1837,10 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
     });
 
     try {
-      await MockFirestore
-          .collection('requests')
-          .doc(widget.request.id)
-          .update({'workStarted': true, 'status': 'in_progress'});
+      await MockFirestore.collection('requests').doc(widget.request.id).update({
+        'workStarted': true,
+        'status': 'in_progress',
+      });
 
       setState(() {
         _isLoadingWorkStart = false;
@@ -1892,10 +1883,9 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
         backgroundColor: const Color(0xFFF8F9FA),
         appBar: _buildAppBar(),
         body: StreamBuilder<DocumentSnapshot>(
-          stream: MockFirestore
-              .collection('requests')
-              .doc(widget.request.id)
-              .snapshots(),
+          stream: MockFirestore.collection(
+            'requests',
+          ).doc(widget.request.id).snapshots(),
           builder: (context, snapshot) {
             bool isWorkStarted = false;
             bool isClientAccepted = false;
@@ -2073,8 +2063,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
       title: Text(
         UserDataSession.fullName.isNotEmpty
             ? UserDataSession.fullName
-            : (MockAuth.currentUser?.displayName ??
-                  'بسيطة | الفني'),
+            : (MockAuth.currentUser?.displayName ?? 'بسيطة | الفني'),
         style: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,

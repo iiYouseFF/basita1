@@ -17,8 +17,8 @@ import 'package:basita1/core/session/auth_session.dart';
 /// ```
 class ApiClient {
   ApiClient({http.Client? httpClient, String? baseUrl})
-      : _http = httpClient ?? http.Client(),
-        _baseUrl = baseUrl ?? ApiConfig.baseUrl;
+    : _http = httpClient ?? http.Client(),
+      _baseUrl = baseUrl ?? ApiConfig.baseUrl;
 
   final http.Client _http;
   final String _baseUrl;
@@ -31,9 +31,9 @@ class ApiClient {
   }
 
   Map<String, String> get _headers => {
-        ...ApiConfig.headers,
-        ...AuthSession.instance.authHeader,
-      };
+    ...ApiConfig.headers,
+    ...AuthSession.instance.authHeader,
+  };
 
   Future<Map<String, dynamic>> get(
     String path, {
@@ -111,8 +111,8 @@ class ApiClient {
     if (fields != null) req.fields.addAll(fields);
     req.files.add(await http.MultipartFile.fromPath(fieldName, filePath));
     final streamed = await req.send().timeout(
-          const Duration(seconds: ApiConfig.timeoutSeconds * 2),
-        );
+      const Duration(seconds: ApiConfig.timeoutSeconds * 2),
+    );
     final res = await http.Response.fromStream(streamed);
     return _decode(res);
   }

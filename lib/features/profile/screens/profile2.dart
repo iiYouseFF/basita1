@@ -317,10 +317,9 @@ class _AccountScreenState extends State<AccountScreen> {
 
     return StreamBuilder<dynamic>(
       stream: currentTechId.isNotEmpty
-          ? MockFirestore
-                .collection('technicians')
-                .doc(currentTechId)
-                .snapshots()
+          ? MockFirestore.collection(
+              'technicians',
+            ).doc(currentTechId).snapshots()
           : const Stream.empty(),
       builder: (context, snapshot) {
         double walletBalance = 0.0;

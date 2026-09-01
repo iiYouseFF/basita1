@@ -82,38 +82,31 @@ class _ProfileScreenState extends State<PersonalDataScreen> {
 
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String? savedUserId = prefs.getString('userId');
-      String? currentUid =
-          MockAuth.currentUser?.uid ?? savedUserId;
+      String? currentUid = MockAuth.currentUser?.uid ?? savedUserId;
 
       if (currentUid != null && currentUid.isNotEmpty) {
-        var docRef = MockFirestore
-            .collection('users')
-            .doc(currentUid);
+        var docRef = MockFirestore.collection('users').doc(currentUid);
         var docSnap = await docRef.get();
         if (docSnap.exists) {
           await docRef.update({'profileImagePath': downloadUrl});
         } else if (userPhone.isNotEmpty) {
-          var querySnapshot = await MockFirestore
-              .collection('users')
-              .where('phone', isEqualTo: userPhone)
-              .get();
+          var querySnapshot = await MockFirestore.collection(
+            'users',
+          ).where('phone', isEqualTo: userPhone).get();
 
           if (querySnapshot.docs.isNotEmpty) {
-            await MockFirestore
-                .collection('users')
+            await MockFirestore.collection('users')
                 .doc(querySnapshot.docs.first.id)
                 .update({'profileImagePath': downloadUrl});
           }
         }
       } else if (userPhone.isNotEmpty) {
-        var querySnapshot = await MockFirestore
-            .collection('users')
-            .where('phone', isEqualTo: userPhone)
-            .get();
+        var querySnapshot = await MockFirestore.collection(
+          'users',
+        ).where('phone', isEqualTo: userPhone).get();
 
         if (querySnapshot.docs.isNotEmpty) {
-          await MockFirestore
-              .collection('users')
+          await MockFirestore.collection('users')
               .doc(querySnapshot.docs.first.id)
               .update({'profileImagePath': downloadUrl});
         }
@@ -191,38 +184,31 @@ class _ProfileScreenState extends State<PersonalDataScreen> {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String? savedUserId = prefs.getString('userId');
-      String? currentUid =
-          MockAuth.currentUser?.uid ?? savedUserId;
+      String? currentUid = MockAuth.currentUser?.uid ?? savedUserId;
 
       if (currentUid != null && currentUid.isNotEmpty) {
-        var docRef = MockFirestore
-            .collection('users')
-            .doc(currentUid);
+        var docRef = MockFirestore.collection('users').doc(currentUid);
         var docSnap = await docRef.get();
         if (docSnap.exists) {
           await docRef.update({'email': updatedEmail, 'city': updatedCity});
         } else if (userPhone.isNotEmpty) {
-          var querySnapshot = await MockFirestore
-              .collection('users')
-              .where('phone', isEqualTo: userPhone)
-              .get();
+          var querySnapshot = await MockFirestore.collection(
+            'users',
+          ).where('phone', isEqualTo: userPhone).get();
 
           if (querySnapshot.docs.isNotEmpty) {
-            await MockFirestore
-                .collection('users')
+            await MockFirestore.collection('users')
                 .doc(querySnapshot.docs.first.id)
                 .update({'email': updatedEmail, 'city': updatedCity});
           }
         }
       } else if (userPhone.isNotEmpty) {
-        var querySnapshot = await MockFirestore
-            .collection('users')
-            .where('phone', isEqualTo: userPhone)
-            .get();
+        var querySnapshot = await MockFirestore.collection(
+          'users',
+        ).where('phone', isEqualTo: userPhone).get();
 
         if (querySnapshot.docs.isNotEmpty) {
-          await MockFirestore
-              .collection('users')
+          await MockFirestore.collection('users')
               .doc(querySnapshot.docs.first.id)
               .update({'email': updatedEmail, 'city': updatedCity});
         }

@@ -67,10 +67,9 @@ class _WalletScreenState extends State<WalletScreen> {
       // قراءة الداتا مباشرة من Transactions لضمان الديناميكية
       body: StreamBuilder<dynamic>(
         stream: currentTechId.isNotEmpty
-            ? MockFirestore
-                  .collection('transactions')
-                  .where('technicianId', isEqualTo: currentTechId)
-                  .snapshots()
+            ? MockFirestore.collection(
+                'transactions',
+              ).where('technicianId', isEqualTo: currentTechId).snapshots()
             : const Stream.empty(),
         builder: (context, snapshot) {
           double walletBalance = 0.0;
@@ -583,8 +582,7 @@ class _WalletScreenState extends State<WalletScreen> {
         const SizedBox(height: 4),
         StreamBuilder<dynamic>(
           stream: currentTechId.isNotEmpty
-              ? MockFirestore
-                    .collection('transactions')
+              ? MockFirestore.collection('transactions')
                     .where('technicianId', isEqualTo: currentTechId)
                     .orderBy('createdAt', descending: true)
                     .limit(10)

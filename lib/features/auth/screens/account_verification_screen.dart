@@ -114,10 +114,9 @@ class _AccountVerificationScreenState extends State<AccountVerificationScreen> {
       String docId = fbUid ?? phone;
 
       if (fbUid == null) {
-        var query = await MockFirestore
-            .collection('users')
-            .where('phone', isEqualTo: phone)
-            .get();
+        var query = await MockFirestore.collection(
+          'users',
+        ).where('phone', isEqualTo: phone).get();
         if (query.docs.isNotEmpty) {
           docId = query.docs.first.id;
         }

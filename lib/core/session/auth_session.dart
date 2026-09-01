@@ -60,6 +60,7 @@ class AuthSession {
     await prefs.remove('auth_userType');
   }
 
-  Map<String, String> get authHeader =>
-      _token != null && _token!.isNotEmpty ? {'Authorization': 'Bearer $_token'} : {};
+  Map<String, String> get authHeader => _token != null && _token!.isNotEmpty
+      ? {'Authorization': 'Bearer $_token'}
+      : {};
 }

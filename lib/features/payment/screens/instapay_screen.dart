@@ -158,10 +158,9 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
           technicianId: widget.technicianId,
         );
 
-        await MockFirestore
-            .collection('requests')
-            .doc(widget.requestId)
-            .update({'status': 'completed', 'paymentMethod': 'instapay'});
+        await MockFirestore.collection('requests').doc(widget.requestId).update(
+          {'status': 'completed', 'paymentMethod': 'instapay'},
+        );
 
         if (mounted) {
           setState(() => _isProcessing = false);

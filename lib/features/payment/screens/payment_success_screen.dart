@@ -75,10 +75,9 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
           centerTitle: true,
         ),
         body: StreamBuilder<dynamic>(
-          stream: MockFirestore
-              .collection('requests')
-              .doc(widget.requestId)
-              .snapshots(),
+          stream: MockFirestore.collection(
+            'requests',
+          ).doc(widget.requestId).snapshots(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(

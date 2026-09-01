@@ -51,10 +51,9 @@ class _LoginScreenState extends State<LoginScreen1> {
         numberZero,
       ];
 
-      var querySnapshot = await MockFirestore
-          .collection('technicians')
-          .where('phone', whereIn: possibleFormats)
-          .get();
+      var querySnapshot = await MockFirestore.collection(
+        'technicians',
+      ).where('phone', whereIn: possibleFormats).get();
 
       if (!mounted) return;
 

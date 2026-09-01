@@ -155,10 +155,9 @@ class _FinishesCommunityScreenState extends State<FinishesCommunityScreen>
               onPressed: () async {
                 Navigator.pop(ctx);
                 try {
-                  await MockFirestore
-                      .collection('post_Finishes')
-                      .doc(postId)
-                      .delete();
+                  await MockFirestore.collection(
+                    'post_Finishes',
+                  ).doc(postId).delete();
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -226,8 +225,7 @@ class _FinishesCommunityScreenState extends State<FinishesCommunityScreen>
                   const Divider(),
                   Expanded(
                     child: StreamBuilder<QuerySnapshot>(
-                      stream: MockFirestore
-                          .collection('post_Finishes')
+                      stream: MockFirestore.collection('post_Finishes')
                           .doc(postId)
                           .collection('comments')
                           .orderBy('createdAt', descending: false)
@@ -314,24 +312,21 @@ class _FinishesCommunityScreenState extends State<FinishesCommunityScreen>
                             ),
                             onPressed: () {
                               if (commentController.text.trim().isNotEmpty) {
-                                MockFirestore
-                                    .collection('post_Finishes')
-                                    .doc(postId)
-                                    .collection('comments')
-                                    .add({
-                                      'text': commentController.text.trim(),
-                                      'authorName':
-                                          UserSession.instance.name.isNotEmpty
-                                          ? UserSession.instance.name
-                                          : 'مستخدم',
-                                      'createdAt': DateTime.now(),
-                                    });
-                                MockFirestore
-                                    .collection('post_Finishes')
-                                    .doc(postId)
-                                    .update({
-                                      'comments': MockFieldValue.increment(1),
-                                    });
+                                MockFirestore.collection(
+                                  'post_Finishes',
+                                ).doc(postId).collection('comments').add({
+                                  'text': commentController.text.trim(),
+                                  'authorName':
+                                      UserSession.instance.name.isNotEmpty
+                                      ? UserSession.instance.name
+                                      : 'مستخدم',
+                                  'createdAt': DateTime.now(),
+                                });
+                                MockFirestore.collection(
+                                  'post_Finishes',
+                                ).doc(postId).update({
+                                  'comments': MockFieldValue.increment(1),
+                                });
                                 commentController.clear();
                               }
                             },
@@ -494,10 +489,9 @@ class _FinishesCommunityScreenState extends State<FinishesCommunityScreen>
         ),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream: MockFirestore
-                .collection('post_Finishes')
-                .orderBy('createdAt', descending: true)
-                .snapshots(),
+            stream: MockFirestore.collection(
+              'post_Finishes',
+            ).orderBy('createdAt', descending: true).snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -590,10 +584,9 @@ class _FinishesCommunityScreenState extends State<FinishesCommunityScreen>
         ),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream: MockFirestore
-                .collection('post_Finishes')
-                .orderBy('createdAt', descending: true)
-                .snapshots(),
+            stream: MockFirestore.collection(
+              'post_Finishes',
+            ).orderBy('createdAt', descending: true).snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -874,13 +867,15 @@ class _FinishesCommunityScreenState extends State<FinishesCommunityScreen>
               InkWell(
                 onTap: () {
                   if (post.id != null && currentUserName.isNotEmpty) {
-                    final postRef = MockFirestore
-                        .collection('post_Finishes')
-                        .doc(post.id);
+                    final postRef = MockFirestore.collection(
+                      'post_Finishes',
+                    ).doc(post.id);
                     if (isLiked) {
                       postRef.update({
                         'likes': MockFieldValue.increment(-1),
-                        'likedBy': MockFieldValue.arrayRemove([currentUserName]),
+                        'likedBy': MockFieldValue.arrayRemove([
+                          currentUserName,
+                        ]),
                       });
                     } else {
                       postRef.update({
@@ -1081,9 +1076,7 @@ class _CreateFinishesPostScreenState extends State<CreateFinishesPostScreen> {
       );
 
       // 4. الحفظ في مجموعة التشطيبات بفايربيز
-      await MockFirestore
-          .collection('post_Finishes')
-          .add(newPost.toMap());
+      await MockFirestore.collection('post_Finishes').add(newPost.toMap());
 
       if (mounted) {
         Navigator.pop(context);
@@ -1491,9 +1484,7 @@ class _CreateFinishesQuestionScreenState
         likedBy: [],
       );
 
-      await MockFirestore
-          .collection('post_Finishes')
-          .add(newQuestion.toMap());
+      await MockFirestore.collection('post_Finishes').add(newQuestion.toMap());
 
       if (mounted) {
         Navigator.pop(context);

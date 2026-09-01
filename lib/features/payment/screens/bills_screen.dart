@@ -173,8 +173,7 @@ class _InvoicesListScreenState extends State<InvoicesListScreen> {
           ),
         ),
         body: StreamBuilder<dynamic>(
-          stream: MockFirestore
-              .collection('requests')
+          stream: MockFirestore.collection('requests')
               .where(
                 Filter.or(
                   Filter('userId', isEqualTo: currentUserId),
