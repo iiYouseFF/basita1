@@ -10,6 +10,7 @@ import 'package:basita1/features/payment/screens/instapay_screen.dart';
 import 'package:basita1/core/repositories/chat_repository.dart';
 import 'package:basita1/core/repositories/appointment_repository.dart';
 import 'package:basita1/core/session/user_data_session.dart';
+import 'package:basita1/features/home/screens/home1.dart';
 
 // ==========================================
 // نموذج بيانات الطلب الديناميكي الشامل
@@ -1756,13 +1757,10 @@ class _TechnicianInvoiceIssuedScreenState
     extends State<TechnicianInvoiceIssuedScreen> {
   int _rating = 0;
   final TextEditingController _feedbackController = TextEditingController();
-  final TextEditingController _paymentCodeController =
-      TextEditingController(); // كنترولر لكود الدفع
 
   @override
   void dispose() {
     _feedbackController.dispose();
-    _paymentCodeController.dispose();
     super.dispose();
   }
 
@@ -2074,104 +2072,18 @@ class _TechnicianInvoiceIssuedScreenState
                         ),
                       ),
                       const SizedBox(height: 12),
-                      // زر تأكيد الدفع
+                      // زر الدفع لمحفظة (تم التعديل للانتقال المباشر للصفحة الرئيسية دون إظهار نافذة قيم تجربتك)
                       SizedBox(
                         width: double.infinity,
                         height: 52,
                         child: OutlinedButton(
                           onPressed: () {
-                            // إظهار نافذة إدخال كود الدفع (الـ Dialog)
-                            showDialog(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return Directionality(
-                                  textDirection: TextDirection.rtl,
-                                  child: Dialog(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(24),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(24.0),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            "قيّم تجربتك مع العميل",
-                                            style: GoogleFonts.cairo(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                              color: textDark,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 24),
-                                          TextField(
-                                            controller: _paymentCodeController,
-                                            style: GoogleFonts.cairo(
-                                              fontSize: 14,
-                                            ),
-                                            decoration: InputDecoration(
-                                              hintText: "ادخل كود الدفع",
-                                              hintStyle: GoogleFonts.cairo(
-                                                color: const Color(0xFFA1A1AA),
-                                                fontSize: 14,
-                                              ),
-                                              contentPadding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 16,
-                                                    vertical: 16,
-                                                  ),
-                                              enabledBorder: OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                                borderSide: const BorderSide(
-                                                  color: Color(0xFFE4E4E7),
-                                                ),
-                                              ),
-                                              focusedBorder: OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                                borderSide: const BorderSide(
-                                                  color: primaryBlue,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 32),
-                                          SizedBox(
-                                            width: double.infinity,
-                                            height: 52,
-                                            child: ElevatedButton(
-                                              onPressed: () {
-                                                // العودة للصفحة الرئيسية عند الضغط على تأكيد من داخل النافذة
-                                                Navigator.popUntil(
-                                                  context,
-                                                  (route) => route.isFirst,
-                                                );
-                                              },
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: primaryBlue,
-                                                elevation: 0,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                ),
-                                              ),
-                                              child: Text(
-                                                "تأكيد",
-                                                style: GoogleFonts.cairo(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const MainTechnicianScreen(),
+                              ),
                             );
                           },
                           style: OutlinedButton.styleFrom(
@@ -2184,7 +2096,7 @@ class _TechnicianInvoiceIssuedScreenState
                             ),
                           ),
                           child: Text(
-                            "تأكيد الدفع",
+                            "الدفع لمحفظة",
                             style: GoogleFonts.cairo(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,

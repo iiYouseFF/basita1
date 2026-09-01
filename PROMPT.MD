@@ -1,1 +1,1 @@
-Please modify the phone verification screen. Remove the real Firebase Phone Auth implementation and make the OTP check mockup/fake (so that entering any 6 digits and clicking verify will successfully pass and navigate to the next screen). Also, ensure the previous screen flow works seamlessly as it did before.
+i have made an node.js api, the url is : http://basseeyta.duckdns.org, and the github is : https://github.com/iiYouseFF/basseeyta also you can see the api docs at http://basseeyta.duckdns.org/api-docs.json

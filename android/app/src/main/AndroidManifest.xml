@@ -11,7 +11,8 @@
     <application
         android:label="Basseeyta"
         android:name="${applicationName}"
-        android:icon="@mipmap/launcher_icon">
+        android:icon="@mipmap/launcher_icon"
+        android:usesCleartextTraffic="true">
         
         <activity
             android:name=".MainActivity"
@@ -38,7 +39,7 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- مفتاح Google Maps API: استبدله بمفتاحك الفعلي من Google Cloud Console -->
+        <!-- مفتاح Google Maps API -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="YOUR_GOOGLE_MAPS_API_KEY" />

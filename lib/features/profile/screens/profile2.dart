@@ -9,6 +9,9 @@ import 'package:basita1/features/orders/screens/sale_screen.dart';
 import 'package:basita1/features/home/screens/home1.dart';
 import 'package:basita1/features/auth/screens/account_type_screen.dart';
 import 'package:basita1/features/booking/screens/appointments_screen.dart';
+import 'package:basita1/features/technician/screens/technician_dashboard.dart';
+import 'package:basita1/features/feedback/screens/coming.dart';
+import 'package:basita1/features/community/screens/community_screen.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -107,7 +110,12 @@ class _AccountScreenState extends State<AccountScreen> {
                   icon: Icons.person_outline,
                   title: "المعلومات الشخصية",
                   onTap: () {
-                    // Navigator.push(context, MaterialPageRoute(builder: (context) => const PersonalInfoScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ComingSoonScreen1(),
+                      ),
+                    );
                   },
                 ),
                 _buildDivider(),
@@ -115,7 +123,12 @@ class _AccountScreenState extends State<AccountScreen> {
                   icon: Icons.photo_library_outlined,
                   title: "معرض الأعمال",
                   onTap: () {
-                    // Navigator.push(context, MaterialPageRoute(builder: (context) => const GalleryScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ComingSoonScreen1(),
+                      ),
+                    );
                   },
                 ),
                 _buildDivider(),
@@ -123,7 +136,12 @@ class _AccountScreenState extends State<AccountScreen> {
                   icon: Icons.map_outlined,
                   title: "مناطق الخدمة",
                   onTap: () {
-                    // Navigator.push(context, MaterialPageRoute(builder: (context) => const ServiceAreasScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ComingSoonScreen1(),
+                      ),
+                    );
                   },
                 ),
                 _buildDivider(),
@@ -131,7 +149,12 @@ class _AccountScreenState extends State<AccountScreen> {
                   icon: Icons.people_outline, // تم التعديل لتطابق الصورة
                   title: "المجتمع", // تم التعديل لتطابق الصورة
                   onTap: () {
-                    // Navigator.push(context, MaterialPageRoute(builder: (context) => const CommunityScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CommunityScreenPerfect(),
+                      ),
+                    );
                   },
                 ),
               ]),
@@ -144,7 +167,12 @@ class _AccountScreenState extends State<AccountScreen> {
                   icon: Icons.school_outlined,
                   title: "مركز التدريب",
                   onTap: () {
-                    // Navigator.push(context, MaterialPageRoute(builder: (context) => const TrainingCenterScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ComingSoonScreen1(),
+                      ),
+                    );
                   },
                 ),
                 _buildDivider(),
@@ -152,7 +180,12 @@ class _AccountScreenState extends State<AccountScreen> {
                   icon: Icons.emoji_events_outlined,
                   title: "الإنجازات",
                   onTap: () {
-                    // Navigator.push(context, MaterialPageRoute(builder: (context) => const AchievementsScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const TechnicianDashboardS(),
+                      ),
+                    );
                   },
                 ),
               ]),
@@ -165,7 +198,12 @@ class _AccountScreenState extends State<AccountScreen> {
                   icon: Icons.help_outline,
                   title: "الدعم والمساعدة",
                   onTap: () {
-                    // Navigator.push(context, MaterialPageRoute(builder: (context) => const SupportScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ComingSoonScreen1(),
+                      ),
+                    );
                   },
                 ),
                 _buildDivider(),
@@ -173,7 +211,12 @@ class _AccountScreenState extends State<AccountScreen> {
                   icon: Icons.shield_outlined,
                   title: "الخصوصية والأمان",
                   onTap: () {
-                    // Navigator.push(context, MaterialPageRoute(builder: (context) => const PrivacySecurityScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ComingSoonScreen1(),
+                      ),
+                    );
                   },
                 ),
                 _buildDivider(),

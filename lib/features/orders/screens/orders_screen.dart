@@ -576,7 +576,7 @@ class _RequestsPageState extends State<RequestsPage> {
                       debugPrint("Error accepting request: $e");
                     }
                     if (context.mounted) {
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
                           builder: (context) =>
@@ -681,7 +681,7 @@ class _RequestsPageState extends State<RequestsPage> {
             Icons.home_filled,
             isActive: false,
             onTap: () {
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const MainTechnicianScreen(),
@@ -700,7 +700,7 @@ class _RequestsPageState extends State<RequestsPage> {
             Icons.chat_bubble_outline,
             isActive: false,
             onTap: () {
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const SmartAssistantScreen(),
@@ -713,7 +713,7 @@ class _RequestsPageState extends State<RequestsPage> {
             Icons.calendar_today_outlined,
             isActive: false,
             onTap: () {
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const AppointmentsScreen(),
@@ -726,7 +726,7 @@ class _RequestsPageState extends State<RequestsPage> {
             Icons.person_outline,
             isActive: false,
             onTap: () {
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => const AccountScreen()),
               );
@@ -1369,106 +1369,139 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
+  // ============== التعديل الديناميكي هنا في الشريط السفلي ==============
   Widget _buildStickyBottomBar(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -4),
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('requests')
+          .doc(widget.request.id)
+          .snapshots(),
+      builder: (context, snapshot) {
+        // نضع السعر الأساسي في المتغير عشان لو مفيش تحديثات يعرضه
+        String displayPrice = widget.request.price;
+
+        // التحقق من وجود بيانات جديدة للسعر (لو العميل قبل أو عدل السعر)
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final data = snapshot.data!.data() as Map<String, dynamic>?;
+          if (data != null) {
+            if (data['acceptedPrice'] != null &&
+                data['acceptedPrice'].toString().isNotEmpty) {
+              displayPrice = data['acceptedPrice'].toString();
+            } else if (data['finalPrice'] != null &&
+                data['finalPrice'].toString().isNotEmpty) {
+              displayPrice = data['finalPrice'].toString();
+            } else if (data['price'] != null &&
+                data['price'].toString().isNotEmpty) {
+              displayPrice = data['price'].toString();
+            } else if (data['budget'] != null &&
+                data['budget'].toString().isNotEmpty) {
+              displayPrice = '${data['budget']} ج.م';
+            }
+          }
+        }
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: Colors.red),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close, color: Colors.red),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              flex: 2,
-              child: ElevatedButton(
-                onPressed: () async {
-                  try {
-                    await OrderAcceptService.acceptRequest(
-                      requestId: widget.request.id,
-                      clientPhone: widget.request.clientPhone,
-                      serviceType: widget.request.serviceType,
-                      serviceName: widget.request.name,
-                      clientAddress: widget.request.location,
-                      requestPrice: widget.request.price,
-                    );
-                  } catch (e) {
-                    debugPrint("Error accepting request: $e");
-                  }
-                  if (context.mounted) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            TaskDetailsPage(request: widget.request),
-                      ),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE0E7FF),
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: Text(
-                  "قبول (${widget.request.price})",
-                  style: const TextStyle(
-                    color: primaryBlue,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              flex: 2,
-              child: ElevatedButton(
-                onPressed: () => _showOfferBottomSheet(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryBlue,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: const Text(
-                  "تقديم عرض",
-                  style: TextStyle(
+          child: SafeArea(
+            child: Row(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
                     color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
+                    border: Border.all(color: Colors.red),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close, color: Colors.red),
                   ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      try {
+                        await OrderAcceptService.acceptRequest(
+                          requestId: widget.request.id,
+                          clientPhone: widget.request.clientPhone,
+                          serviceType: widget.request.serviceType,
+                          serviceName: widget.request.name,
+                          clientAddress: widget.request.location,
+                          requestPrice: displayPrice, // تمرير السعر الديناميكي
+                        );
+                      } catch (e) {
+                        debugPrint("Error accepting request: $e");
+                      }
+                      if (context.mounted) {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                TaskDetailsPage(request: widget.request),
+                          ),
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE0E7FF),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Text(
+                      "قبول ($displayPrice)", // قراءة السعر هنا ديناميكياً
+                      style: const TextStyle(
+                        color: primaryBlue,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton(
+                    onPressed: () => _showOfferBottomSheet(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryBlue,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text(
+                      "تقديم عرض",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
+  // =====================================================================
 
   void _showOfferBottomSheet(BuildContext context) {
     bool provideMaterials = false;
@@ -2440,7 +2473,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
               Icons.chat_bubble_outline,
               isActive: false,
               onTap: () {
-                Navigator.push(
+                Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const SmartAssistantScreen(),
@@ -2453,7 +2486,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
               Icons.calendar_today_outlined,
               isActive: false,
               onTap: () {
-                Navigator.push(
+                Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const AppointmentsScreen(),
@@ -2466,7 +2499,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
               Icons.person_outline,
               isActive: false,
               onTap: () {
-                Navigator.push(
+                Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const AccountScreen(),

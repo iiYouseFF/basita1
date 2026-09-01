@@ -53,7 +53,7 @@ class OfferModel {
     return OfferModel(
       offerId: docId,
       requestId: map['requestId'] ?? '',
-      technicianId: map['technicianId'] ?? UserDataSession.uid ?? '',
+      technicianId: map['technicianId'] ?? UserDataSession.uid,
       name:
           map['technicianName'] ??
           map['name'] ??
@@ -62,7 +62,12 @@ class OfferModel {
               : "فني محترف"),
       rating: (map['rating'] ?? 5.0).toDouble(),
       reviewsCount: map['reviewsCount'] ?? 0,
-      price: map['price']?.toString() ?? map['offerPrice']?.toString() ?? "0",
+      // التعديل هنا: قراءة finalPrice أولاً لو تم التفاوض عليه
+      price:
+          map['finalPrice']?.toString() ??
+          map['price']?.toString() ??
+          map['offerPrice']?.toString() ??
+          "0",
       experienceYears: map['experienceYears'] ?? 3,
       arrivalTime: map['arrivalTime'] ?? "يصل خلال 30 دقيقة",
       imagePath: resolvedImage,
@@ -100,7 +105,7 @@ class _AvailableOffersScreenState extends State<AvailableOffersScreen> {
       await FirebaseFirestore.instance
           .collection('offers')
           .doc(offer.offerId)
-          .update({'status': 'accepted'});
+          .update({'status': 'accepted', 'finalPrice': offer.price});
 
       await FirebaseFirestore.instance
           .collection('requests')
@@ -216,6 +221,11 @@ class _AvailableOffersScreenState extends State<AvailableOffersScreen> {
                   );
                 } catch (e) {
                   acceptedOffer = null;
+                }
+
+                // إصلاح المشكلة: في حالة وجود عرض مقبول، نعرضه هو فقط ونخفي باقي العروض
+                if (acceptedOffer != null) {
+                  offers = [acceptedOffer];
                 }
 
                 return Column(
@@ -656,13 +666,17 @@ class _AvailableOffersScreenState extends State<AvailableOffersScreen> {
                           color: Colors.white,
                           size: 18,
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          isAccepted ? "تم القبول" : "قبول",
-                          style: GoogleFonts.cairo(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
+                        const SizedBox(width: 4),
+                        // التعديل هنا: إظهار السعر داخل زر القبول لو تم الاتفاق
+                        Expanded(
+                          child: Text(
+                            isAccepted ? "مقبول (${offer.price})" : "قبول",
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.cairo(
+                              color: Colors.white,
+                              fontSize: isAccepted ? 12 : 14,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
@@ -1528,8 +1542,9 @@ class _DynamicNegotiationScreenState extends State<DynamicNegotiationScreen> {
                     children: [
                       const Icon(Icons.check_circle, color: badgeGreen),
                       const SizedBox(width: 8),
+                      // التعديل هنا: إظهار السعر النهائي في رسالة التأكيد
                       Text(
-                        "تم قبول العرض والاتفاق نهائياً",
+                        "تم قبول العرض بسعر $currentPrice ج.م",
                         style: GoogleFonts.cairo(
                           color: badgeGreen,
                           fontWeight: FontWeight.bold,

@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart'; // تأكد من إضافة المكتبة في pubspec.yaml
 
 // =========================================================================
@@ -82,7 +82,7 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
     _loadData();
   }
 
-  // دالة لجلب البيانات ودمجها مع البيانات الثابتة (كما هي تماماً بدون نقص أي سطر)
+  // دالة لجلب البيانات ودمجها مع البيانات الثابتة
   Future<void> _loadData() async {
     // 1. البيانات الثابتة
     List<VisitModel> staticVisits = [
@@ -107,7 +107,7 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
         materialsCost: "420 ج.م",
         experience: "8 سنوات",
         totalServices: "1,240 خدمة",
-        afterTaskImages: [], // لا يوجد صور ثابتة هنا
+        afterTaskImages: [],
         technicianNotes:
             "مواظبة ممتازة جداً وملتزم بنظافة المكان بعد الانتهاء من العمل. ينصح به بشدة في الأعمال المعقدة.",
       ),
@@ -190,11 +190,16 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
           }
         }
 
+        // معالجة آمنة لـ reqId لمنع حدوث RangeError
+        String formattedReqId = reqId.isNotEmpty
+            ? (reqId.length >= 5
+                  ? reqId.substring(0, 5).toUpperCase()
+                  : reqId.toUpperCase())
+            : "0000";
+
         firebaseVisits.add(
           VisitModel(
-            requestId: reqId.isNotEmpty
-                ? reqId.substring(0, 5).toUpperCase()
-                : "0000",
+            requestId: formattedReqId,
             name: techName,
             jobTitle: serviceName,
             date: dateStr,
@@ -210,8 +215,8 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
             laborCost: "$amount ج.م",
             materialsCost: "0 ج.م",
             experience: experience,
-            afterTaskImages: taskImages, // تمرير الصور ديناميكياً
-            technicianNotes: techNotes, // تمرير الملاحظات ديناميكياً
+            afterTaskImages: taskImages,
+            technicianNotes: techNotes,
           ),
         );
       }
@@ -220,7 +225,7 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
     }
 
     setState(() {
-      allVisits = [...firebaseVisits, ...staticVisits]; // عرض الأحدث أولاً
+      allVisits = [...firebaseVisits, ...staticVisits];
       isLoading = false;
     });
   }
@@ -266,7 +271,6 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
                       const SizedBox(height: 24),
                       _buildFilterChips(),
                       const SizedBox(height: 24),
-
                       allVisits.isEmpty
                           ? Center(
                               child: Text(
@@ -383,7 +387,6 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // اليمين: الصورة مع الشارة
               Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -420,7 +423,6 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
                 ],
               ),
               const SizedBox(width: 16),
-              // المنتصف: الاسم والوظيفة
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -452,7 +454,6 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
                   ],
                 ),
               ),
-              // اليسار: الحالة والتقييم
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -497,7 +498,6 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
             ],
           ),
           const SizedBox(height: 20),
-          // تفاصيل الموعد والسعر في حاوية رمادية
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -561,7 +561,6 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
             ),
           ),
           const SizedBox(height: 20),
-          // الأزرار
           Row(
             children: [
               Expanded(
@@ -651,7 +650,7 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
       ],
     );
 
-    return isFullWidth ? Expanded(child: content) : Expanded(child: content);
+    return Expanded(child: content);
   }
 }
 
@@ -1042,7 +1041,6 @@ class DynamicVisitDetailsApp extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          // عرض الصور
           visit.afterTaskImages.isNotEmpty
               ? SizedBox(
                   height: 120,

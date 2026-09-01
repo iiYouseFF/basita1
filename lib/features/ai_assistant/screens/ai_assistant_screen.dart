@@ -1,17 +1,13 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:basita1/features/technician/screens/technicians_screen.dart';
 
-// تعريف أنواع الرسائل لتسهيل بناء الواجهة
-enum MessageType {
-  welcomeCard,
-  suggestions,
-  userText,
-  botText,
-  actionCard,
-  recentCommands,
-}
+enum MessageType { welcomeCard, userText, botText, loading }
 
-// نموذج بيانات الرسالة
 class ChatMessage {
   final MessageType type;
   final String? text;
@@ -27,47 +23,36 @@ class AiAssistantScreen extends StatefulWidget {
 }
 
 class _AiAssistantScreenState extends State<AiAssistantScreen> {
-  // الألوان الأساسية المستوحاة من التصميم
-  static const Color brandBlue = Color(0xFF0053AC); // الأزرق الرئيسي
+  // الألوان الأساسية لتطبيق بسيطة
+  static const Color brandBlue = Color(0xFF0053AC);
+  static const Color botOrange = Color(0xFFFF7A00);
   static const Color bgLightGrey = Color(0xFFF8FAFC);
   static const Color textDark = Color(0xFF1E293B);
   static const Color textMuted = Color(0xFF64748B);
+  static const Color successGreen = Color(0xFF10B981);
+
+  // رابط Replit الخاص بك
+  static const String apiUrl =
+      "https://home-appliance-helper--basseeyta.replit.app/task-completion";
 
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  bool _isLoading = false;
 
-  // خريطة (Map) تحتوي على الردود المخصصة لكل مقترح سريع
-  final Map<String, String> _quickRepliesMap = {
-    "احجز لي سباك اليوم":
-        "فهمت ذلك. سأبحث لك عن أفضل السباكين المتاحين الآن لخدمتك اليوم.",
-    "اطلب كهربائي بأعلى تقييم":
-        "جاري البحث عن كهربائيين حاصلين على تقييم 5 نجوم لضمان أفضل خدمة لك.",
-    "افتح صفحة العائلة":
-        "حسناً، جاري تحضير صفحة العائلة لتتمكن من إدارتها ومتابعة أفراد أسرتك.",
-    "اعرض شركات التشطيب":
-        "بالتأكيد، سأعرض لك الآن قائمة بأفضل شركات التشطيب المعتمدة لدينا.",
-    "اشترك في التأمين":
-        "خطوة ممتازة! سأقوم بفتح باقات التأمين المتاحة لتختار ما يناسب احتياجاتك.",
-    "اعرض آخر طلباتي":
-        "جاري استرجاع سجل طلباتك السابقة لتتمكن من مراجعتها ومتابعتها.",
-  };
-
-  // قائمة الرسائل المبدئية التي تظهر عند فتح الصفحة (مطابقة للصورة)
-  List<ChatMessage> messages = [
-    ChatMessage(type: MessageType.welcomeCard),
-    ChatMessage(type: MessageType.suggestions),
-    ChatMessage(
-      type: MessageType.userText,
-      text: "عندي تسريب مياه في مطبخ الشقة اللي في سموحة، محتاج سباك ضروري.",
-    ),
-    ChatMessage(
-      type: MessageType.botText,
-      text:
-          "فهمت ذلك. سأبحث لك عن أفضل السباكين المتاحين الآن في منطقة سموحة للتعامل مع تسريب المياه.",
-    ),
-    ChatMessage(type: MessageType.actionCard),
-    ChatMessage(type: MessageType.recentCommands),
+  final List<String> _quickSuggestions = [
+    "الغسالة بتسرب مية من تحت وقت التشغيل",
+    "الثلاجة مش بتبرد خالص",
+    "السخان مش بيسخن مياة",
+    "احجز لي سباك اليوم",
   ];
+
+  List<ChatMessage> messages = [];
+
+  @override
+  void initState() {
+    super.initState();
+    messages = [ChatMessage(type: MessageType.welcomeCard)];
+  }
 
   @override
   void dispose() {
@@ -76,49 +61,194 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     super.dispose();
   }
 
-  // دالة إرسال الرسالة من المستخدم
-  void _sendMessage(String text) {
-    if (text.trim().isEmpty) return;
+  // --- دالة استخراج النص الذكية (لمنع الفقاعات الفارغة) ---
+  String _extractTextFromResponse(dynamic data) {
+    if (data == null) return "";
 
-    setState(() {
-      messages.add(ChatMessage(type: MessageType.userText, text: text));
-      _messageController.clear();
-    });
+    if (data is String) return data;
 
-    _scrollToBottom();
-    _simulateBotResponse(text);
+    if (data is List) {
+      if (data.isNotEmpty) {
+        return _extractTextFromResponse(data.first);
+      }
+      return "";
+    }
+
+    if (data is Map) {
+      final possibleKeys = [
+        'reply',
+        'response',
+        'answer',
+        'text',
+        'output',
+        'message',
+        'content',
+        'result',
+        'data',
+      ];
+
+      for (var key in possibleKeys) {
+        if (data.containsKey(key) &&
+            data[key] != null &&
+            data[key].toString().trim().isNotEmpty) {
+          return data[key].toString().trim();
+        }
+      }
+
+      for (var value in data.values) {
+        if (value is String && value.trim().length > 5) {
+          return value.trim();
+        }
+      }
+
+      return data.toString();
+    }
+
+    return data.toString();
   }
 
-  // دالة محاكاة رد البوت الذكي
-  void _simulateBotResponse(String userText) {
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      if (!mounted) return;
+  // --- دالة الإرسال مع ترويسات المتصفح وإيقاظ السيرفر التلقائي ---
+  Future<void> _sendMessage(String text, {int retryCount = 0}) async {
+    final trimmedText = text.trim();
+    if (trimmedText.isEmpty || (_isLoading && retryCount == 0)) return;
+
+    if (retryCount == 0) {
       setState(() {
-        // تحديد الرد بناءً على إذا كان النص موجوداً في المقترحات أم لا
-        String botReply =
-            _quickRepliesMap[userText] ??
-            "سأقوم بتنفيذ طلبك: '$userText' فوراً. هل تحتاج لشيء آخر؟";
-
-        // إضافة رد البوت
-        messages.add(ChatMessage(type: MessageType.botText, text: botReply));
-
-        // إظهار كارت الحجز فقط إذا كان الطلب متعلقاً بسباك كمثال تفاعلي
-        if (userText == "احجز لي سباك اليوم") {
-          messages.add(ChatMessage(type: MessageType.actionCard));
-        }
+        _isLoading = true;
+        messages.add(
+          ChatMessage(type: MessageType.userText, text: trimmedText),
+        );
+        messages.add(ChatMessage(type: MessageType.loading));
+        _messageController.clear();
       });
       _scrollToBottom();
+    } else {
+      _removeLoadingBubble();
+      setState(() {
+        messages.add(ChatMessage(type: MessageType.loading));
+      });
+      _scrollToBottom();
+    }
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse(apiUrl),
+            headers: {
+              'Content-Type': 'application/json; charset=UTF-8',
+              'Accept': 'application/json, text/plain, */*',
+              'User-Agent':
+                  'Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+            },
+            body: jsonEncode({
+              'prompt': trimmedText,
+              'query': trimmedText,
+              'message': trimmedText,
+              'input': trimmedText,
+              'check_database_history': true,
+              'source': 'app_mirrored_client',
+            }),
+          )
+          .timeout(const Duration(seconds: 45));
+
+      final decodedBody = utf8.decode(response.bodyBytes);
+
+      // إذا استجاب Replit بصفحة HTML (وضع السبات)، نعيد المحاولة تلقائياً (حتى 4 مرات)
+      if ((decodedBody.trim().startsWith('<') ||
+              decodedBody.toLowerCase().contains('<!doctype html')) &&
+          retryCount < 4) {
+        await Future.delayed(Duration(seconds: 4 + retryCount));
+        return _sendMessage(text, retryCount: retryCount + 1);
+      }
+
+      _removeLoadingBubble();
+      String botResponse = "";
+
+      if (decodedBody.trim().startsWith('<') ||
+          decodedBody.toLowerCase().contains('<!doctype html')) {
+        botResponse =
+            "عذراً، الخادم يستغرق وقتاً طويلاً للاستيقاظ. يرجى المحاولة مرة أخرى بعد قليل.";
+      } else if (response.statusCode == 200) {
+        try {
+          final dynamic decodedJson = jsonDecode(decodedBody);
+          botResponse = _extractTextFromResponse(decodedJson);
+        } catch (e) {
+          botResponse = decodedBody.trim();
+        }
+      } else {
+        botResponse =
+            "عذراً، حدث خطأ في الاتصال بالخادم (الكود: ${response.statusCode}). يرجى المحاولة مرة أخرى.";
+      }
+
+      if (botResponse.trim().isEmpty) {
+        botResponse =
+            "لم أتمكن من صياغة الرد في الوقت الحالي، هل يمكنك توضيح المشكلة أكثر؟";
+      }
+
+      setState(() {
+        messages.add(
+          ChatMessage(type: MessageType.botText, text: botResponse.trim()),
+        );
+      });
+    } on SocketException {
+      _removeLoadingBubble();
+      setState(() {
+        messages.add(
+          ChatMessage(
+            type: MessageType.botText,
+            text:
+                "لا يوجد اتصال بالإنترنت. يرجى التحقق من الشبكة والمحاولة مرة أخرى.",
+          ),
+        );
+      });
+    } catch (e) {
+      if (retryCount < 3) {
+        await Future.delayed(const Duration(seconds: 4));
+        return _sendMessage(text, retryCount: retryCount + 1);
+      }
+      _removeLoadingBubble();
+      setState(() {
+        messages.add(
+          ChatMessage(
+            type: MessageType.botText,
+            text:
+                "عذراً، استغرق الخادم وقتاً طويلاً للرد. يرجى إعادة المحاولة.",
+          ),
+        );
+      });
+    } finally {
+      setState(() => _isLoading = false);
+      _scrollToBottom();
+    }
+  }
+
+  void _removeLoadingBubble() {
+    setState(() {
+      messages.removeWhere((msg) => msg.type == MessageType.loading);
     });
   }
 
-  // دالة النزول لأسفل الشات تلقائياً عند إضافة رسالة
+  Future<void> _launchURL(String urlString) async {
+    final Uri url = Uri.parse(urlString);
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('عذراً، لا يمكن فتح هذا الرابط.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOutCubic,
         );
       }
     });
@@ -127,25 +257,23 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   @override
   Widget build(BuildContext context) {
     return Directionality(
-      textDirection: TextDirection.rtl, // الواجهة باللغة العربية
+      textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: bgLightGrey,
         appBar: _buildAppBar(context),
         body: Column(
           children: [
-            // منطقة الشات
             Expanded(
               child: ListView.builder(
                 controller: _scrollController,
                 padding: const EdgeInsets.all(16.0),
                 physics: const BouncingScrollPhysics(),
                 itemCount: messages.length,
-                itemBuilder: (context, index) {
-                  return _buildMessageItem(messages[index]);
-                },
+                itemBuilder: (context, index) =>
+                    _buildMessageItem(messages[index]),
               ),
             ),
-            // حقل إدخال النص السفلي
+            _buildQuickQueryBar(),
             _buildBottomInputArea(),
           ],
         ),
@@ -153,59 +281,76 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     );
   }
 
-  // ==================== 1. الـ AppBar ====================
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
-      backgroundColor: bgLightGrey,
-      elevation: 0,
+      backgroundColor: Colors.white,
+      elevation: 0.5,
       centerTitle: true,
-      title: const Text(
-        "المساعد الذكي",
-        style: TextStyle(
-          color: brandBlue,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          fontFamily: 'Cairo',
-        ),
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: const BoxDecoration(
+              color: successGreen,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            "عم بسيط - مساعد الصيانة الذكي",
+            style: TextStyle(
+              color: textDark,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Cairo',
+            ),
+          ),
+        ],
       ),
       leading: IconButton(
-  icon: const Icon(Icons.arrow_back, color: Color(0xFF0056D2), size: 28),
-  onPressed: () {
-    Navigator.pop(context); // العودة للصفحة السابقة مباشرة
-  },
-),
+        icon: const Icon(Icons.arrow_back, color: textDark, size: 24),
+        onPressed: () => Navigator.pop(context),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh_rounded, color: textDark, size: 22),
+          onPressed: () {
+            setState(() {
+              messages = [ChatMessage(type: MessageType.welcomeCard)];
+            });
+          },
+          tooltip: "محادثة جديدة",
+        ),
+      ],
     );
   }
 
-  // ==================== 2. موجه رسائل الشات ====================
   Widget _buildMessageItem(ChatMessage message) {
     switch (message.type) {
       case MessageType.welcomeCard:
         return _buildWelcomeCard();
-      case MessageType.suggestions:
-        return _buildSuggestionsSection();
       case MessageType.userText:
         return _buildUserBubble(message.text ?? "");
       case MessageType.botText:
         return _buildBotBubble(message.text ?? "");
-      case MessageType.actionCard:
-        return _buildActionCard();
-      case MessageType.recentCommands:
-        return _buildRecentCommands();
+      case MessageType.loading:
+        return _buildLoadingBubble();
     }
   }
 
-  // ==================== 3. كارت الترحيب ====================
   Widget _buildWelcomeCard() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 24),
-      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.only(bottom: 20, top: 10),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withOpacity(0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -213,35 +358,56 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       ),
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: brandBlue.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.smart_toy_rounded,
-              color: brandBlue,
-              size: 40,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: botOrange.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.smart_toy_rounded,
+                  color: botOrange,
+                  size: 30,
+                ),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "أهلاً بك مع عم بسيط!",
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: textDark,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      "مساعدك الذكي لصيانة الأجهزة المنزلية",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: textMuted,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          const SizedBox(height: 14),
           const Text(
-            "مرحبًا أنا مساعد بسيطة الذكي",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: textDark,
-              fontFamily: 'Cairo',
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            "يمكنني تنفيذ أي مهمة داخل التطبيق بمجرد أن تخبرني بما تريد. اطلب أي شيء وسأنفذه لك فوراً.",
-            textAlign: TextAlign.center,
+            "اكتب مشكلتك ليتم فحصها عبر قاعدة بيانات الصيانة وتوجيهك لأفضل حل أو فني مناسب. النظام الآن متصل بالذكاء الاصطناعي مباشرة.",
             style: TextStyle(
               fontSize: 13,
-              color: textMuted,
+              color: textDark,
               height: 1.5,
               fontFamily: 'Cairo',
             ),
@@ -251,131 +417,65 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     );
   }
 
-  // ==================== 4. المقترحات السريعة ====================
-  Widget _buildSuggestionsSection() {
-    // جلب النصوص من الخريطة المحددة مسبقاً
-    List<String> suggestions = _quickRepliesMap.keys.toList();
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.only(right: 8.0, bottom: 12.0),
-            child: Text(
-              "مقترحات سريعة",
-              style: TextStyle(
-                color: textMuted,
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Cairo',
-              ),
-            ),
-          ),
-          Wrap(
-            spacing: 8.0,
-            runSpacing: 10.0,
-            children: suggestions.map((text) {
-              return GestureDetector(
-                onTap: () =>
-                    _sendMessage(text), // إرسال الاقتراح كرسالة عند الضغط
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.grey.shade200),
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  child: Text(
-                    text,
-                    style: const TextStyle(
-                      color: textDark,
-                      fontSize: 13,
-                      fontFamily: 'Cairo',
-                    ),
-                  ),
+  Widget _buildQuickQueryBar() {
+    return Container(
+      height: 55,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: const BoxDecoration(color: bgLightGrey),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        physics: const BouncingScrollPhysics(),
+        itemCount: _quickSuggestions.length,
+        itemBuilder: (context, index) {
+          final suggestion = _quickSuggestions[index];
+          return Padding(
+            padding: const EdgeInsets.only(left: 8.0),
+            child: ActionChip(
+              backgroundColor: Colors.white,
+              elevation: 0.5,
+              pressElevation: 0,
+              side: BorderSide(color: Colors.grey.shade300),
+              label: Text(
+                suggestion,
+                style: const TextStyle(
+                  color: textDark,
+                  fontSize: 13,
+                  fontFamily: 'Cairo',
                 ),
-              );
-            }).toList(),
-          ),
-        ],
+              ),
+              onPressed: () => _sendMessage(suggestion),
+            ),
+          );
+        },
       ),
     );
   }
 
-  // ==================== 5. رسالة المستخدم ====================
   Widget _buildUserBubble(String text) {
-    return Align(
-      alignment: Alignment.centerLeft, // في الـ RTL سيظهر على اليسار
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16, right: 40),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: const BoxDecoration(
-          color: brandBlue,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(16),
-            topRight: Radius.circular(16),
-            bottomRight: Radius.circular(16),
-            bottomLeft: Radius.circular(4), // الطرف المدبب
-          ),
-        ),
-        child: Text(
-          text,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            height: 1.5,
-            fontFamily: 'Cairo',
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ==================== 6. رسالة البوت النصية ====================
-  Widget _buildBotBubble(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // أيقونة البوت
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: brandBlue.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.smart_toy_rounded,
-              color: brandBlue,
-              size: 16,
-            ),
-          ),
-          const SizedBox(width: 8),
-          // فقاعة نص البوت
-          Expanded(
+          Flexible(
             child: Container(
               margin: const EdgeInsets.only(left: 40),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: const BorderRadius.only(
+              decoration: const BoxDecoration(
+                color: brandBlue,
+                borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(16),
                   topRight: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
-                  bottomRight: Radius.circular(4), // الطرف المدبب
+                  bottomRight: Radius.circular(16),
+                  bottomLeft: Radius.circular(4),
                 ),
-                border: Border.all(color: Colors.grey.shade200),
               ),
               child: Text(
                 text,
                 style: const TextStyle(
-                  color: textDark,
+                  color: Colors.white,
                   fontSize: 14,
                   height: 1.5,
                   fontFamily: 'Cairo',
@@ -383,316 +483,304 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
               ),
             ),
           ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: brandBlue.withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.person_outline_rounded,
+              color: brandBlue,
+              size: 18,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // ==================== 7. كارت الحجز التفاعلي ====================
-  Widget _buildActionCard() {
+  Widget _buildBotBubble(String text) {
     return Padding(
-      padding: const EdgeInsets.only(right: 32, bottom: 24),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: brandBlue.withValues(alpha: 0.3)),
-          boxShadow: [
-            BoxShadow(
-              color: brandBlue.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: botOrange.withOpacity(0.15),
+              shape: BoxShape.circle,
             ),
-          ],
-        ),
-        child: Column(
-          children: [
-            // العنوان
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.build_circle_rounded,
-                    color: brandBlue,
-                    size: 28,
-                  ),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Text(
-                      "طلب سباك - سموحة",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Cairo',
-                      ),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: brandBlue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      "متاح الآن",
-                      style: TextStyle(
-                        color: brandBlue,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Cairo',
-                      ),
-                    ),
+            child: const Icon(
+              Icons.smart_toy_rounded,
+              color: botOrange,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.only(right: 40),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                  bottomLeft: Radius.circular(4),
+                  bottomRight: Radius.circular(16),
+                ),
+                border: Border.all(color: Colors.grey.shade200),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.02),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
-            ),
-            const Divider(height: 1, color: Color(0xFFF1F5F9)),
-            // الإحصائيات
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildStatColumn("عدد الفنيين", "12", null),
-                  Container(height: 30, width: 1, color: Colors.grey.shade200),
-                  _buildStatColumn("أفضل سعر", "120", "ج.م"),
-                  Container(height: 30, width: 1, color: Colors.grey.shade200),
-                  _buildStatColumn("أفضل تقييم", "4.9", "⭐"),
-                ],
-              ),
-            ),
-            // الأزرار
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // TODO: أكشن الحجز
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: brandBlue,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: const Text(
-                        "احجز الآن",
+                  const Row(
+                    children: [
+                      Text(
+                        "عم بسيط",
                         style: TextStyle(
-                          color: Colors.white,
-                          fontFamily: 'Cairo',
+                          color: botOrange,
+                          fontSize: 12,
                           fontWeight: FontWeight.bold,
+                          fontFamily: 'Cairo',
                         ),
                       ),
-                    ),
+                      Spacer(),
+                      Icon(
+                        Icons.verified_rounded,
+                        color: successGreen,
+                        size: 14,
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // TODO: أكشن عرض الفنيين
+                  const SizedBox(height: 8),
+                  MarkdownBody(
+                    data: text,
+                    selectable: true,
+                    styleSheet: MarkdownStyleSheet(
+                      p: const TextStyle(
+                        color: textDark,
+                        fontSize: 14,
+                        height: 1.6,
+                        fontFamily: 'Cairo',
+                      ),
+                      strong: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                        fontFamily: 'Cairo',
+                      ),
+                      a: const TextStyle(
+                        color: brandBlue,
+                        fontWeight: FontWeight.bold,
+                        decoration: TextDecoration.underline,
+                      ),
+                      listBullet: const TextStyle(
+                        color: botOrange,
+                        fontSize: 16,
+                      ),
+                      blockquoteDecoration: BoxDecoration(
+                        color: bgLightGrey,
+                        border: const Border(
+                          right: BorderSide(color: botOrange, width: 4),
+                        ),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      blockquotePadding: const EdgeInsets.all(12),
+                    ),
+                    onTapLink: (text, href, title) {
+                      if (href == null) return;
+                      if (href == '#' ||
+                          href.toLowerCase().contains('technician') ||
+                          href.toLowerCase().contains('book')) {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const TechniciansScreen(),
                           ),
                         );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey.shade100,
-                        foregroundColor: textDark,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: const Text(
-                        "عرض الفنيين",
-                        style: TextStyle(
-                          fontFamily: 'Cairo',
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                      } else {
+                        _launchURL(href);
+                      }
+                    },
                   ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatColumn(String title, String value, String? suffix) {
-    return Column(
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            color: textMuted,
-            fontSize: 11,
-            fontFamily: 'Cairo',
           ),
-        ),
-        const SizedBox(height: 4),
-        Row(
-          children: [
-            Text(
-              value,
-              style: const TextStyle(
-                color: textDark,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Cairo',
-              ),
-            ),
-            if (suffix != null) ...[
-              const SizedBox(width: 4),
-              if (suffix == "⭐")
-                const Icon(Icons.star_rounded, color: Colors.amber, size: 16)
-              else
-                Text(
-                  suffix,
-                  style: const TextStyle(
-                    color: brandBlue,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Cairo',
-                  ),
-                ),
-            ],
-          ],
-        ),
-      ],
-    );
-  }
-
-  // ==================== 8. الأوامر الأخيرة ====================
-  Widget _buildRecentCommands() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Divider(height: 30, color: Color(0xFFE2E8F0)),
-          const Padding(
-            padding: EdgeInsets.only(right: 8.0, bottom: 12.0),
-            child: Text(
-              "الأوامر الأخيرة",
-              style: TextStyle(
-                color: textDark,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Cairo',
-              ),
-            ),
-          ),
-          _buildRecentTile("حجز كهربائي في التجمع", "أمس"),
-          _buildRecentTile("استعراض شركات التشطيب الحديثة", "منذ يومين"),
         ],
       ),
     );
   }
 
-  Widget _buildRecentTile(String title, String time) {
-    return GestureDetector(
-      onTap: () => _sendMessage(title), // إعادة إرسال الأمر عند الضغط عليه
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 10.0),
-        child: Row(
-          children: [
-            const Icon(Icons.history_rounded, color: textMuted, size: 20),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  color: textDark,
-                  fontSize: 13,
-                  fontFamily: 'Cairo',
+  Widget _buildLoadingBubble() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: botOrange.withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.smart_toy_rounded,
+              color: botOrange,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: botOrange,
+                  ),
                 ),
-              ),
-            ),
-            Text(
-              time,
-              style: const TextStyle(
-                color: textMuted,
-                fontSize: 11,
-                fontFamily: 'Cairo',
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ==================== 9. حقل الإدخال السفلي (الكيبورد) ====================
-  Widget _buildBottomInputArea() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-      decoration: const BoxDecoration(color: bgLightGrey),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // أيقونة المايك
-            IconButton(
-              icon: const Icon(Icons.mic_none_rounded, color: brandBlue),
-              onPressed: () {}, // إضافة الأوامر الصوتية هنا
-            ),
-            // حقل النص
-            Expanded(
-              child: TextField(
-                controller: _messageController,
-                style: const TextStyle(fontSize: 14, fontFamily: 'Cairo'),
-                decoration: const InputDecoration(
-                  hintText: "اكتب أو تحدث بما تحتاج...",
-                  hintStyle: TextStyle(
+                SizedBox(width: 12),
+                Text(
+                  "جاري استجابة الخادم...",
+                  style: TextStyle(
                     color: textMuted,
                     fontSize: 13,
                     fontFamily: 'Cairo',
                   ),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 8),
                 ),
-                onSubmitted: _sendMessage,
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomInputArea() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: const Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: IconButton(
+              icon: const Icon(
+                Icons.mic_none_rounded,
+                color: brandBlue,
+                size: 26,
+              ),
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('ميزة التحدث الصوتي ستتوفر قريباً!'),
+                  ),
+                );
+              },
+            ),
+          ),
+          Expanded(
+            child: Container(
+              constraints: const BoxConstraints(maxHeight: 120),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: bgLightGrey,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _messageController,
+                      enabled: !_isLoading,
+                      maxLines: null,
+                      keyboardType: TextInputType.multiline,
+                      style: const TextStyle(fontSize: 14, fontFamily: 'Cairo'),
+                      decoration: const InputDecoration(
+                        hintText: "اسأل عم بسيط عن أي عطل...",
+                        hintStyle: TextStyle(
+                          color: textMuted,
+                          fontSize: 13,
+                          fontFamily: 'Cairo',
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.camera_alt_outlined,
+                      color: textMuted,
+                      size: 22,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('ميزة إرفاق الصور ستتوفر قريباً!'),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
-            // أيقونة الكاميرا
-            IconButton(
-              icon: const Icon(Icons.camera_alt_outlined, color: textMuted),
-              onPressed: () {}, // رفع الصور
-            ),
-            // زر الإرسال الأزرق
-            GestureDetector(
-              onTap: () => _sendMessage(_messageController.text),
-              child: Container(
-                margin: const EdgeInsets.only(left: 4),
+          ),
+          const SizedBox(width: 10),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: GestureDetector(
+              onTap: _isLoading
+                  ? null
+                  : () => _sendMessage(_messageController.text),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: brandBlue,
-                  borderRadius: BorderRadius.circular(20),
+                  color: _isLoading ? Colors.grey.shade400 : brandBlue,
+                  shape: BoxShape.circle,
+                  boxShadow: _isLoading
+                      ? null
+                      : [
+                          BoxShadow(
+                            color: brandBlue.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                 ),
                 child: const Icon(
                   Icons.send_rounded,
@@ -701,8 +789,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
