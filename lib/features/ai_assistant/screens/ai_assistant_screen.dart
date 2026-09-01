@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:basita1/features/technician/screens/technicians_screen.dart';
+import 'package:basita1/features/ai_assistant/screens/uncle_baseet_chat_screen.dart';
 
 // تعريف أنواع الرسائل لتسهيل بناء الواجهة
 enum MessageType {
@@ -244,6 +245,29 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
               color: textMuted,
               height: 1.5,
               fontFamily: 'Cairo',
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const UncleBaseetChatScreen()),
+                );
+              },
+              icon: const Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 18),
+              label: const Text(
+                'تحدث مع عمو بسيط (متصل بـ n8n)',
+                style: TextStyle(color: Colors.white, fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: brandBlue,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                elevation: 0,
+              ),
             ),
           ),
         ],

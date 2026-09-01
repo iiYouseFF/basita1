@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:basita1/features/technician/screens/technician_report_screen.dart';
 
 class TechnicianDashboardScreen extends StatefulWidget {
   const TechnicianDashboardScreen({super.key});
@@ -38,6 +39,8 @@ class _TechnicianDashboardScreenState extends State<TechnicianDashboardScreen> {
                   physics: const BouncingScrollPhysics(),
                   children: [
                     _buildMapSection(),
+                    const SizedBox(height: 16),
+                    _buildTechnicianReportEntry(context),
                     const SizedBox(height: 20),
                     _buildFiltersSection(),
                     const SizedBox(height: 16),
@@ -1029,6 +1032,46 @@ class _TechnicianDashboardScreenState extends State<TechnicianDashboardScreen> {
           ],
         ),
       ],
+    );
+  }
+
+  // Technician Report entry — n8n integration
+  Widget _buildTechnicianReportEntry(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const TechnicianReportScreen()),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEFF6FF),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: primaryBlue.withValues(alpha: 0.15)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: primaryBlue, borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.assignment_add, color: Colors.white, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('إرسال تقرير صيانة', style: GoogleFonts.cairo(color: textDark, fontSize: 14, fontWeight: FontWeight.bold)),
+                  Text('توثيق العمل للعميل عبر n8n', style: GoogleFonts.cairo(color: textMuted, fontSize: 11, height: 1.3)),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFF64748B)),
+          ],
+        ),
+      ),
     );
   }
 }

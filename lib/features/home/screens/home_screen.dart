@@ -15,6 +15,7 @@ import 'package:basita1/features/offers/screens/offers_screen.dart';
 import 'package:basita1/features/visits/screens/visits_screen.dart';
 import 'package:basita1/features/home/screens/shatably_app.dart';
 import 'package:basita1/features/ai_assistant/screens/ai_assistant_screen.dart';
+import 'package:basita1/features/ai_assistant/screens/uncle_baseet_chat_screen.dart';
 import 'package:basita1/core/session/user_session.dart';
 import 'package:basita1/features/profile/screens/personal_data_screen.dart';
 import 'package:basita1/features/feedback/screens/coming_soon_screen.dart';
@@ -575,7 +576,7 @@ class _SimpleHomeScreenState extends State<SimpleHomeScreen> {
           FocusManager.instance.primaryFocus?.unfocus();
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const AiAssistantScreen()),
+            MaterialPageRoute(builder: (context) => const UncleBaseetChatScreen()),
           );
         },
       },
