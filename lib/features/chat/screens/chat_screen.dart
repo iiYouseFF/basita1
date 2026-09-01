@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:basita1/core/repositories/chat_repository.dart';
 import 'package:basita1/core/models/chat_room.dart' as model;
 import 'package:basita1/core/models/chat_message.dart' as msg;
 import 'package:basita1/core/session/user_session.dart';
+import 'package:basita1/core/network/socket_service.dart';
 
 String formatTime(DateTime time) {
   int hour = time.hour;
@@ -25,16 +27,35 @@ class _ChatMainPageState extends State<ChatMainPage> {
   final Color primaryBlue = const Color(0xFF005CEE);
   final TextEditingController _searchController = TextEditingController();
   final ChatRepository _chatRepo = ChatRepository();
+  final SocketService _socketService = SocketService.instance;
   final String _currentUserId = UserSession.instance.phone;
 
   List<model.ChatRoom> _allRooms = [];
   List<model.ChatRoom> _filteredRooms = [];
   bool _isLoading = true;
+  bool _isSocketConnected = false;
+  StreamSubscription<bool>? _connSub;
 
   @override
   void initState() {
     super.initState();
     _loadChatRooms();
+    _initSocket();
+  }
+
+  Future<void> _initSocket() async {
+    await _socketService.connectChat();
+    _connSub = _socketService.connectionStream.listen((c) {
+      if (mounted) setState(() => _isSocketConnected = c);
+    });
+    _isSocketConnected = _socketService.isChatConnected;
+  }
+
+  @override
+  void dispose() {
+    _connSub?.cancel();
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _loadChatRooms() async {
@@ -114,9 +135,44 @@ class _ChatMainPageState extends State<ChatMainPage> {
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  "تواصل مع الفنيين والمحترفين لمتابعة طلبات الصيانة",
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        "تواصل مع الفنيين والمحترفين لمتابعة طلبات الصيانة",
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _isSocketConnected ? Colors.green.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: _isSocketConnected ? Colors.green : Colors.orange,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _isSocketConnected ? "متصل" : "غير متصل",
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: _isSocketConnected ? Colors.green : Colors.orange,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 20),
                 Container(
@@ -361,27 +417,58 @@ class _ChatDetailsBotScreenState extends State<ChatDetailsBotScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final ChatRepository _chatRepo = ChatRepository();
+  final SocketService _socketService = SocketService.instance;
 
   bool isTyping = false;
+  bool _isSocketConnected = false;
+  StreamSubscription<bool>? _connectionSub;
 
   @override
   void initState() {
     super.initState();
     _chatRepo.markAsRead(widget.room.id, widget.currentUserId);
+    _initRealtime();
   }
 
-  void _sendMessage() {
+  Future<void> _initRealtime() async {
+    await _socketService.connectChat();
+    _socketService.joinRoom(widget.room.id);
+    _connectionSub = _socketService.connectionStream.listen((connected) {
+      if (mounted) setState(() => _isSocketConnected = connected);
+    });
+    // initial status
+    _isSocketConnected = _socketService.isChatConnected;
+  }
+
+  @override
+  void dispose() {
+    _connectionSub?.cancel();
+    _socketService.leaveRoom(widget.room.id);
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendMessage() async {
     if (_messageController.text.trim().isEmpty) return;
 
     final text = _messageController.text;
     _messageController.clear();
 
-    _chatRepo.sendMessage(
-      roomId: widget.room.id,
-      senderId: widget.currentUserId,
-      senderType: 'user',
-      message: text,
-    );
+    try {
+      await _chatRepo.sendMessage(
+        roomId: widget.room.id,
+        senderId: widget.currentUserId,
+        senderType: 'user',
+        message: text,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('فشل إرسال الرسالة: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
 
     _scrollToBottom();
   }
@@ -426,9 +513,25 @@ class _ChatDetailsBotScreenState extends State<ChatDetailsBotScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Text(
-                  "متصل الآن",
-                  style: TextStyle(color: Colors.green, fontSize: 12),
+                Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: _isSocketConnected ? Colors.green : Colors.orange,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _isSocketConnected ? "متصل الآن" : "جاري الاتصال...",
+                      style: TextStyle(
+                        color: _isSocketConnected ? Colors.green : Colors.orange,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
