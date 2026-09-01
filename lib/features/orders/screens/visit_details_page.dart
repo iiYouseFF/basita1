@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart'; // تأكد من وجود هذا الملف
 
-
 class BasseytaApp extends StatelessWidget {
   const BasseytaApp({super.key});
 
@@ -43,12 +42,12 @@ class BasseytaApp extends StatelessWidget {
       backgroundColor: const Color(0xFFF9F9F9),
       elevation: 0,
       centerTitle: true,
-     leading: IconButton(
-  icon: const Icon(Icons.arrow_back, color: Color(0xFF0056D2), size: 28),
-  onPressed: () {
-    Navigator.pop(context); // العودة للصفحة السابقة مباشرة
-  },
-),
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Color(0xFF0056D2), size: 28),
+        onPressed: () {
+          Navigator.pop(context); // العودة للصفحة السابقة مباشرة
+        },
+      ),
       title: const Text(
         "تفاصيل الزيارة",
         style: TextStyle(

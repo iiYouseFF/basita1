@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+// removed: firebase_auth
 import 'package:google_fonts/google_fonts.dart'; // إضافة مكتبة Google Fonts
 import 'package:basita1/core/session/user_data_session.dart';
 import 'package:basita1/features/orders/screens/orders_screen.dart';
@@ -9,9 +9,7 @@ import 'package:basita1/features/orders/screens/sale_screen.dart';
 import 'package:basita1/features/home/screens/home1.dart';
 import 'package:basita1/features/auth/screens/account_type_screen.dart';
 import 'package:basita1/features/booking/screens/appointments_screen.dart';
-import 'package:basita1/features/technician/screens/technician_dashboard.dart';
-import 'package:basita1/features/feedback/screens/coming.dart';
-import 'package:basita1/features/community/screens/community_screen.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -31,7 +29,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
   /// جلب معرّف الفني ديناميكياً ليطابق قاعدة البيانات
   String get _technicianDocId {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = MockAuth.currentUser;
     String rawPhone = user?.phoneNumber ?? '';
 
     if (rawPhone.isEmpty) {
@@ -110,12 +108,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   icon: Icons.person_outline,
                   title: "المعلومات الشخصية",
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ComingSoonScreen1(),
-                      ),
-                    );
+                    // Navigator.push(context, MaterialPageRoute(builder: (context) => const PersonalInfoScreen()));
                   },
                 ),
                 _buildDivider(),
@@ -123,12 +116,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   icon: Icons.photo_library_outlined,
                   title: "معرض الأعمال",
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ComingSoonScreen1(),
-                      ),
-                    );
+                    // Navigator.push(context, MaterialPageRoute(builder: (context) => const GalleryScreen()));
                   },
                 ),
                 _buildDivider(),
@@ -136,12 +124,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   icon: Icons.map_outlined,
                   title: "مناطق الخدمة",
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ComingSoonScreen1(),
-                      ),
-                    );
+                    // Navigator.push(context, MaterialPageRoute(builder: (context) => const ServiceAreasScreen()));
                   },
                 ),
                 _buildDivider(),
@@ -149,12 +132,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   icon: Icons.people_outline, // تم التعديل لتطابق الصورة
                   title: "المجتمع", // تم التعديل لتطابق الصورة
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const CommunityScreenPerfect(),
-                      ),
-                    );
+                    // Navigator.push(context, MaterialPageRoute(builder: (context) => const CommunityScreen()));
                   },
                 ),
               ]),
@@ -167,12 +145,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   icon: Icons.school_outlined,
                   title: "مركز التدريب",
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ComingSoonScreen1(),
-                      ),
-                    );
+                    // Navigator.push(context, MaterialPageRoute(builder: (context) => const TrainingCenterScreen()));
                   },
                 ),
                 _buildDivider(),
@@ -180,12 +153,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   icon: Icons.emoji_events_outlined,
                   title: "الإنجازات",
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const TechnicianDashboardS(),
-                      ),
-                    );
+                    // Navigator.push(context, MaterialPageRoute(builder: (context) => const AchievementsScreen()));
                   },
                 ),
               ]),
@@ -198,12 +166,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   icon: Icons.help_outline,
                   title: "الدعم والمساعدة",
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ComingSoonScreen1(),
-                      ),
-                    );
+                    // Navigator.push(context, MaterialPageRoute(builder: (context) => const SupportScreen()));
                   },
                 ),
                 _buildDivider(),
@@ -211,12 +174,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   icon: Icons.shield_outlined,
                   title: "الخصوصية والأمان",
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ComingSoonScreen1(),
-                      ),
-                    );
+                    // Navigator.push(context, MaterialPageRoute(builder: (context) => const PrivacySecurityScreen()));
                   },
                 ),
                 _buildDivider(),
@@ -287,7 +245,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 border: Border.all(color: Colors.white, width: 4),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 8,
                   ),
                 ],
@@ -357,12 +315,11 @@ class _AccountScreenState extends State<AccountScreen> {
   Widget _buildWalletCard() {
     final String currentTechId = _technicianDocId;
 
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+    return StreamBuilder<dynamic>(
       stream: currentTechId.isNotEmpty
-          ? FirebaseFirestore.instance
-                .collection('technicians')
-                .doc(currentTechId)
-                .snapshots()
+          ? MockFirestore.collection(
+              'technicians',
+            ).doc(currentTechId).snapshots()
           : const Stream.empty(),
       builder: (context, snapshot) {
         double walletBalance = 0.0;
@@ -379,7 +336,7 @@ class _AccountScreenState extends State<AccountScreen> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.02),
+                color: Colors.black.withValues(alpha: 0.02),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -488,7 +445,7 @@ class _AccountScreenState extends State<AccountScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -542,7 +499,7 @@ class _AccountScreenState extends State<AccountScreen> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -4),
           ),
@@ -617,8 +574,8 @@ class _AccountScreenState extends State<AccountScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isActive
-              ? const Color(0xFF60A5FA).withOpacity(
-                  0.8,
+              ? const Color(0xFF60A5FA).withValues(
+                  alpha: 0.8,
                 ) // اللون الأزرق للعنصر النشط
               : Colors.transparent,
           borderRadius: BorderRadius.circular(20),

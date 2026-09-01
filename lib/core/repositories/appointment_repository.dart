@@ -1,8 +1,34 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:async';
 import 'package:basita1/core/models/appointment.dart';
+import 'package:basita1/core/network/api_client.dart';
 
+/// Real backend: POST /appointments, GET /appointments, PATCH, etc.
+/// Base: http://basseeyta.duckdns.org
 class AppointmentRepository {
-  final SupabaseClient _client = Supabase.instance.client;
+  final ApiClient _api = ApiClient();
+
+  Map<String, dynamic> _normalize(Map<String, dynamic> j) => {
+    'id': j['id'] ?? '',
+    'request_id': j['requestId'] ?? j['request_id'] ?? '',
+    'client_id': j['clientId'] ?? j['client_id'] ?? '',
+    'technician_id': j['technicianId'] ?? j['technician_id'] ?? '',
+    'service_type': j['serviceType'] ?? j['service_type'] ?? '',
+    'service_name': j['serviceName'] ?? j['service_name'],
+    'status': j['status'] ?? 'scheduled',
+    'appointment_date': j['appointmentDate'] ?? j['appointment_date'],
+    'appointment_time': j['appointmentTime'] ?? j['appointment_time'],
+    'client_address': j['clientAddress'] ?? j['client_address'],
+    'client_latitude': j['clientLatitude'] ?? j['client_latitude'],
+    'client_longitude': j['clientLongitude'] ?? j['client_longitude'],
+    'technician_latitude': j['technicianLatitude'] ?? j['technician_latitude'],
+    'technician_longitude':
+        j['technicianLongitude'] ?? j['technician_longitude'],
+    'estimated_duration': j['estimatedDuration'] ?? j['estimated_duration'],
+    'price': j['price'],
+    'notes': j['notes'],
+    'created_at': j['createdAt'] ?? j['created_at'],
+    'updated_at': j['updatedAt'] ?? j['updated_at'],
+  };
 
   Future<Appointment> createAppointment({
     required String requestId,
@@ -21,63 +47,64 @@ class AppointmentRepository {
     double? price,
     String? notes,
   }) async {
-    final data = await _client
-        .from('appointments')
-        .insert({
-          'request_id': requestId,
-          'client_id': clientId,
-          'technician_id': technicianId,
-          'service_type': serviceType,
-          'service_name': serviceName,
-          'appointment_date': appointmentDate?.toIso8601String(),
-          'appointment_time': appointmentTime,
-          'client_address': clientAddress,
-          'client_latitude': clientLatitude,
-          'client_longitude': clientLongitude,
-          'technician_latitude': technicianLatitude,
-          'technician_longitude': technicianLongitude,
-          'estimated_duration': estimatedDuration,
-          'price': price,
-          'notes': notes,
-        })
-        .select()
-        .single();
-    return Appointment.fromJson(data);
+    final res = await _api.post(
+      '/appointments',
+      body: {
+        'requestId': requestId,
+        'clientId': clientId,
+        'technicianId': technicianId,
+        'serviceType': serviceType,
+        if (serviceName != null) 'serviceName': serviceName,
+        if (appointmentDate != null)
+          'appointmentDate': appointmentDate.toIso8601String(),
+        if (appointmentTime != null) 'appointmentTime': appointmentTime,
+        if (clientAddress != null) 'clientAddress': clientAddress,
+        if (clientLatitude != null) 'clientLatitude': clientLatitude,
+        if (clientLongitude != null) 'clientLongitude': clientLongitude,
+        if (technicianLatitude != null)
+          'technicianLatitude': technicianLatitude,
+        if (technicianLongitude != null)
+          'technicianLongitude': technicianLongitude,
+        if (estimatedDuration != null) 'estimatedDuration': estimatedDuration,
+        if (price != null) 'price': price,
+        if (notes != null) 'notes': notes,
+      },
+    );
+    final data =
+        (res['data'] as Map<String, dynamic>?)?['appointment'] ??
+        res['data'] ??
+        res;
+    return Appointment.fromJson(
+      _normalize(Map<String, dynamic>.from(data as Map)),
+    );
   }
 
   Future<List<Appointment>> getUserAppointments(String userId) async {
-    final data = await _client
-        .from('appointments')
-        .select()
-        .or('client_id.eq.$userId,technician_id.eq.$userId')
-        .order('appointment_date', ascending: true);
-    return data.map((json) => Appointment.fromJson(json)).toList();
+    final res = await _api.get('/appointments', query: {'userId': userId});
+    final list = _extractList(res);
+    return list
+        .map(
+          (e) => Appointment.fromJson(_normalize(Map<String, dynamic>.from(e))),
+        )
+        .toList();
   }
 
-  Stream<List<Appointment>> watchUserAppointments(String userId) {
-    return _client
-        .from('appointments')
-        .stream(primaryKey: ['id'])
-        .order('appointment_date', ascending: true)
-        .map((data) => data
-            .where((json) =>
-                json['client_id'] == userId ||
-                json['technician_id'] == userId)
-            .map((json) => Appointment.fromJson(json))
-            .toList());
+  Stream<List<Appointment>> watchUserAppointments(String userId) async* {
+    yield await getUserAppointments(userId);
   }
 
   Future<Appointment?> getAppointmentByRequestId(String requestId) async {
-    final data = await _client
-        .from('appointments')
-        .select()
-        .eq('request_id', requestId)
-        .maybeSingle();
-    return data != null ? Appointment.fromJson(data) : null;
+    final res = await _api.get(
+      '/appointments',
+      query: {'requestId': requestId},
+    );
+    final list = _extractList(res);
+    if (list.isEmpty) return null;
+    return Appointment.fromJson(
+      _normalize(Map<String, dynamic>.from(list.first)),
+    );
   }
 
-  /// إنشاء موعد عند قبول الفني للطلب،
-  /// أو تحديث الموعد الحالي إن كان موجوداً مسبقاً (يمنع التكرار).
   Future<Appointment> upsertAppointmentOnAccept({
     required String requestId,
     required String clientId,
@@ -89,30 +116,26 @@ class AppointmentRepository {
     double? clientLongitude,
     double? price,
   }) async {
-    final existing = await getAppointmentByRequestId(requestId);
-    if (existing != null) {
-      await _client
-          .from('appointments')
-          .update({
-            'technician_id': technicianId,
-            'status': 'scheduled',
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('request_id', requestId);
-      return Appointment.fromJson({
-        'id': existing.id,
-        'request_id': requestId,
-        'client_id': clientId,
-        'technician_id': technicianId,
-        'service_type': serviceType,
-        'service_name': serviceName ?? existing.serviceName,
-        'client_address': clientAddress ?? existing.clientAddress,
-        'client_latitude': clientLatitude ?? 0,
-        'client_longitude': clientLongitude ?? 0,
-        'price': price ?? existing.price,
-      });
-    }
-
+    final res = await _api.post(
+      '/appointments/upsert-on-accept',
+      body: {
+        'requestId': requestId,
+        'clientId': clientId,
+        'technicianId': technicianId,
+        'serviceType': serviceType,
+        if (serviceName != null) 'serviceName': serviceName,
+        if (clientAddress != null) 'clientAddress': clientAddress,
+        if (clientLatitude != null) 'clientLatitude': clientLatitude,
+        if (clientLongitude != null) 'clientLongitude': clientLongitude,
+        if (price != null) 'price': price,
+      },
+    );
+    final data =
+        (res['data'] as Map<String, dynamic>?)?['appointment'] ??
+        res['data'] ??
+        res;
+    if (data is Map)
+      return Appointment.fromJson(_normalize(Map<String, dynamic>.from(data)));
     return createAppointment(
       requestId: requestId,
       clientId: clientId,
@@ -129,7 +152,6 @@ class AppointmentRepository {
     );
   }
 
-  /// إتمام المهمة: تحديث حالة الموعد ومواقع الفني والعميل.
   Future<void> completeAppointmentAndSetLocations({
     required String requestId,
     required double technicianLatitude,
@@ -137,35 +159,35 @@ class AppointmentRepository {
     required double clientLatitude,
     required double clientLongitude,
   }) async {
-    await _client
-        .from('appointments')
-        .update({
-          'status': 'completed',
-          'technician_latitude': technicianLatitude,
-          'technician_longitude': technicianLongitude,
-          'client_latitude': clientLatitude,
-          'client_longitude': clientLongitude,
-          'completed_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
-        })
-        .eq('request_id', requestId);
+    await _api.patch(
+      '/appointments/by-request/$requestId/complete',
+      body: {
+        'technicianLatitude': technicianLatitude,
+        'technicianLongitude': technicianLongitude,
+        'clientLatitude': clientLatitude,
+        'clientLongitude': clientLongitude,
+      },
+    );
   }
 
   Future<Appointment?> getAppointment(String appointmentId) async {
-    final data = await _client
-        .from('appointments')
-        .select()
-        .eq('id', appointmentId)
-        .maybeSingle();
-    return data != null ? Appointment.fromJson(data) : null;
+    try {
+      final res = await _api.get('/appointments/$appointmentId');
+      final data = (res['data'] as Map<String, dynamic>?) ?? res;
+      return Appointment.fromJson(_normalize(Map<String, dynamic>.from(data)));
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> updateAppointmentStatus(
-      String appointmentId, String status) async {
-    await _client
-        .from('appointments')
-        .update({'status': status, 'updated_at': DateTime.now().toIso8601String()})
-        .eq('id', appointmentId);
+    String appointmentId,
+    String status,
+  ) async {
+    await _api.patch(
+      '/appointments/$appointmentId/status',
+      body: {'status': status},
+    );
   }
 
   Future<void> updateAppointmentLocation({
@@ -174,37 +196,42 @@ class AppointmentRepository {
     required double latitude,
     required double longitude,
   }) async {
-    final updateData = <String, dynamic>{
-      'updated_at': DateTime.now().toIso8601String(),
-    };
-    if (role == 'technician') {
-      updateData['technician_latitude'] = latitude;
-      updateData['technician_longitude'] = longitude;
-    } else {
-      updateData['client_latitude'] = latitude;
-      updateData['client_longitude'] = longitude;
-    }
-    await _client
-        .from('appointments')
-        .update(updateData)
-        .eq('id', appointmentId);
+    await _api.patch(
+      '/appointments/$appointmentId/location',
+      body: {'role': role, 'latitude': latitude, 'longitude': longitude},
+    );
   }
 
-  Future<List<Appointment>> getTechnicianAppointments(String technicianId) async {
-    final data = await _client
-        .from('appointments')
-        .select()
-        .eq('technician_id', technicianId)
-        .order('appointment_date', ascending: true);
-    return data.map((json) => Appointment.fromJson(json)).toList();
+  Future<List<Appointment>> getTechnicianAppointments(
+    String technicianId,
+  ) async {
+    final res = await _api.get(
+      '/appointments',
+      query: {'technicianId': technicianId},
+    );
+    final list = _extractList(res);
+    return list
+        .map(
+          (e) => Appointment.fromJson(_normalize(Map<String, dynamic>.from(e))),
+        )
+        .toList();
   }
 
   Future<List<Appointment>> getClientAppointments(String clientId) async {
-    final data = await _client
-        .from('appointments')
-        .select()
-        .eq('client_id', clientId)
-        .order('appointment_date', ascending: true);
-    return data.map((json) => Appointment.fromJson(json)).toList();
+    final res = await _api.get('/appointments', query: {'userId': clientId});
+    final list = _extractList(res);
+    return list
+        .map(
+          (e) => Appointment.fromJson(_normalize(Map<String, dynamic>.from(e))),
+        )
+        .toList();
+  }
+
+  List<dynamic> _extractList(Map<String, dynamic> res) {
+    final data = res['data'];
+    if (data is List) return data;
+    if (data is Map && data['appointments'] is List)
+      return data['appointments'];
+    return [];
   }
 }

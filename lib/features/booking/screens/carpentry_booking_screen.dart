@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:basita1/core/network/mock_backend.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
 
 class CarpentryBookingScreen extends StatefulWidget {
   const CarpentryBookingScreen({super.key});
@@ -68,14 +69,14 @@ class _CarpentryBookingScreenState extends State<CarpentryBookingScreen> {
 
     try {
       // إنشاء مستند جديد في مجموعة 'carpentry_requests' في Firestore
-      await FirebaseFirestore.instance.collection('carpentry_requests').add({
+      await MockFirestore.collection('carpentry_requests').add({
         'workType': _selectedWorkType,
         'woodType': _selectedWoodType ?? 'لم يتم التحديد',
         'budget': _budgetController.text.trim(),
         'date': _dateController.text,
         'time': _timeController.text,
         'notes': _notesController.text.trim(),
-        'createdAt': FieldValue.serverTimestamp(),
+        'createdAt': DateTime.now(),
         'status': 'pending',
       });
 
@@ -230,7 +231,7 @@ class _CarpentryBookingScreenState extends State<CarpentryBookingScreen> {
               _buildSectionCard(
                 title: "نوع الخشب",
                 child: DropdownButtonFormField<String>(
-                  value: _selectedWoodType,
+                  initialValue: _selectedWoodType,
                   hint: Text(
                     "اختر نوع الخشب",
                     style: GoogleFonts.cairo(color: Colors.grey),
@@ -377,7 +378,7 @@ class _CarpentryBookingScreenState extends State<CarpentryBookingScreen> {
             color: Colors.white,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, -5),
               ),
@@ -430,7 +431,7 @@ class _CarpentryBookingScreenState extends State<CarpentryBookingScreen> {
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),

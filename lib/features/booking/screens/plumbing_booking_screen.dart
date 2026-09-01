@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:basita1/core/network/mock_backend.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
 
 class PlumbingBookingScreen extends StatefulWidget {
-  const PlumbingBookingScreen({Key? key}) : super(key: key);
+  const PlumbingBookingScreen({super.key});
 
   @override
   State<PlumbingBookingScreen> createState() => _PlumbingBookingScreenState();
@@ -55,7 +56,7 @@ class _PlumbingBookingScreenState extends State<PlumbingBookingScreen> {
 
     try {
       // 1. حفظ البيانات في كولكشن جديد مخصص للسباكة
-      await FirebaseFirestore.instance.collection('plumbing_requests').add({
+      await MockFirestore.collection('plumbing_requests').add({
         'workCategory': 'سباكة',
         'finishingType': _selectedFinishingType,
         'area': "${_areaController.text.trim()} م²",
@@ -65,7 +66,7 @@ class _PlumbingBookingScreenState extends State<PlumbingBookingScreen> {
         'budget': _budgetController.text.trim(),
         'notes': _notesController.text.trim(),
         'status': 'pending',
-        'createdAt': FieldValue.serverTimestamp(),
+        'createdAt': DateTime.now(),
       });
 
       if (mounted) {
@@ -407,7 +408,7 @@ class _PlumbingBookingScreenState extends State<PlumbingBookingScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

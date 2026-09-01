@@ -1,15 +1,16 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+// removed: firebase_auth
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+// removed: supabase_flutter
 
 import 'package:basita1/core/session/user_session.dart';
 import 'package:basita1/features/feedback/screens/coming_soon_screen.dart';
 import 'package:basita1/features/auth/screens/account_type_screen.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 class PersonalDataScreen extends StatefulWidget {
   const PersonalDataScreen({super.key});
@@ -66,7 +67,7 @@ class _ProfileScreenState extends State<PersonalDataScreen> {
       String userPhone = UserSession.instance.phone.trim();
       String fileName = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
-      final supabase = Supabase.instance.client;
+      final supabase = MockSupabase;
       await supabase.storage
           .from('user_profiles')
           .upload(
@@ -81,38 +82,31 @@ class _ProfileScreenState extends State<PersonalDataScreen> {
 
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String? savedUserId = prefs.getString('userId');
-      String? currentUid =
-          FirebaseAuth.instance.currentUser?.uid ?? savedUserId;
+      String? currentUid = MockAuth.currentUser?.uid ?? savedUserId;
 
       if (currentUid != null && currentUid.isNotEmpty) {
-        var docRef = FirebaseFirestore.instance
-            .collection('users')
-            .doc(currentUid);
+        var docRef = MockFirestore.collection('users').doc(currentUid);
         var docSnap = await docRef.get();
         if (docSnap.exists) {
           await docRef.update({'profileImagePath': downloadUrl});
         } else if (userPhone.isNotEmpty) {
-          var querySnapshot = await FirebaseFirestore.instance
-              .collection('users')
-              .where('phone', isEqualTo: userPhone)
-              .get();
+          var querySnapshot = await MockFirestore.collection(
+            'users',
+          ).where('phone', isEqualTo: userPhone).get();
 
           if (querySnapshot.docs.isNotEmpty) {
-            await FirebaseFirestore.instance
-                .collection('users')
+            await MockFirestore.collection('users')
                 .doc(querySnapshot.docs.first.id)
                 .update({'profileImagePath': downloadUrl});
           }
         }
       } else if (userPhone.isNotEmpty) {
-        var querySnapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .where('phone', isEqualTo: userPhone)
-            .get();
+        var querySnapshot = await MockFirestore.collection(
+          'users',
+        ).where('phone', isEqualTo: userPhone).get();
 
         if (querySnapshot.docs.isNotEmpty) {
-          await FirebaseFirestore.instance
-              .collection('users')
+          await MockFirestore.collection('users')
               .doc(querySnapshot.docs.first.id)
               .update({'profileImagePath': downloadUrl});
         }
@@ -190,38 +184,31 @@ class _ProfileScreenState extends State<PersonalDataScreen> {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String? savedUserId = prefs.getString('userId');
-      String? currentUid =
-          FirebaseAuth.instance.currentUser?.uid ?? savedUserId;
+      String? currentUid = MockAuth.currentUser?.uid ?? savedUserId;
 
       if (currentUid != null && currentUid.isNotEmpty) {
-        var docRef = FirebaseFirestore.instance
-            .collection('users')
-            .doc(currentUid);
+        var docRef = MockFirestore.collection('users').doc(currentUid);
         var docSnap = await docRef.get();
         if (docSnap.exists) {
           await docRef.update({'email': updatedEmail, 'city': updatedCity});
         } else if (userPhone.isNotEmpty) {
-          var querySnapshot = await FirebaseFirestore.instance
-              .collection('users')
-              .where('phone', isEqualTo: userPhone)
-              .get();
+          var querySnapshot = await MockFirestore.collection(
+            'users',
+          ).where('phone', isEqualTo: userPhone).get();
 
           if (querySnapshot.docs.isNotEmpty) {
-            await FirebaseFirestore.instance
-                .collection('users')
+            await MockFirestore.collection('users')
                 .doc(querySnapshot.docs.first.id)
                 .update({'email': updatedEmail, 'city': updatedCity});
           }
         }
       } else if (userPhone.isNotEmpty) {
-        var querySnapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .where('phone', isEqualTo: userPhone)
-            .get();
+        var querySnapshot = await MockFirestore.collection(
+          'users',
+        ).where('phone', isEqualTo: userPhone).get();
 
         if (querySnapshot.docs.isNotEmpty) {
-          await FirebaseFirestore.instance
-              .collection('users')
+          await MockFirestore.collection('users')
               .doc(querySnapshot.docs.first.id)
               .update({'email': updatedEmail, 'city': updatedCity});
         }

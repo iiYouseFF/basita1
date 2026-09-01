@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+// removed: firebase_auth
 import 'dart:io';
 import 'dart:math';
 
@@ -12,37 +12,34 @@ import 'package:basita1/features/chat/screens/chat_screen.dart';
 import 'package:basita1/features/profile/screens/profile_screen.dart';
 import 'package:basita1/features/booking/screens/request_service_screen.dart';
 import 'package:basita1/core/session/user_session.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 // دالة مساعدة ذكية لجلب مرجع وثيقة المستخدم الحقيقية في فايربيز (تمنع ضياع الـ Session والرجوع للتسجيل)
-Future<DocumentReference<Map<String, dynamic>>?> _getRealUserDocRef() async {
-  String? uid = FirebaseAuth.instance.currentUser?.uid;
+Future<dynamic>? _getRealUserDocRef() async {
+  String? uid = MockAuth.currentUser?.uid;
   if (uid != null) {
-    final doc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .get();
+    final doc = await MockFirestore.collection('users').doc(uid).get();
     if (doc.exists) return doc.reference;
   }
 
   String phone = UserSession.instance.phone.trim();
   if (phone.isEmpty) {
     if (uid != null) {
-      return FirebaseFirestore.instance.collection('users').doc(uid);
+      return MockFirestore.collection('users').doc(uid);
     }
     return null;
   }
 
-  final query = await FirebaseFirestore.instance
-      .collection('users')
-      .where('phone', isEqualTo: phone)
-      .get();
+  final query = await MockFirestore.collection(
+    'users',
+  ).where('phone', isEqualTo: phone).get();
 
   if (query.docs.isNotEmpty) {
     return query.docs.first.reference;
   }
 
   String fallbackUid = uid ?? "user_${phone.replaceAll(RegExp(r'[^0-9]'), '')}";
-  return FirebaseFirestore.instance.collection('users').doc(fallbackUid);
+  return MockFirestore.collection('users').doc(fallbackUid);
 }
 
 // =========================================================================
@@ -53,7 +50,7 @@ class FamilyGateScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<DocumentReference<Map<String, dynamic>>?>(
+    return FutureBuilder<dynamic>(
       future: _getRealUserDocRef(),
       builder: (context, userDocSnapshot) {
         if (userDocSnapshot.connectionState == ConnectionState.waiting) {
@@ -70,7 +67,7 @@ class FamilyGateScreen extends StatelessWidget {
         }
 
         // استخدام StreamBuilder المباشر على وثيقة المستخدم لضمان عدم ضياع الحالة أبداً
-        return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+        return StreamBuilder<dynamic>(
           stream: userDocSnapshot.data!.snapshots(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -118,7 +115,7 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
 
   String get currentUserName => UserSession.instance.name.isNotEmpty
       ? UserSession.instance.name
-      : (FirebaseAuth.instance.currentUser?.displayName ?? "مستخدم");
+      : (MockAuth.currentUser?.displayName ?? "مستخدم");
 
   String get currentUserPhone => UserSession.instance.phone.trim();
 
@@ -133,10 +130,9 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
 
     setState(() => isLoading = true);
     try {
-      DocumentSnapshot familyDoc = await FirebaseFirestore.instance
-          .collection('families')
-          .doc(code)
-          .get();
+      DocumentSnapshot familyDoc = await MockFirestore.collection(
+        'families',
+      ).doc(code).get();
 
       if (familyDoc.exists) {
         final userRef = await _getRealUserDocRef();
@@ -144,25 +140,22 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
         String currentUserId = userRef.id;
 
         // إضافة المستخدم كعضو في العائلة
-        await FirebaseFirestore.instance
-            .collection('families')
-            .doc(code)
-            .collection('members')
-            .doc(currentUserId)
-            .set({
-              'name': currentUserName,
-              'role': 'عضو',
-              'isOnline': true,
-              'joinedAt': FieldValue.serverTimestamp(),
-              'imageUrl': UserSession.instance.profileImagePath ?? '',
-            }, SetOptions(merge: true));
+        await MockFirestore.collection(
+          'families',
+        ).doc(code).collection('members').doc(currentUserId).set({
+          'name': currentUserName,
+          'role': 'عضو',
+          'isOnline': true,
+          'joinedAt': DateTime.now(),
+          'imageUrl': UserSession.instance.profileImagePath ?? '',
+        }, MockSetOptions(merge: true));
 
         // ربط العائلة بملف المستخدم
         await userRef.set({
           'familyId': code,
           'name': currentUserName,
           'phone': UserSession.instance.phone,
-        }, SetOptions(merge: true));
+        }, MockSetOptions(merge: true));
 
         if (mounted) {
           Navigator.pushReplacement(
@@ -278,10 +271,14 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: FamilyJoiningScreen.primaryBlue.withOpacity(0.05),
+                      color: FamilyJoiningScreen.primaryBlue.withValues(
+                        alpha: 0.05,
+                      ),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: FamilyJoiningScreen.primaryBlue.withOpacity(0.2),
+                        color: FamilyJoiningScreen.primaryBlue.withValues(
+                          alpha: 0.2,
+                        ),
                       ),
                     ),
                     child: Row(
@@ -374,11 +371,9 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
       if (userRef == null) throw "تعذر تحديد بيانات المستخدم";
       String currentUserId = userRef.id;
 
-      final batch = FirebaseFirestore.instance.batch();
+      final batch = MockFirestore.batch();
 
-      final familyRef = FirebaseFirestore.instance
-          .collection('families')
-          .doc(familyCode);
+      final familyRef = MockFirestore.collection('families').doc(familyCode);
 
       // حفظ البيانات الأساسية والقائد
       batch.set(familyRef, {
@@ -386,7 +381,7 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
             ? familyName
             : "عائلة $currentUserName",
         'adminId': currentUserId, // القائد
-        'createdAt': FieldValue.serverTimestamp(),
+        'createdAt': DateTime.now(),
         'monthlySpend': 0,
         'activeRequests': 0,
         'familyPoints': 100,
@@ -398,7 +393,7 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
         'name': currentUserName,
         'role': 'مسؤول العائلة',
         'isOnline': true,
-        'joinedAt': FieldValue.serverTimestamp(),
+        'joinedAt': DateTime.now(),
         'imageUrl': UserSession.instance.profileImagePath ?? '',
       });
 
@@ -406,7 +401,7 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
         'familyId': familyCode,
         'name': currentUserName,
         'phone': UserSession.instance.phone,
-      }, SetOptions(merge: true));
+      }, MockSetOptions(merge: true));
 
       await batch.commit();
 
@@ -432,8 +427,7 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
     if (currentUserPhone.isEmpty) return const SizedBox.shrink();
 
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('family_invitations')
+      stream: MockFirestore.collection('family_invitations')
           .where('toPhone', isEqualTo: currentUserPhone)
           .where('status', isEqualTo: 'pending')
           .snapshots(),
@@ -470,11 +464,11 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
                   color: const Color(0xFFFFF9E6), // لون مميز لكارت الدعوة
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: const Color(0xFFFFC107).withOpacity(0.5),
+                    color: const Color(0xFFFFC107).withValues(alpha: 0.5),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
+                      color: Colors.black.withValues(alpha: 0.03),
                       blurRadius: 10,
                       spreadRadius: 2,
                     ),
@@ -529,10 +523,9 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
                           child: ElevatedButton(
                             onPressed: () async {
                               // تحديث حالة الدعوة
-                              await FirebaseFirestore.instance
-                                  .collection('family_invitations')
-                                  .doc(inviteId)
-                                  .update({'status': 'accepted'});
+                              await MockFirestore.collection(
+                                'family_invitations',
+                              ).doc(inviteId).update({'status': 'accepted'});
                               // الانضمام للعائلة
                               _joinFamily(familyCode);
                             },
@@ -557,10 +550,9 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
                           child: OutlinedButton(
                             onPressed: () async {
                               // رفض ومسح الدعوة
-                              await FirebaseFirestore.instance
-                                  .collection('family_invitations')
-                                  .doc(inviteId)
-                                  .delete();
+                              await MockFirestore.collection(
+                                'family_invitations',
+                              ).doc(inviteId).delete();
                             },
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(color: Color(0xFFE74C3C)),
@@ -621,7 +613,7 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
+                            color: Colors.black.withValues(alpha: 0.03),
                             blurRadius: 10,
                             spreadRadius: 2,
                           ),
@@ -703,7 +695,7 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
+                            color: Colors.black.withValues(alpha: 0.03),
                             blurRadius: 10,
                             spreadRadius: 2,
                           ),
@@ -792,8 +784,8 @@ class _FamilyJoiningScreenState extends State<FamilyJoiningScreen> {
                     Container(
                       padding: const EdgeInsets.all(15),
                       decoration: BoxDecoration(
-                        color: FamilyJoiningScreen.primaryBlue.withOpacity(
-                          0.05,
+                        color: FamilyJoiningScreen.primaryBlue.withValues(
+                          alpha: 0.05,
                         ),
                         borderRadius: BorderRadius.circular(15),
                       ),
@@ -953,10 +945,9 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
           child: currentUserId == null
               ? const Center(child: CircularProgressIndicator())
               : StreamBuilder<DocumentSnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('families')
-                      .doc(widget.familyCode)
-                      .snapshots(),
+                  stream: MockFirestore.collection(
+                    'families',
+                  ).doc(widget.familyCode).snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
@@ -1060,7 +1051,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: FamilyDashboardScreen.primaryBlue.withOpacity(0.25),
+            color: FamilyDashboardScreen.primaryBlue.withValues(alpha: 0.25),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -1085,11 +1076,9 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
                   ),
                   const SizedBox(height: 6),
                   StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('families')
-                        .doc(widget.familyCode)
-                        .collection('members')
-                        .snapshots(),
+                    stream: MockFirestore.collection(
+                      'families',
+                    ).doc(widget.familyCode).collection('members').snapshots(),
                     builder: (context, memberSnapshot) {
                       int count = memberSnapshot.hasData
                           ? memberSnapshot.data!.docs.length
@@ -1100,7 +1089,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -1131,7 +1120,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Icon(
@@ -1167,9 +1156,9 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
+          color: Colors.white.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1177,7 +1166,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
             Text(
               title,
               style: GoogleFonts.cairo(
-                color: Colors.white.withOpacity(0.85),
+                color: Colors.white.withValues(alpha: 0.85),
                 fontSize: 12,
               ),
             ),
@@ -1247,7 +1236,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.02),
+                color: Colors.black.withValues(alpha: 0.02),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -1297,16 +1286,16 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
 
   Widget _buildMembersList(bool isAdmin, String adminId) {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('families')
-          .doc(widget.familyCode)
-          .collection('members')
-          .snapshots(),
+      stream: MockFirestore.collection(
+        'families',
+      ).doc(widget.familyCode).collection('members').snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting)
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty)
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const Text("لا يوجد أفراد بعد");
+        }
 
         return Column(
           children: snapshot.data!.docs.map((doc) {
@@ -1359,7 +1348,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1494,7 +1483,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -1604,25 +1593,22 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
                                     String currentUserName =
                                         UserSession.instance.name.isNotEmpty
                                         ? UserSession.instance.name
-                                        : (FirebaseAuth
-                                                  .instance
+                                        : (MockFirestore
                                                   .currentUser
                                                   ?.displayName ??
                                               "القائد");
 
-                                    await FirebaseFirestore.instance
-                                        .collection('family_invitations')
-                                        .add({
-                                          'toPhone': phone,
-                                          'familyCode': widget.familyCode,
-                                          'familyName':
-                                              familyData['familyName'] ??
-                                              'عائلتي',
-                                          'inviterName': currentUserName,
-                                          'status': 'pending',
-                                          'createdAt':
-                                              FieldValue.serverTimestamp(),
-                                        });
+                                    await MockFirestore.collection(
+                                      'family_invitations',
+                                    ).add({
+                                      'toPhone': phone,
+                                      'familyCode': widget.familyCode,
+                                      'familyName':
+                                          familyData['familyName'] ?? 'عائلتي',
+                                      'inviterName': currentUserName,
+                                      'status': 'pending',
+                                      'createdAt': DateTime.now(),
+                                    });
 
                                     if (context.mounted) {
                                       Navigator.pop(context);
@@ -1719,7 +1705,9 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
                     width: 1.5,
                   ),
                   borderRadius: BorderRadius.circular(12),
-                  color: FamilyDashboardScreen.primaryBlue.withOpacity(0.05),
+                  color: FamilyDashboardScreen.primaryBlue.withValues(
+                    alpha: 0.05,
+                  ),
                 ),
                 child: Text(
                   widget.familyCode,
@@ -1812,20 +1800,16 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
     );
 
     if (confirm == true) {
-      final batch = FirebaseFirestore.instance.batch();
+      final batch = MockFirestore.batch();
 
       // إزالة من Users
-      final targetUserRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(memberId);
-      batch.update(targetUserRef, {'familyId': FieldValue.delete()});
+      final targetUserRef = MockFirestore.collection('users').doc(memberId);
+      batch.update(targetUserRef, {'familyId': MockFieldValue.delete()});
 
       // إزالة من Members
-      final memberRef = FirebaseFirestore.instance
-          .collection('families')
-          .doc(widget.familyCode)
-          .collection('members')
-          .doc(memberId);
+      final memberRef = MockFirestore.collection(
+        'families',
+      ).doc(widget.familyCode).collection('members').doc(memberId);
       batch.delete(memberRef);
 
       await batch.commit();
@@ -1879,35 +1863,29 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen> {
     if (confirm != true || currentUserId == null) return;
 
     // جلب عدد الأعضاء الحاليين قبل المغادرة
-    var membersQuery = await FirebaseFirestore.instance
-        .collection('families')
-        .doc(widget.familyCode)
-        .collection('members')
-        .get();
+    var membersQuery = await MockFirestore.collection(
+      'families',
+    ).doc(widget.familyCode).collection('members').get();
 
     int currentMembersCount = membersQuery.docs.length;
 
-    final batch = FirebaseFirestore.instance.batch();
+    final batch = MockFirestore.batch();
 
     // مسح المستخدم الحالي من الـ users
-    final userRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(currentUserId);
-    batch.update(userRef, {'familyId': FieldValue.delete()});
+    final userRef = MockFirestore.collection('users').doc(currentUserId);
+    batch.update(userRef, {'familyId': MockFieldValue.delete()});
 
     // مسحه من members العائلة
-    final memberRef = FirebaseFirestore.instance
-        .collection('families')
-        .doc(widget.familyCode)
-        .collection('members')
-        .doc(currentUserId);
+    final memberRef = MockFirestore.collection(
+      'families',
+    ).doc(widget.familyCode).collection('members').doc(currentUserId);
     batch.delete(memberRef);
 
     // لو ده كان آخر فرد، امسح العائلة كلها
     if (currentMembersCount <= 1) {
-      final familyRef = FirebaseFirestore.instance
-          .collection('families')
-          .doc(widget.familyCode);
+      final familyRef = MockFirestore.collection(
+        'families',
+      ).doc(widget.familyCode);
       batch.delete(familyRef);
     }
 
@@ -1940,7 +1918,7 @@ Widget _buildCustomBottomNavBar(BuildContext context, int currentIndex) {
       color: Colors.white,
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.05),
+          color: Colors.black.withValues(alpha: 0.05),
           blurRadius: 10,
           offset: const Offset(0, -5),
         ),
@@ -2010,7 +1988,7 @@ Widget _buildCustomBottomNavBar(BuildContext context, int currentIndex) {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: primaryBlue.withOpacity(0.15),
+                      color: primaryBlue.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(25),
                     ),
                     child: Column(

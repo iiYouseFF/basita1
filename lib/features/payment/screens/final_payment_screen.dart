@@ -1,13 +1,15 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+// removed: firebase_auth
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // [إضافة جديدة]
+import 'package:basita1/core/services/supabase_service.dart';
+import 'package:basita1/core/repositories/payment_log_repository.dart';
 
 // استدعاء ملف جلسة المستخدم لجلب معلوماته عند حفظ البطاقة
 import 'package:basita1/core/session/user_session.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 // ==========================================
 // 1. نموذج بيانات طلب العميل (Client Request Model)
@@ -44,11 +46,15 @@ class ClientRequestModel {
       return 0.0;
     }
 
+    // [تصحيح المشكلة الأولى]:
+    // تجاهلنا حقل finalTotal تماماً لأنه كان يجمع الميزانية (Budget) مع سعر الخدمة بالخطأ.
+    // الاعتماد الأساسي سيكون على السعر النهائي الذي قدمه الفني.
     double finalPrice = parsePrice(data['finalPrice']);
     double acceptedPrice = parsePrice(data['acceptedPrice']);
     double servicePrice = parsePrice(data['servicePrice']);
     double priceVal = parsePrice(data['price']);
 
+    // أولوية السعر: السعر النهائي > السعر المقبول > سعر الخدمة > السعر العادي
     double correctTotal = finalPrice > 0
         ? finalPrice
         : (acceptedPrice > 0
@@ -68,7 +74,7 @@ class ClientRequestModel {
           data['techId'] ??
           data['assignedTechnicianId'] ??
           '',
-      finalTotal: correctTotal,
+      finalTotal: correctTotal, // إرسال السعر المصحح بدون الميزانية
       status: data['status'] ?? 'pending',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
     );
@@ -88,70 +94,6 @@ class ClientRequestsScreen extends StatefulWidget {
 class _ClientRequestsScreenState extends State<ClientRequestsScreen> {
   final Color primaryBlue = const Color(0xFF0056D2);
   final Color bgLight = const Color(0xFFF8F9FA);
-
-  // [إضافة جديدة]: قائمة لحفظ الـ IDs المخفية محلياً
-  List<String> _hiddenRequestIds = [];
-  bool _isLoadingIds = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadHiddenIds(); // جلب الـ IDs المخفية أول ما الصفحة تفتح
-  }
-
-  // [إضافة جديدة]: دالة لجلب الطلبات المحذوفة محلياً من الذاكرة
-  Future<void> _loadHiddenIds() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _hiddenRequestIds = prefs.getStringList('hidden_client_requests') ?? [];
-      _isLoadingIds = false;
-    });
-  }
-
-  // [إضافة جديدة]: دالة لإخفاء الطلبات المكتملة محلياً فقط
-  Future<void> _hideCompletedRequestsLocally(
-    List<ClientRequestModel> allCurrentRequests,
-  ) async {
-    final prefs = await SharedPreferences.getInstance();
-
-    // فلترة الطلبات عشان نجيب الـ IDs بتاعت الطلبات المكتملة فقط
-    final completedIds = allCurrentRequests
-        .where((req) => req.status == 'completed' || req.status == 'paid')
-        .map((req) => req.id)
-        .toList();
-
-    if (completedIds.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'لا يوجد طلبات مكتملة لمسحها',
-            style: GoogleFonts.cairo(),
-          ),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      _hiddenRequestIds.addAll(completedIds);
-      _hiddenRequestIds = _hiddenRequestIds.toSet().toList(); // منع التكرار
-    });
-
-    await prefs.setStringList('hidden_client_requests', _hiddenRequestIds);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'تم إخفاء السجل بنجاح من التطبيق',
-            style: GoogleFonts.cairo(),
-          ),
-          backgroundColor: primaryBlue,
-        ),
-      );
-    }
-  }
 
   bool _isAwaitingPayment(String status) {
     return [
@@ -228,7 +170,7 @@ class _ClientRequestsScreenState extends State<ClientRequestsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final String currentUserId = MockAuth.currentUser?.uid ?? '';
     final String currentUserPhone = UserSession.instance.phone;
 
     return Directionality(
@@ -247,251 +189,201 @@ class _ClientRequestsScreenState extends State<ClientRequestsScreen> {
             ),
           ),
           centerTitle: true,
-          // [إضافة جديدة]: زر المسح في الـ AppBar
-          actions: [
-            if (!_isLoadingIds)
-              StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream: FirebaseFirestore.instance
-                    .collection('requests')
-                    .where(
-                      Filter.or(
-                        Filter('userId', isEqualTo: currentUserId),
-                        Filter('userPhone', isEqualTo: currentUserPhone),
-                        Filter('phone', isEqualTo: currentUserPhone),
-                      ),
-                    )
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  // نجيب الداتا عشان لو ضغط على الزرار يمسح المكتمل منها
-                  final docs = snapshot.data?.docs ?? [];
-                  final allRequests = docs
-                      .map((doc) => ClientRequestModel.fromFirestore(doc))
-                      .toList();
-
-                  return IconButton(
-                    icon: const Icon(
-                      Icons.delete_sweep_rounded,
-                      color: Colors.red,
-                    ),
-                    tooltip: 'مسح السجل المكتمل',
-                    onPressed: () => _hideCompletedRequestsLocally(allRequests),
-                  );
-                },
-              ),
-          ],
         ),
-        body: _isLoadingIds
-            ? const Center(
-                child: CircularProgressIndicator(color: Color(0xFF0056D2)),
+        body: StreamBuilder<dynamic>(
+          stream: MockFirestore.collection('requests')
+              .where(
+                Filter.or(
+                  Filter('userId', isEqualTo: currentUserId),
+                  Filter('userPhone', isEqualTo: currentUserPhone),
+                  Filter('phone', isEqualTo: currentUserPhone),
+                ),
               )
-            : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream: FirebaseFirestore.instance
-                    .collection('requests')
-                    .where(
-                      Filter.or(
-                        Filter('userId', isEqualTo: currentUserId),
-                        Filter('userPhone', isEqualTo: currentUserPhone),
-                        Filter('phone', isEqualTo: currentUserPhone),
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(color: Color(0xFF0056D2)),
+              );
+            }
+
+            if (snapshot.hasError) {
+              return Center(
+                child: Text(
+                  'حدث خطأ أثناء تحميل البيانات',
+                  style: GoogleFonts.cairo(color: Colors.red),
+                ),
+              );
+            }
+
+            final docs = snapshot.data?.docs ?? [];
+
+            if (docs.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.assignment_outlined,
+                      size: 64,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      "لا توجد طلبات حالية",
+                      style: GoogleFonts.cairo(
+                        fontSize: 16,
+                        color: const Color(0xFF6C757D),
+                        fontWeight: FontWeight.bold,
                       ),
-                    )
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF0056D2),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            final requests = docs
+                .map((doc) => ClientRequestModel.fromFirestore(doc))
+                .toList();
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: requests.length,
+              itemBuilder: (context, index) {
+                final request = requests[index];
+                final bool isReadyToPay = _isAwaitingPayment(request.status);
+
+                return GestureDetector(
+                  onTap: () => _handleCardTap(request),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isReadyToPay
+                            ? primaryBlue
+                            : const Color(0xFFDEE2E6),
+                        width: isReadyToPay ? 1.5 : 1.0,
                       ),
-                    );
-                  }
-
-                  if (snapshot.hasError) {
-                    return Center(
-                      child: Text(
-                        'حدث خطأ أثناء تحميل البيانات',
-                        style: GoogleFonts.cairo(color: Colors.red),
-                      ),
-                    );
-                  }
-
-                  final docs = snapshot.data?.docs ?? [];
-
-                  // [إضافة جديدة]: فلترة البيانات لاستبعاد الطلبات المخفية محلياً
-                  final visibleDocs = docs
-                      .where((doc) => !_hiddenRequestIds.contains(doc.id))
-                      .toList();
-
-                  if (visibleDocs.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.assignment_outlined,
-                            size: 64,
-                            color: Colors.grey.shade400,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                request.serviceName,
+                                style: GoogleFonts.cairo(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF1D1D1D),
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _getStatusBgColor(request.status),
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              child: Text(
+                                _getStatusLabel(request.status),
+                                style: GoogleFonts.cairo(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: _getStatusTextColor(request.status),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.person_outline,
+                              size: 16,
+                              color: Color(0xFF6C757D),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              "الفني: ${request.technicianName}",
+                              style: GoogleFonts.cairo(
+                                fontSize: 14,
+                                color: const Color(0xFF6C757D),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (isReadyToPay) ...[
+                          const SizedBox(height: 12),
+                          const Divider(),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "المطلوب سداده:",
+                                style: GoogleFonts.cairo(
+                                  fontSize: 14,
+                                  color: const Color(0xFF1D1D1D),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                "${request.finalTotal.toInt()} ج.م",
+                                style: GoogleFonts.cairo(
+                                  fontSize: 18,
+                                  color: primaryBlue,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 12),
-                          Text(
-                            "لا توجد طلبات حالية",
-                            style: GoogleFonts.cairo(
-                              fontSize: 16,
-                              color: const Color(0xFF6C757D),
-                              fontWeight: FontWeight.bold,
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () => _handleCardTap(request),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primaryBlue,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: Text(
+                                "ادفع الآن",
+                                style: GoogleFonts.cairo(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                           ),
                         ],
-                      ),
-                    );
-                  }
-
-                  final requests = visibleDocs
-                      .map((doc) => ClientRequestModel.fromFirestore(doc))
-                      .toList();
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: requests.length,
-                    itemBuilder: (context, index) {
-                      final request = requests[index];
-                      final bool isReadyToPay = _isAwaitingPayment(
-                        request.status,
-                      );
-
-                      return GestureDetector(
-                        onTap: () => _handleCardTap(request),
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isReadyToPay
-                                  ? primaryBlue
-                                  : const Color(0xFFDEE2E6),
-                              width: isReadyToPay ? 1.5 : 1.0,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      request.serviceName,
-                                      style: GoogleFonts.cairo(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: const Color(0xFF1D1D1D),
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _getStatusBgColor(request.status),
-                                      borderRadius: BorderRadius.circular(100),
-                                    ),
-                                    child: Text(
-                                      _getStatusLabel(request.status),
-                                      style: GoogleFonts.cairo(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: _getStatusTextColor(
-                                          request.status,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.person_outline,
-                                    size: 16,
-                                    color: Color(0xFF6C757D),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    "الفني: ${request.technicianName}",
-                                    style: GoogleFonts.cairo(
-                                      fontSize: 14,
-                                      color: const Color(0xFF6C757D),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if (isReadyToPay) ...[
-                                const SizedBox(height: 12),
-                                const Divider(),
-                                const SizedBox(height: 8),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      "المطلوب سداده:",
-                                      style: GoogleFonts.cairo(
-                                        fontSize: 14,
-                                        color: const Color(0xFF1D1D1D),
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      "${request.finalTotal.toInt()} ج.م",
-                                      style: GoogleFonts.cairo(
-                                        fontSize: 18,
-                                        color: primaryBlue,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed: () => _handleCardTap(request),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: primaryBlue,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      "ادفع الآن",
-                                      style: GoogleFonts.cairo(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
@@ -540,7 +432,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   final _cvvController = TextEditingController();
 
   String get _userId {
-    final authUid = FirebaseAuth.instance.currentUser?.uid;
+    final authUid = MockAuth.currentUser?.uid;
     if (authUid != null && authUid.isNotEmpty) {
       return authUid;
     }
@@ -565,6 +457,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
+  // دالة بناء فورم البطاقة الجديدة لمنع التكرار واستدعائها في حالات متعددة
   Widget _buildNewCardForm() {
     return Form(
       key: _formKey,
@@ -653,8 +546,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Future<void> _processPayment() async {
+    // [تصحيح المشكلة الثانية]: إجبار العميل على إضافة أو إختيار بطاقة
     if (_selectedMethod == 0) {
+      // إذا لم يختار بطاقة، أو كان هناك طلب لاستخدام بطاقة جديدة (أو لا يملك بطاقات أساساً)
       if (_selectedSavedCardId == null || _useNewCard) {
+        // نتحقق بقوة من صحة بيانات البطاقة الجديدة قبل المرور للخطوة التالية
         if (_formKey.currentState == null ||
             !_formKey.currentState!.validate()) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -666,7 +562,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               backgroundColor: Colors.red,
             ),
           );
-          return;
+          return; // منع عملية الدفع بالكامل
         }
 
         if (_saveNewCard) {
@@ -679,13 +575,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 ? 'visa'
                 : 'mastercard';
 
-            await FirebaseFirestore.instance.collection('PaymentCards').add({
+            await MockFirestore.collection('PaymentCards').add({
               'cardLast4': cardLast4,
               'cardHolder': _holderController.text.trim(),
               'expiryDate': _expiryController.text.trim(),
               'isDefault': false,
               'cardType': cardType,
-              'createdAt': FieldValue.serverTimestamp(),
+              'createdAt': DateTime.now(),
               'userId': _userId,
               'userName': UserSession.instance.name,
               'userPhone': UserSession.instance.phone,
@@ -703,20 +599,60 @@ class _PaymentScreenState extends State<PaymentScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await Future.delayed(const Duration(seconds: 2));
-
       String methodTitle = _selectedMethod == 0
           ? "بطاقة بنكية"
           : _selectedMethod == 1
           ? "محفظة إلكترونية"
           : "كاش";
-
       bool isCash = _selectedMethod == 2;
 
+      // Phase 3: Edge Function process-payment for card/wallet (mock Stripe) + audit log
+      if (!isCash) {
+        try {
+          final svc = SupabaseService();
+          await svc.invokeFunction(
+            functionName: 'process-payment',
+            body: {
+              'amount': widget.amount,
+              'currency': 'EGP',
+              'paymentMethodId':
+                  'pm_mock_${DateTime.now().millisecondsSinceEpoch}',
+              'requestId': widget.requestId,
+              'userId': _userId,
+              'technicianId': widget.technicianId,
+              'serviceName': widget.serviceName,
+            },
+          );
+          try {
+            await PaymentLogRepository().logPayment(
+              userId: _userId,
+              amount: widget.amount,
+              paymentMethod: _selectedMethod == 0 ? 'card' : 'wallet',
+              requestId: widget.requestId,
+              technicianId: widget.technicianId,
+            );
+          } catch (_) {}
+        } catch (e) {
+          // ignore: avoid_print
+          print('[PaymentScreen] Edge process-payment (MVP mock) $e');
+        }
+      } else {
+        try {
+          await PaymentLogRepository().logPayment(
+            userId: _userId,
+            amount: widget.amount,
+            paymentMethod: 'cash',
+            requestId: widget.requestId,
+            technicianId: widget.technicianId,
+          );
+        } catch (_) {}
+      }
+      await Future.delayed(const Duration(milliseconds: 800));
+
       if (widget.requestId.isNotEmpty) {
-        final reqRef = FirebaseFirestore.instance
-            .collection('requests')
-            .doc(widget.requestId);
+        final reqRef = MockFirestore.collection(
+          'requests',
+        ).doc(widget.requestId);
 
         final reqDoc = await reqRef.get();
         String techId = widget.technicianId;
@@ -734,7 +670,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         Map<String, dynamic> updateData = {
           'status': isCash ? 'pending_cash' : 'completed',
           'isPaid': !isCash,
-          'paidAt': FieldValue.serverTimestamp(),
+          'paidAt': DateTime.now(),
           'paymentMethod': methodTitle,
           'paidAmount': widget.amount,
         };
@@ -744,9 +680,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         await reqRef.update(updateData);
 
         if (techId.isNotEmpty) {
-          final techRef = FirebaseFirestore.instance
-              .collection('technicians')
-              .doc(techId);
+          final techRef = MockFirestore.collection('technicians').doc(techId);
 
           final techSnap = await techRef.get();
 
@@ -773,15 +707,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
             }
 
             Map<String, dynamic> updates = {
-              'totalEarnings': FieldValue.increment(widget.amount),
+              'totalEarnings': MockFieldValue.increment(widget.amount),
               'todayEarnings': currentTodayEarnings,
               'todayOrdersCount': currentTodayOrders,
               'lastEarningDateStr': todayStr,
-              'lastEarningTimestamp': FieldValue.serverTimestamp(),
+              'lastEarningTimestamp': DateTime.now(),
             };
 
             if (!isCash) {
-              updates['walletBalance'] = FieldValue.increment(widget.amount);
+              updates['walletBalance'] = MockFieldValue.increment(
+                widget.amount,
+              );
             }
 
             await techRef.update(updates);
@@ -792,12 +728,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
               'todayEarnings': widget.amount,
               'todayOrdersCount': 1,
               'lastEarningDateStr': todayStr,
-              'lastEarningTimestamp': FieldValue.serverTimestamp(),
+              'lastEarningTimestamp': DateTime.now(),
             };
-            await techRef.set(setData, SetOptions(merge: true));
+            await techRef.set(setData, MockSetOptions(merge: true));
           }
 
-          await FirebaseFirestore.instance.collection('transactions').add({
+          await MockFirestore.collection('transactions').add({
             'technicianId': techId,
             'requestId': widget.requestId,
             'serviceName': widget.serviceName,
@@ -805,7 +741,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             'isPositive': !isCash,
             'type': isCash ? 'cash_collection' : 'income',
             'paymentMethod': methodTitle,
-            'createdAt': FieldValue.serverTimestamp(),
+            'createdAt': DateTime.now(),
             'dateStr': todayStr,
           });
         }
@@ -919,7 +855,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         border: Border.all(color: borderGrey, width: 0.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1075,11 +1011,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
               const Divider(height: 1),
               const SizedBox(height: 16),
 
-              StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream: FirebaseFirestore.instance
-                    .collection('PaymentCards')
-                    .where('userId', isEqualTo: _userId)
-                    .snapshots(),
+              StreamBuilder<dynamic>(
+                stream: MockFirestore.collection(
+                  'PaymentCards',
+                ).where('userId', isEqualTo: _userId).snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
@@ -1093,6 +1028,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   final docs = snapshot.data?.docs ?? [];
 
                   if (docs.isEmpty) {
+                    // إجبار المستخدم على رؤية وتعبئة استمارة البطاقة إن لم يمتلك بطاقات محفوظة
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1112,11 +1048,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     );
                   }
 
-                  List<QueryDocumentSnapshot<Map<String, dynamic>>> sortedDocs =
-                      List.from(docs);
+                  // فرز البطاقات: البطاقة الأساسية أولاً ثم الأحدث
+                  List<dynamic> sortedDocs = List.from(docs);
                   sortedDocs.sort((a, b) {
-                    final aData = a.data();
-                    final bData = b.data();
+                    final aData = a.data() as Map<String, dynamic>;
+                    final bData = b.data() as Map<String, dynamic>;
                     final aDefault = aData['isDefault'] ?? false;
                     final bDefault = bData['isDefault'] ?? false;
                     if (aDefault && !bDefault) return -1;
@@ -1128,8 +1064,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   });
 
                   if (_selectedSavedCardId == null && !_useNewCard) {
-                    QueryDocumentSnapshot<Map<String, dynamic>> defaultDoc =
-                        sortedDocs.first;
+                    dynamic defaultDoc = sortedDocs.first;
                     for (var d in sortedDocs) {
                       if (d.data()['isDefault'] == true) {
                         defaultDoc = d;
@@ -1192,7 +1127,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                               boxShadow: isCardSelected
                                   ? [
                                       BoxShadow(
-                                        color: primaryBlue.withOpacity(0.06),
+                                        color: primaryBlue.withValues(
+                                          alpha: 0.06,
+                                        ),
                                         blurRadius: 8,
                                         offset: const Offset(0, 2),
                                       ),
@@ -1290,7 +1227,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             ),
                           ),
                         );
-                      }).toList(),
+                      }),
                       const SizedBox(height: 8),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1382,7 +1319,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       width: 12,
                       height: 12,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF79E1B).withOpacity(0.85),
+                        color: const Color(0xFFF79E1B).withValues(alpha: 0.85),
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -1627,7 +1564,7 @@ class PaymentSuccessScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: primaryBlue.withOpacity(0.1),
+                    color: primaryBlue.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Container(
@@ -1670,7 +1607,7 @@ class PaymentSuccessScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.03),
+                        color: Colors.black.withValues(alpha: 0.03),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -1839,7 +1776,7 @@ class PaymentFailedScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: redColor.withOpacity(0.1),
+                    color: redColor.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Container(
@@ -1937,7 +1874,7 @@ class PaymentFailedScreen extends StatelessWidget {
 // ==========================================
 class _AddCardBottomSheet extends StatefulWidget {
   final String userId;
-  const _AddCardBottomSheet({Key? key, required this.userId}) : super(key: key);
+  const _AddCardBottomSheet({super.key, required this.userId});
 
   @override
   State<_AddCardBottomSheet> createState() => _AddCardBottomSheetState();
@@ -1971,16 +1908,14 @@ class _AddCardBottomSheetState extends State<_AddCardBottomSheet> {
       final cleanNumber = _numberController.text.replaceAll(' ', '');
       final cardType = cleanNumber.startsWith('4') ? 'visa' : 'mastercard';
 
-      final cardsCollection = FirebaseFirestore.instance.collection(
-        'PaymentCards',
-      );
+      final cardsCollection = MockFirestore.collection('PaymentCards');
 
       if (_isDefault) {
         final snapshot = await cardsCollection
             .where('userId', isEqualTo: widget.userId)
             .get();
 
-        final batch = FirebaseFirestore.instance.batch();
+        final batch = MockFirestore.batch();
         for (var doc in snapshot.docs) {
           batch.update(doc.reference, {'isDefault': false});
         }
@@ -1995,7 +1930,7 @@ class _AddCardBottomSheetState extends State<_AddCardBottomSheet> {
         'expiryDate': _expiryController.text.trim(),
         'isDefault': _isDefault,
         'cardType': cardType,
-        'createdAt': FieldValue.serverTimestamp(),
+        'createdAt': DateTime.now(),
         'userId': widget.userId,
         'userName': UserSession.instance.name,
         'userPhone': UserSession.instance.phone,
@@ -2162,7 +2097,7 @@ class _AddCardBottomSheetState extends State<_AddCardBottomSheet> {
                     ),
                     Switch(
                       value: _isDefault,
-                      activeColor: const Color(0xFF0D6EFD),
+                      activeThumbColor: const Color(0xFF0D6EFD),
                       onChanged: (val) => setState(() => _isDefault = val),
                     ),
                   ],

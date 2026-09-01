@@ -6,7 +6,7 @@ import 'package:basita1/features/search/screens/search_screen.dart';
 // 1. شاشة البداية (Onboarding Screen)
 // ==========================================
 class OnboardingScreen extends StatelessWidget {
-  const OnboardingScreen({Key? key}) : super(key: key);
+  const OnboardingScreen({super.key});
 
   // اللون الأزرق الأساسي المأخوذ من التصميم
   final Color primaryBlue = const Color(0xFF0C54BE);
@@ -154,7 +154,7 @@ class OnboardingScreen extends StatelessWidget {
 // 2. الصفحة الجديدة (التي تفتح بعد الضغط على ابدأ الان)
 // ==========================================
 class NextScreen extends StatelessWidget {
-  const NextScreen({Key? key}) : super(key: key);
+  const NextScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

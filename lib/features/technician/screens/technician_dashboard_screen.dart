@@ -158,7 +158,7 @@ class _TechnicianDashboardScreenState extends State<TechnicianDashboardScreen> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                   ),
                 ],
@@ -198,7 +198,7 @@ class _TechnicianDashboardScreenState extends State<TechnicianDashboardScreen> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 15,
                     offset: const Offset(0, 5),
                   ),
@@ -316,10 +316,10 @@ class _TechnicianDashboardScreenState extends State<TechnicianDashboardScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: urgentRed.withOpacity(0.3), width: 1.5),
+        border: Border.all(color: urgentRed.withValues(alpha: 0.3), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: urgentRed.withOpacity(0.05),
+            color: urgentRed.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -336,7 +336,7 @@ class _TechnicianDashboardScreenState extends State<TechnicianDashboardScreen> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: urgentRed.withOpacity(0.1),
+                  color: urgentRed.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(

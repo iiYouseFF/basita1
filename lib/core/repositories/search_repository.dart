@@ -1,7 +1,8 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:basita1/core/network/api_client.dart';
 
+/// Real backend: GET /search?q=&entityType=&governorate=&limit=, POST /search/index
 class SearchRepository {
-  final SupabaseClient _client = Supabase.instance.client;
+  final ApiClient _api = ApiClient();
 
   Future<List<Map<String, dynamic>>> search({
     required String query,
@@ -9,21 +10,22 @@ class SearchRepository {
     String? governorate,
     int limit = 20,
   }) async {
-    var rpcQuery = _client.rpc('search_entities', params: {
-      'search_query': query,
-    });
-
-    final data = await rpcQuery;
-    List<Map<String, dynamic>> results = List<Map<String, dynamic>>.from(data ?? []);
-
-    if (entityType != null) {
-      results = results.where((r) => r['entity_type'] == entityType).toList();
-    }
-    if (governorate != null) {
-      results = results.where((r) => r['governorate'] == governorate).toList();
-    }
-
-    return results.take(limit).toList();
+    final res = await _api.get(
+      '/search',
+      query: {
+        'q': query,
+        if (entityType != null) 'entityType': entityType,
+        if (governorate != null) 'governorate': governorate,
+        'limit': limit,
+      },
+    );
+    final data = res['data'];
+    final list = data is List
+        ? data
+        : (data is Map && data['results'] is List ? data['results'] : []);
+    return List<Map<String, dynamic>>.from(
+      (list as List).map((e) => Map<String, dynamic>.from(e)),
+    );
   }
 
   Future<void> indexEntity({
@@ -34,21 +36,20 @@ class SearchRepository {
     String? governorate,
     String? specialty,
   }) async {
-    await _client.from('search_index').upsert({
-      'entity_type': entityType,
-      'entity_id': entityId,
-      'title': title,
-      'description': description,
-      'governorate': governorate,
-      'specialty': specialty,
-    });
+    await _api.post(
+      '/search/index',
+      body: {
+        'entityType': entityType,
+        'entityId': entityId,
+        'title': title,
+        if (description != null) 'description': description,
+        if (governorate != null) 'governorate': governorate,
+        if (specialty != null) 'specialty': specialty,
+      },
+    );
   }
 
   Future<void> removeIndex(String entityType, String entityId) async {
-    await _client
-        .from('search_index')
-        .delete()
-        .eq('entity_type', entityType)
-        .eq('entity_id', entityId);
+    await _api.delete('/search/index/$entityType/$entityId');
   }
 }

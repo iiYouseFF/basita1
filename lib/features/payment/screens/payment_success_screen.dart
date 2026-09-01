@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
 import 'package:google_fonts/google_fonts.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 // =====================================================================
 // صفحة تأكيد نجاح الدفع وتفاصيل الخدمة (PaymentSuccessScreen)
@@ -73,11 +74,10 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
           ),
           centerTitle: true,
         ),
-        body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-          stream: FirebaseFirestore.instance
-              .collection('requests')
-              .doc(widget.requestId)
-              .snapshots(),
+        body: StreamBuilder<dynamic>(
+          stream: MockFirestore.collection(
+            'requests',
+          ).doc(widget.requestId).snapshots(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(
@@ -131,7 +131,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: greenSuccess.withOpacity(0.1),
+                      color: greenSuccess.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Container(
@@ -179,7 +179,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
                       border: Border.all(color: cardBorder),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
+                          color: Colors.black.withValues(alpha: 0.02),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),

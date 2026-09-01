@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:basita1/features/auth/screens/otp_screen1.dart';
 import 'package:basita1/core/session/user_data_session.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 class LoginScreen1 extends StatefulWidget {
   const LoginScreen1({super.key});
@@ -50,10 +51,9 @@ class _LoginScreenState extends State<LoginScreen1> {
         numberZero,
       ];
 
-      var querySnapshot = await FirebaseFirestore.instance
-          .collection('technicians')
-          .where('phone', whereIn: possibleFormats)
-          .get();
+      var querySnapshot = await MockFirestore.collection(
+        'technicians',
+      ).where('phone', whereIn: possibleFormats).get();
 
       if (!mounted) return;
 

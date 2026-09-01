@@ -175,7 +175,7 @@ class _NegotiationScreenState extends State<NegotiationScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: badgeGreen.withOpacity(0.15),
+                  color: badgeGreen.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Text(
@@ -243,7 +243,7 @@ class _NegotiationScreenState extends State<NegotiationScreen> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
+                  color: Colors.black.withValues(alpha: 0.02),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -305,7 +305,7 @@ class _NegotiationScreenState extends State<NegotiationScreen> {
             border: Border.all(color: const Color(0xFFD6E4F0), width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
@@ -328,7 +328,7 @@ class _NegotiationScreenState extends State<NegotiationScreen> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: brandBlue.withOpacity(0.1),
+                      color: brandBlue.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -485,7 +485,7 @@ class _NegotiationScreenState extends State<NegotiationScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 12,
             offset: const Offset(0, -4),
           ),
@@ -528,7 +528,7 @@ class _NegotiationScreenState extends State<NegotiationScreen> {
                       borderRadius: BorderRadius.circular(26),
                       boxShadow: [
                         BoxShadow(
-                          color: accentGreen.withOpacity(0.3),
+                          color: accentGreen.withValues(alpha: 0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),

@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Basita (بسيطة) — External Backend PRD</title>
+<meta name="description" content="Product Requirements Document for Basita external backend system — all features extracted from Flutter app.">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --primary:#0D47A1;--primary-700:#0a357a;--primary-50:#e8effb;--primary-100:#d0ddf5;
+  --accent:#00BFA5;--accent-50:#e0f7f4;--warn:#FF6F00;--warn-50:#fff3e0;
+  --danger:#D32F2F;--danger-50:#ffebee;--success:#2E7D32;
+  --bg:#f8f9fb;--surface:#ffffff;--surface-2:#f1f4f8;--border:#e3e8ef;--border-strong:#d0d7e3;
+  --text:#0f172a;--muted:#64748b;--muted-2:#94a3b8;
+  --radius:14px;--radius-sm:9px;--shadow:0 4px 24px rgba(13,71,161,.07),0 1px 3px rgba(0,0,0,.06);
+  --shadow-lg:0 12px 40px rgba(13,71,161,.11),0 4px 12px rgba(0,0,0,.08);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter','Cairo',system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.65;-webkit-font-smoothing:antialiased}
+a{color:var(--primary);text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);padding:.18em .42em;border-radius:6px;border:1px solid var(--border)}
+pre{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:#0f172a;color:#e2e8f0;padding:16px;border-radius:12px;overflow:auto;border:1px solid #1e293b;white-space:pre-wrap;word-break:break-word}
+pre code{background:none;border:none;padding:0;color:inherit}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.topbar-inner{max-width:1180px;margin:0 auto;padding:14px 22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,var(--primary),#1976D2);display:grid;place-items:center;color:#fff;font-weight:800;font-size:18px;box-shadow:0 4px 14px rgba(13,71,161,.3)}
+.brand h1{margin:0;font-size:18px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.brand h1 span{color:var(--primary)}
+.brand p{margin:2px 0 0;font-size:12px;color:var(--muted);font-weight:500}
+.topbar-actions{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pill{font-size:12px;font-weight:700;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.pill-dot{width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 0 4px rgba(46,125,50,.15)}
+.pill.warn{background:var(--warn-50);border-color:#ffcc80;color:#e65100}
+.pill.success{background:#e8f5e9;border-color:#a5d6a7;color:#1b5e20}
+.btn{appearance:none;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);font:600 13px var(--sans);padding:8px 13px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:.15s;white-space:nowrap}
+.btn:hover{transform:translateY(-1px);box-shadow:var(--shadow);border-color:var(--primary-100)}
+.btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+.btn.primary:hover{background:var(--primary-700)}
+.shell{max-width:1180px;margin:0 auto;padding:22px;display:grid;grid-template-columns:260px 1fr;gap:22px}
+@media(max-width:980px){.shell{grid-template-columns:1fr}.side{position:static!important}}
+.side{position:sticky;top:72px;align-self:start;display:flex;flex-direction:column;gap:16px}
+.main{display:flex;flex-direction:column;gap:18px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.card-pad{padding:18px}
+.card h3{margin:0 0 8px;font-size:14px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.muted{color:var(--muted);font-size:13px}
+.small{font-size:12px;color:var(--muted)}
+.kicker{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--primary)}
+.divider{height:1px;background:var(--border);margin:14px 0}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav a{padding:8px 10px;border-radius:9px;font:600 13px var(--sans);color:var(--muted);display:flex;align-items:center;gap:8px;border:1px solid transparent}
+.nav a.active{background:var(--primary);color:#fff}
+.nav a:hover{background:var(--surface-2);color:var(--text);text-decoration:none}
+.badge{font:800 10px var(--mono);padding:2px 6px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);color:var(--muted);margin-left:auto}
+.hero{background:linear-gradient(135deg,var(--primary) 0%, #1565C0 55%, #1976D2 100%);color:#fff;border-radius:18px;padding:22px;position:relative;overflow:hidden;box-shadow:var(--shadow-lg)}
+.hero h2{margin:0;font-size:26px;font-weight:800;letter-spacing:-.03em;line-height:1.15}
+.hero h2 span{opacity:.95;font-weight:400}
+.hero p{margin:10px 0 14px;opacity:.9;font-size:14px;line-height:1.6;max-width:60ch}
+.hero-actions{display:flex;gap:8px;flex-wrap:wrap}
+.hero .btn{background:#fff;color:var(--primary);border-color:#fff}
+.hero .btn.secondary{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.35);backdrop-filter:blur(6px)}
+.section{scroll-margin-top:84px}
+.section-head{display:flex;align-items:center;gap:12px;margin:0 0 12px}
+.section-head h2{margin:0;font-size:18px;font-weight:800;letter-spacing:-.02em}
+.section-head .num{width:32px;height:32px;border-radius:10px;background:var(--primary);color:#fff;display:grid;place-items:center;font:800 13px var(--mono)}
+.section-head p{margin:0;color:var(--muted);font-size:13px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:780px){.grid2{grid-template-columns:1fr}}
+.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}
+th{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;background:var(--surface-2);padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:none}
+.tag{font:700 11px var(--mono);padding:3px 7px;border-radius:999px;border:1px solid var(--border);background:var(--surface-2);white-space:nowrap}
+.tag.primary{background:var(--primary-50);border-color:var(--primary-100);color:var(--primary)}
+.tag.success{background:#e8f5e9;border-color:#a5d6a7;color:#1b5e20}
+.tag.warn{background:var(--warn-50);border-color:#ffcc80;color:#e65100}
+.callout{border-left:4px solid var(--primary);background:var(--primary-50);border-radius:10px;padding:12px 14px;font-size:13px}
+.callout.warn{border-color:var(--warn);background:var(--warn-50)}
+.callout.danger{border-color:var(--danger);background:var(--danger-50)}
+.callout.success{border-color:var(--success);background:#e8f5e9}
+.endpoint{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)}
+.endpoint-head{padding:12px 14px;display:flex;gap:10px;align-items:center;background:var(--surface-2);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.method{font:800 11px var(--mono);padding:4px 8px;border-radius:6px;color:#fff;min-width:54px;text-align:center}
+.method.get{background:#2E7D32}.method.post{background:var(--primary)}.method.put{background:#EF6C00}.method.patch{background:#6A1B9A}.method.delete{background:var(--danger)}
+.path{font:700 13px var(--mono);color:var(--text)}
+.meta{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.endpoint-body{padding:14px}
+.footer{padding:18px;text-align:center;font-size:12px;color:var(--muted)}
+@media print{.topbar,.side,.btn{display:none!important}.shell{grid-template-columns:1fr}.card{break-inside:avoid;box-shadow:none}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-mark">ب</div>
+      <div>
+        <h1>Basita <span>بسيطة</span> — External Backend PRD</h1>
+        <p>Frontend-only Flutter · External REST API · v1.0 · 2026-08-30</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span class="pill"><span class="pill-dot"></span> Status: PRD Ready</span>
+      <span class="pill warn">Flutter: frontend-only</span>
+      <span class="pill success">API: ApiClient → ApiConfig.baseUrl</span>
+      <button class="btn" onclick="window.print()">🖨️ Print</button>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="side">
+    <div class="card">
+      <div class="card-pad">
+        <div class="kicker">Document</div>
+        <h3>📄 PRD Navigation</h3>
+        <p class="small">All backend features extracted from the app. Use this spec to build the external system. Flutter now talks only to <code>ApiClient</code> (<code>lib/core/network/api_config.dart</code>).</p>
+        <div class="divider"></div>
+        <div class="kicker">Quick facts</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+          <code>API_BASE_URL=http://basseeyta.duckdns.org</code>
+          <code>API_KEY= --dart-define=API_KEY=...</code>
+          <code>lib/core/network/api_client.dart</code>
+          <code>lib/core/network/mock_backend.dart (temporary)</code>
+        </div>
+      </div>
+    </div>
+    <nav class="card">
+      <div class="card-pad" style="padding:12px">
+        <div class="kicker" style="margin-bottom:8px">Contents</div>
+        <div class="nav">
+          <a href="#overview">0 · Overview</a>
+          <a href="#arch">1 · Architecture</a>
+          <a href="#auth">2 · Auth & Users <span class="badge">7 EP</span></a>
+          <a href="#requests">3 · Service Requests <span class="badge">8 EP</span></a>
+          <a href="#offers">4 · Offers <span class="badge">4 EP</span></a>
+          <a href="#chat">5 · Chat <span class="badge">5 EP</span></a>
+          <a href="#payments">6 · Payments <span class="badge">9 EP</span></a>
+          <a href="#community">7 · Community <span class="badge">5 EP</span></a>
+          <a href="#storage">8 · Storage <span class="badge">5 buckets</span></a>
+          <a href="#search">9 · Search</a>
+          <a href="#notifications">10 · Notifications</a>
+          <a href="#support">11 · Support & Reviews</a>
+          <a href="#appointments">12 · Appointments</a>
+          <a href="#family">13 · Family & Verification</a>
+          <a href="#security">14 · Security</a>
+          <a href="#realtime">15 · Realtime & Jobs</a>
+          <a href="#models">16 · Data Models</a>
+          <a href="#env">17 · Env & Migration</a>
+        </div>
+      </div>
+    </nav>
+    <div class="card">
+      <div class="card-pad">
+        <h3>🎯 Build order</h3>
+        <p class="small">Implement in this order to unblock Flutter fastest:</p>
+        <ol style="font-size:13px;margin:8px 0 0;padding-left:18px;line-height:1.8">
+          <li><b>Auth</b> → unblocks login_screens</li>
+          <li><b>Service Requests + Storage</b> → request_service_screen</li>
+          <li><b>Offers + Chat + Appointments</b> → technician flows</li>
+          <li><b>Payments + Cards</b> → final_payment</li>
+          <li><b>Community + Search</b></li>
+          <li><b>Notifications / Tickets / Reviews</b></li>
+        </ol>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <section class="hero">
+      <div style="position:relative">
+        <div class="kicker" style="color:rgba(255,255,255,.85)">Product Requirements Document · External Backend System</div>
+        <h2>All backend features extracted — <span>Flutter is now frontend-only. Build the external backend against this contract.</span></h2>
+        <p>Previously: Firebase (Auth, Firestore, FCM, Analytics, Crashlytics) + Supabase (Postgres, Storage, Edge Functions). Now: <b>zero Firebase/Supabase in the app</b>. Every table, bucket, edge function, RLS policy, Firestore rule, and realtime subscription below must be re-implemented as REST + storage + push behind <code>ApiConfig.baseUrl</code>. Mock layer (<code>mock_backend.dart</code>) keeps the app building until the backend is ready.</p>
+        <div class="hero-actions">
+          <a class="btn" href="#arch">See architecture ↓</a>
+          <a class="btn secondary" href="#models">Data models ↓</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="overview" class="section">
+      <div class="section-head"><div class="num">0</div><div><h2>Overview & Goals</h2><p>Why extraction, what success looks like, what is out of scope.</p></div></div>
+      <div class="card"><div class="card-pad">
+        <div class="grid2">
+          <div>
+            <div class="kicker">Goals</div>
+            <ul style="font-size:13px;margin:8px 0 0;padding-left:18px">
+              <li>Remove all Firebase & Supabase SDKs from Flutter (<b>done</b>: <code>pubspec.yaml</code> now has only <code>http</code> + UI deps).</li>
+              <li>Provide a single, versioned REST API that covers <b>every</b> feature listed in <code>BACKEND_PLAN.md</code> + <code>BACKEND_SERVICES.md</code>.</li>
+              <li>Keep UI 100% intact — screens in <code>lib/features/**</code> keep their widgets, now call <code>ApiClient</code> (currently mocked).</li>
+              <li>Preserve security semantics: ownership checks, RLS-like row ownership, and no plaintext card storage.</li>
+              <li>Make rollout incremental: mock → real backend by swapping <code>API_BASE_URL</code> without app code changes.</li>
+            </ul>
+          </div>
+          <div>
+            <div class="kicker">Non-goals</div>
+            <ul style="font-size:13px;margin:8px 0 0;padding-left:18px">
+              <li>Re-designing UI or navigation.</li>
+              <li>Changing the Arabic UX or business rules (pricing in EGP, governorate filtering, etc.).</li>
+              <li>Building admin dashboard (but API must support it).</li>
+            </ul>
+            <div class="callout" style="margin-top:12px"><b>Frontend wiring:</b> <code>lib/main.dart</code> no longer calls <code>Firebase.initializeApp</code> or <code>Supabase.initialize</code>. It only calls <code>ApiConfig.init()</code>. Every repository in <code>lib/core/repositories/*</code> now hits <code>ApiClient</code> (currently stubbed with <code>Future.delayed</code> + mock objects).</div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Metric</th><th>Target</th><th>Current</th></tr></thead>
+          <tbody>
+            <tr><td>P95 API latency (Egypt)</td><td>&lt; 400ms</td><td>Mock: ~300ms</td></tr>
+            <tr><td>Auth OTP delivery</td><td>&lt; 15s via SMS (or mock in dev)</td><td>Mock any 6 digits</td></tr>
+            <tr><td>Storage upload (5MB image)</td><td>&lt; 3s</td><td>Mock CDN URL</td></tr>
+            <tr><td>Uptime</td><td>99.9%</td><td>External backend TBD</td></tr>
+          </tbody>
+        </table></div>
+      </div></div>
+    </section>
+
+    <section id="arch" class="section">
+      <div class="section-head"><div class="num">1</div><div><h2>System Architecture</h2><p>Frontend → External Backend → DB / Storage / Push / Workers.</p></div></div>
+      <div class="card"><div class="card-pad">
+        <pre><code>┌─────────────────────────────────────────────────────────┐
+│                    FLUTTER APP                         │
+│  lib/main.dart → ApiConfig.baseUrl                     │
+│  lib/core/network/api_client.dart  (http)              │
+│  lib/core/network/mock_backend.dart (temporary shim)   │
+└──────────────────────┬──────────────────────────────────┘
+                       │  HTTPS + JSON + Bearer JWT
+                       ▼
+┌─────────────────────────────────────────────────────────┐
+│               EXTERNAL BACKEND (you build)             │
+│  REST API  — see §2–13 endpoints                       │
+│  Auth (JWT)  ·  Postgres (app DB)  ·  Object Storage   │
+│  Push (FCM/APNs)  ·  Workers/Cron  ·  Search (pg_trgm  │
+│  or Meilisearch)  ·  Payments (Stripe/Fawry/InstaPay)  │
+└─────────────────────────────────────────────────────────┘
+  ▲ DB            ▲ Storage          ▲ Push
+  │ 9+ tables     │ 5 buckets        │ FCM
+  └───────────────┴──────────────────┘
+</code></pre>
+        <div class="grid2" style="margin-top:12px">
+          <div class="callout"><b>Why REST?</b> Flutter previously used Firestore <code>snapshots()</code> + Supabase Realtime. External backend can keep realtime via <b>WebSocket or SSE</b> for chat/offers/notifications (§15), but MVP may use polling + pull-to-refresh. The <code>ApiClient</code> is transport-agnostic — add a WebSocket client later if needed.</div>
+          <div class="callout warn"><b>Source of truth:</b> <b>One DB</b> for the external backend (Postgres recommended). Replicate the 9+ tables (§16) there. Do NOT keep Firestore + Supabase side-by-side — migrate completely.</div>
+        </div>
+        <div class="table-wrap" style="margin-top:12px"><table>
+          <thead><tr><th>Concern</th><th>Previously</th><th>External Backend</th></tr></thead>
+          <tbody>
+            <tr><td>Auth</td><td>Firebase Phone OTP + Supabase JWT mirror</td><td>Your Auth service: phone OTP (Twilio/Infobip) + JWT (HS256/RS256). Keep <code>AppConfig.useMockOtp</code> as dev bypass.</td></tr>
+            <tr><td>Users / Technicians / Requests / Offers / Chat / Posts</td><td>Firestore collections</td><td>Postgres tables + REST (see §16).</td></tr>
+            <tr><td>Notifications / Reviews / Promos / Tickets / Search / Payments / Appointments</td><td>Supabase Postgres</td><td>Postgres tables (same schemas, just new API).</td></tr>
+            <tr><td>Files</td><td>Supabase Storage (5 buckets)</td><td>S3/R2/GCS buckets (see §8).</td></tr>
+            <tr><td>Push</td><td>Edge Function → FCM</td><td>Backend → FCM HTTP v1 + APNs (see §10).</td></tr>
+            <tr><td>Server logic</td><td>Edge Functions (Deno)</td><td>Backend handlers (Node/Deno/Go - your choice) + cron workers.</td></tr>
+          </tbody>
+        </table></div>
+      </div></div>
+    </section>
+
+    <section id="auth" class="section">
+      <div class="section-head"><div class="num">2</div><div><h2>Auth & Users</h2><p>Phone OTP, registration, sessions, and profile.</p></div></div>
+      <div class="endpoint">
+        <div class="endpoint-head"><span class="method post">POST</span><span class="path">/auth/request-otp</span><div class="meta"><span class="tag">Auth</span><span class="tag">→ SMS</span></div></div>
+        <div class="endpoint-body"><p class="small">Sends 6-digit OTP. In dev, <code>AppConfig.useMockOtp=true</code> accepts any 6 digits locally — backend may still return <code>{mock:true}</code>.</p><pre><code>Request:  { "phone": "+201012345678" }
+Response: { "success": true, "verificationId": "uuid-or-jwt", "expiresIn": 120, "mock": false }</code></pre></div>
+      </div>
+      <div class="endpoint" style="margin-top:10px">
+        <div class="endpoint-head"><span class="method post">POST</span><span class="path">/auth/verify-otp</span><div class="meta"><span class="tag primary">→ JWT</span></div></div>
+        <div class="endpoint-body"><pre><code>Request:  { "phone": "+201012345678", "code": "123456", "verificationId": "..." }
+Response: { "token": "eyJ...", "user": { "id":"uuid", "phone":"+20...", "name":"...", "userType":"user" } }
+// All subsequent calls: Authorization: Bearer &lt;token&gt;
+// Flutter stores token in SharedPreferences + UserSession / UserDataSession</code></pre></div>
+      </div>
+      <div class="endpoint" style="margin-top:10px">
+        <div class="endpoint-head"><span class="method post">POST</span><span class="path">/auth/register</span><div class="meta"><span class="tag">multipart</span></div></div>
+        <div class="endpoint-body"><p class="small">Customer sign-up (BaseetaSignUpApp / l.dart). Also used by technician onboarding (see below). Profile image is uploaded separately to Storage (§8) or as multipart.</p><pre><code>Request (JSON or multipart): {
+  "name":"...", "phone":"+20...", "email":"...",
+  "governorate":"...", "city":"...", "region":"...", "placeType":"شقة",
+  "profileImageUrl":"https://cdn.../profiles/..." // from /storage/upload
+}
+Response: { "user": { "id":"uuid", "phone":"+20...", "name":"...", "governorate":"..." } }</code></pre></div>
+      </div>
+      <div class="grid2" style="margin-top:10px">
+        <div class="endpoint"><div class="endpoint-head"><span class="method post">POST</span><span class="path">/auth/technicians/register</span><div class="meta"><span class="tag warn">Technician</span></div></div><div class="endpoint-body"><pre><code>Body: {
+  "fullName":"...", "phone":"+20...", "experience":"3 سنوات",
+  "specialty":"كهرباء", "governorate":"القاهرة", "area":"المعادي",
+  "profileImageUrl":"https://cdn.../profiles/..."
+}
+// Stored as technicians table (phone is natural key; also store userId JWT sub)
+// See lib/features/auth/screens/technician_onboarding_screen.dart
+</code></pre></div></div>
+        <div class="endpoint"><div class="endpoint-head"><span class="method get">GET</span><span class="path">/users/me</span><div class="meta"><span class="tag">Auth</span></div></div><div class="endpoint-body"><pre><code>Headers: Authorization: Bearer &lt;jwt&gt;
+Response: { "id":"uuid", "name":"...", "phone":"...", "email":"...", "governorate":"...", "city":"...", "region":"...", "placeType":"...", "profileImagePath":"https://..." }</code></pre></div></div>
+      </div>
+      <div class="endpoint" style="margin-top:10px">
+        <div class="endpoint-head"><span class="method get">GET</span><span class="path">/users & /technicians</span><div class="meta"><span class="tag">Lookup</span></div></div>
+        <div class="endpoint-body"><p class="small">Flows that do <code>users.where(phone == ...).get()</code> in the old app: <b>login_screen.dart, login_screen1.dart, technician_onboarding_screen.dart</b> (phone uniqueness check).</p><pre><code>GET /users?phone=%2B2010...           → { users: [...] }
+GET /technicians?phone=%2B2010...     → { technicians: [...] }
+GET /technicians/{phone}              → { technician: {...} }
+PUT /users/me                         → update profile (personal_data_screen.dart)
+PUT /technicians/{phone}              → update technician profile
+POST /auth/logout  +  DELETE /auth/session (optional)</code></pre></div>
+      </div>
+      <div class="callout" style="margin-top:10px"><b>Auth rules to preserve:</b> Technician phone is unique (checked via 2 queries in <code>technician_onboarding_screen.dart:226</code>). User login checks 4 phone formats (<code>login_screen.dart:50</code>). Keep Egypt normalization: <code>lib/core/utils/phone_utils.dart:normalizeEgyptPhone</code> → E.164 <code>+20...</code>.</div>
+    </section>
+
+    <section id="requests" class="section">
+      <div class="section-head"><div class="num">3</div><div><h2>Service Requests</h2><p>Core marketplace object — lifecycle, specialized collections, media.</p></div></div>
+      <div class="card"><div class="card-pad">
+        <div class="kicker">Lifecycle</div>
+        <pre><code>pending → offer_submitted → accepted → in_progress → completed → paid
+   │            │           │            │           │
+   └── cancelled└── rejected└── disputed └─pending_cash</code></pre>
+        <p class="small">Statuses come from <code>BACKEND_SERVICES.md §6.2</code>. Keep all 11 states; the happy path is <code>pending → accepted → paid</code>. Technician can set <code>offer_submitted</code> via Offer (§4); customer acceptance moves to <code>accepted</code>.</p>
+        <div class="table-wrap" style="margin-top:10px"><table>
+          <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>id</td><td>uuid</td><td>PK, gen_random_uuid()</td></tr>
+            <tr><td>userId, userName, userPhone, userRegion, userGovernorate</td><td>text</td><td>Denormalized from user; also store <code>phone</code> / <code>region</code> aliases for old clients.</td></tr>
+            <tr><td>title, description, budget, price</td><td>text/numeric</td><td><code>price = "$budget ج.م"</code> (see request_service_screen.dart)</td></tr>
+            <tr><td>scheduledDate</td><td>text/date</td><td>String "الآن" or yyyy-MM-dd from date picker</td></tr>
+            <tr><td>status</td><td>enum</td><td>See lifecycle above</td></tr>
+            <tr><td>images, taskImages, image</td><td>text[]</td><td>Supabase <code>request</code> + <code>task_images</code> bucket URLs</td></tr>
+            <tr><td>technicianId, technicianName, acceptedPrice, acceptedAt</td><td>text/timestamp</td><td>Set on accept</td></tr>
+            <tr><td>hasOffers, clientAccepted, lastOfferTime</td><td>bool/timestamp</td><td>Used by offers_dashboard_screen</td></tr>
+            <tr><td>isPaid, paidAt, paymentMethod, paidAmount, finalPrice</td><td>bool/numeric</td><td>Set after payment (§6)</td></tr>
+          </tbody>
+        </table></div>
+      </div></div>
+      <div class="endpoint" style="margin-top:10px">
+        <div class="endpoint-head"><span class="method post">POST</span><span class="path">/service-requests</span><div class="meta"><span class="tag primary">→ creates request</span></div></div>
+        <div class="endpoint-body"><p class="small">Called by <code>request_service_screen.dart → RequestRepository.createRequest</code>. Previously wrote to <code>requests</code> (and mirrored to <code>carpentry_requests</code> / <code>plumbing_requests</code> / <code>painting_requests</code> by serviceType). Keep that behavior or consolidate to one table with <code>serviceType</code> column — but keep the specialized GETs for backward compat.</p><pre><code>POST /service-requests
+Body: { userId, userName, userPhone, userRegion, userGovernorate, title, description, budget, scheduledDate, serviceType, images:[urls] }
+Response: { "id":"uuid", "request": { ... } }
+// Specialized:
+// POST /service-requests/carpentry, /plumbing, /painting  → same shape, filtered by serviceType
+</code></pre></div>
+      </div>
+      <div class="grid2" style="margin-top:10px">
+        <div class="endpoint"><div class="endpoint-head"><span class="method get">GET</span><span class="path">/service-requests</span></div><div class="endpoint-body"><pre><code>// Technician: available in governorate
+GET /service-requests?status=pending&amp;governorate=القاهرة&amp;sort=createdAt.desc
+// Customer: own requests
+GET /service-requests?userId={uuid}&amp;status=pending
+// Single
+GET /service-requests/{id}
+// Replaces: Firestore where(status, governorate).orderBy(createdAt).snapshots()
+</code></pre></div></div>
+        <div class="endpoint"><div class="endpoint-head"><span class="method patch">PATCH</span><span class="path">/service-requests/{id}</span></div><div class="endpoint-body"><pre><code>PATCH /service-requests/{id}
+Body: { status, technicianId, acceptedPrice, hasOffers, isPaid, ... }
+// Also:
+DELETE /service-requests/{id}        // owner only
+PATCH /service-requests/{id}/status  // { status, extra: {...} }
+</code></pre></div></div>
+      </div>
+      <div class="callout warn" style="margin-top:10px"><b>Media:</b> Images uploaded first to Storage §8 (<code>request</code> bucket) via <code>supabase.storage.from('request').upload(...)</code> — now <code>POST /storage/upload</code>. The request stores public URLs. Keep <code>cacheControl:3600, upsert:false</code> semantics and path <code>{userId}/{ts}.jpg</code>.</div>
+    </section>
+
+    <section id="offers" class="section">
+      <div class="section-head"><div class="num">4</div><div><h2>Offers & Negotiation</h2><p>Technician → Customer price/time negotiation.</p></div></div>
+      <div class="endpoint">
+        <div class="endpoint-head"><span class="method post">POST</span><span class="path">/service-requests/{id}/offers</span><div class="meta"><span class="tag">Technician</span></div></div>
+        <div class="endpoint-body"><p class="small">Replaces <code>FirebaseFirestore.collection('offers').add(...)</code> in <code>submit_offer_page.dart</code> and <code>OrderAcceptService.acceptRequest</code> (which also creates the chat room + appointment).</p><pre><code>POST /service-requests/{requestId}/offers
+Body: {
+  technicianId, technicianName, price, duration, arrivalTime, warranty,
+  message, provideMaterials, priceIncludesMaterials,
+  rating:4.9, reviewsCount:15, experienceYears:4, isVerified:true,
+  imagePath, hasGreenArrivalTag, status:"pending"
+}
+Response: { "offer": { id, ... } }
+// On success, backend should set request hasOffers=true, lastOfferTime=now
+</code></pre></div>
+      </div>
+      <div class="grid2" style="margin-top:10px">
+        <div class="endpoint"><div class="endpoint-head"><span class="method get">GET</span><span class="path">/service-requests/{id}/offers</span></div><div class="endpoint-body"><pre><code>GET /service-requests/{id}/offers
+// Replaces: offers.where(requestId==...).snapshots()
+// Used in offers_dashboard_screen.dart
+</code></pre></div></div>
+        <div class="endpoint"><div class="endpoint-head"><span class="method patch">PATCH</span><span class="path">/offers/{id}</span></div><div class="endpoint-body"><pre><code>PATCH /offers/{id}  { status:"accepted"|"rejected" }
+// Customer acceptance also patches the request:
+// PATCH /service-requests/{id} { status:"accepted", technicianId, acceptedPrice, acceptedAt }
+// Do this transactionally (offers+requests) — see OrderAcceptService
+</code></pre></div></div>
+      </div>
+      <div class="callout" style="margin-top:10px"><b>Offer model:</b> Keep all 16 fields from <code>lib/features/offers/models/offer_model.dart</code> (id, technicianId, name, rating, reviewsCount, price, experienceYears, arrivalTime, imagePath, isVerified, hasGreenArrivalTag, timestamp, warranty, message, provideMaterials, priceIncludesMaterials). Map <code>timestamp</code> from Firestore <code>createdAt</code> → <code>created_at</code>.</div>
+    </section>
+
+    <section id="chat" class="section">
+      <div class="section-head"><div class="num">5</div><div><h2>Chat & Messaging</h2><p>Conversations + messages — previously Firestore + Supabase chat_rooms.</p></div></div>
+      <div class="card"><div class="card-pad">
+        <p class="small">History is fragmented: <b>Firestore</b> <code>conversations/{id}/messages/{id}</code> and <b>Supabase</b> <code>chat_rooms</code> + <code>chat_messages</code> (with <code>request_id</code> placeholder). External backend should <b>consolidate to one</b> — recommend <code>chat_rooms</code> + <code>chat_messages</code> tables (as in <code>chat_repository.dart</code>), with <code>requestId</code> linkage. Keep Firestore shape for migration but serve via REST + WebSocket.</p>
+        <div class="table-wrap" style="margin-top:10px"><table>
+          <thead><tr><th>Table</th><th>Key fields</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>chat_rooms</td><td>id, client_id, technician_id, request_id, service_type, is_active, created_at, updated_at</td><td>One row per request; placeholder <code>technician_id=''</code> on request creation, updated on first offer.</td></tr>
+            <tr><td>chat_messages</td><td>id, room_id, sender_id, sender_type, message, is_read, created_at</td><td><code>sender_type = 'user'|'technician'</code></td></tr>
+          </tbody>
+        </table></div>
+      </div></div>
+      <div class="endpoint" style="margin-top:10px">
+        <div class="endpoint-head"><span class="method post">POST</span><span class="path">/chat/rooms</span></div>
+        <div class="endpoint-body"><pre><code>POST /chat/rooms  { clientId, technicianId, requestId, serviceType }
+Response: { room: { id, ... } }
+// Idempotent: if requestId already has a room, return/update it (see ChatRepository.getOrCreateRoom)
+</code></pre></div>
+      </div>
+      <div class="grid2" style="margin-top:10px">
+        <div class="endpoint"><div class="endpoint-head"><span class="method get">GET</span><span class="path">/chat/rooms</span></div><div class="endpoint-body"><pre><code>GET /chat/rooms?userId={id}
+→ { rooms: [ { id, clientId, technicianId, requestId, updatedAt } ] }
+// Replaces: ChatRepository.getUserChatRooms / watchUserChatRooms
+// Order by updated_at desc, filter client_id==uid OR technician_id==uid
+</code></pre></div></div>
+        <div class="endpoint"><div class="endpoint-head"><span class="method get">GET</span><span class="path">/chat/rooms/{id}/messages</span></div><div class="endpoint-body"><pre><code>GET /chat/rooms/{id}/messages?limit=50
+→ { messages: [ { id, senderId, message, isRead, createdAt } ] }
+// Replaces: ChatRepository.getMessages / watchMessages (Stream)
+// For realtime, add WebSocket (see §15)
+</code></pre></div></div>
+      </div>
+      <div class="endpoint" style="margin-top:10px">
+        <div class="endpoint-head"><span class="method post">POST</span><span class="path">/chat/rooms/{id}/messages</span></div>
+        <div class="endpoint-body"><pre><code>POST /chat/rooms/{id}/messages  { senderId, senderType, message }
+→ also PATCH /chat/rooms/{id} { updatedAt: now }
+// Also:
+PATCH /chat/rooms/{id}/read  { userId }  → markAsRead
+GET   /chat/rooms/{id}/unread?userId=... → { count }
+</code></pre></div>
+      </div>
+    </section>
+
+    <section id="payments" class="section">
+      <div class="section-head"><div class="num">6</div><div><h2>Payments & Wallet</h2><p>Cards, transactions, InstaPay, promo codes, and the payment edge function.</p></div></div>
+      <div class="card"><div class="card-pad">
+        <div class="kicker">Critical security fix to preserve</div>
+        <p class="small"><b>Never store full card numbers.</b> Old code in <code>payment_cards_screen.dart</code> briefly stored <code>cardNumber</code> plaintext in Firestore <code>PaymentCards</code>. Fixed to <code>cardLast4</code> only (<code>WORK_LOG.md:378</code>). External backend must <b>enforce</b>: only last 4 digits + token from PSP (Stripe/Fawry). Fallback read: <code>cardLast4 ?? cardNumber.substring(...)</code> for legacy docs.</p>
+      </div></div>
+      <div class="endpoint" style="margin-top:10px">
+        <div class="endpoint-head"><span class="method post">POST</span><span class="path">/payment-cards</span><div class="meta"><span class="tag">PCI</span></div></div>
+        <div class="endpoint-body"><pre><code>POST /payment-cards
+Body: { userId, cardLast4, cardHolder, expiryDate, cardType:"visa"|"mastercard", isDefault, token }
+→ token is PSP token (Stripe pm_xxx), not card number
+Response: { card: { id, cardLast4, ... } }
+
+GET /payment-cards?userId={id}      → list (was PaymentCards.where(userId).snapshots())
+DELETE /payment-cards/{id}          → owner only
+PATCH /payment-cards/{id}           → { isDefault }
+</code></pre></div>
+      </div>
+      <div class="endpoint" style="margin-top:10px">
+        <div class="endpoint-head"><span class="method post">POST</span><span class="path">/payments</span><div class="meta"><span class="tag primary">→ PSP</span></div></div>
+        <div class="endpoint-body"><p class="small">Replaces Supabase Edge Function <code>process-payment</code> + <code>payment_logs</code> table + Firestore <code>transactions</code> + technician wallet update (<code>final_payment_screen.dart</code>).</p><pre><code>POST /payments
+Body: { userId, requestId, technicianId, amount, currency:"EGP", paymentMethod:"card"|"cash"|"wallet"|"instapay", promoCode, serviceName }
+Steps (backend):
+ 1. Validate request & promo (if any) → increment_used_count
+ 2. Call Stripe/Fawry (card) or record cash
+ 3. Insert payment_logs { firebase_user_id→user_id, firebase_request_id→request_id, technician_id, amount, payment_method, status:"completed", gateway_response, created_at }
+ 4. Insert transactions { technicianId, requestId, serviceName, amount, isPositive:true, type:"income", paymentMethod, dateStr, createdAt }
+ 5. Patch technicians/{phone} { walletBalance += amount, totalEarnings += amount, todayEarnings += amount, todayOrdersCount +=1 }
+ 6. Patch service-requests/{id} { isPaid:true, paidAt, paymentMethod, paidAmount }
+Response: { success:true, paymentLog, transaction, invoiceUrl }
+
+GET /payments?userId={id}           → user history
+GET /payments?technicianId={phone}  → technician history (sale_screen)
+</code></pre></div>
+      </div>
+      <div class="grid2" style="margin-top:10px">
+        <div class="endpoint"><div class="endpoint-head"><span class="method post">POST</span><span class="path">/payments/instapay</span></div><div class="endpoint-body"><pre><code>POST /payments/instapay
+Body: { requestId, senderId, receiverId, amount, instapayCode }
+→ create instapay_transactions { verification_code:6digits, status:"pending" }
+
+POST /payments/instapay/{id}/verify { code:"123456" }
+→ checks verification_code, sets status:"verified", verified_at
+
+GET /payments/instapay?userId={id}
+</code></pre></div></div>
+        <div class="endpoint"><div class="endpoint-head"><span class="method get">GET</span><span class="path">/promo-codes/validate</span></div><div class="endpoint-body"><pre><code>GET /promo-codes/validate?code=SAVE20&amp;amount=500
+→ { valid:true, promo:{ code, discount_type:"percentage"|"fixed", discount_value, min_order_amount, max_uses, used_count, valid_from, valid_until, is_active }, discount: 100 }
+
+POST /promo-codes/{id}/apply → increment_used_count (atomic)
+</code></pre></div></div>
+      </div>
+      <div class="callout warn" style="margin-top:10px"><b>Wallet fields on technician:</b> <code>walletBalance, totalEarnings, todayEarnings, todayOrdersCount, lastEarningTimestamp, lastEarningDateStr, rating, completedOrdersCount</code> — all updated transactionally on payment success. Also support <code>GET /technicians/{phone}/wallet</code>.</div>
+    </section>
+
+    <section id="community" class="section">
+      <div class="section-head"><div class="num">7</div><div><h2>Community</h2><p>Posts, likes, comments — 6 category screens share one model.</p></div></div>
+      <div class="endpoint">
+        <div class="endpoint-head"><span class="method post">POST</span><span class="path">/posts</span></div>
+        <div class="endpoint-body"><pre><code>POST /posts
+Body: { authorId, authorName, authorRole:"user"|"technician", title, content, imagePath:"https://cdn.../community_posts/...", isQuestion, category:"general"|"electricity"|"plumbing"|"painting"|"finishing" }
+Response: { post: { id, likes:0, comments:0, likedBy:[], createdAt } }
+
+// Text search: titles + content, governorate filter optional
+</code></pre></div>
+      </div>
+      <div class="grid2" style="margin-top:10px">
+        <div class="endpoint"><div class="endpoint-head"><span class="method get">GET</span><span class="path">/posts</span></div><div class="endpoint-body"><pre><code>GET /posts?category=plumbing&amp;sort=createdAt.desc&amp;limit=20
+GET /posts?authorId={uid}
+// Replaces: Firestore posts.where(...).snapshots() in comm1..6.dart
+// Each comm file is a category filter on the same collection
+</code></pre></div></div>
+        <div class="endpoint"><div class="endpoint-head"><span class="method post">POST</span><span class="path">/posts/{id}/like</span></div><div class="endpoint-body"><pre><code>POST /posts/{id}/like { userId }
+→ toggles: likes = liked ? -1 : +1, likedBy = arrayUnion/Remove(userId)
+
+PATCH /posts/{id}  { title, content }  → author only
+DELETE /posts/{id} → author only (rule: authorId==uid)
+</code></pre></div></div>
+      </div>
+      <div class="callout" style="margin-top:10px"><b>Firestore rule to keep:</b> <code>allow create: if auth.uid==authorId</code>, <code>allow update/delete: if resource.authorId==auth.uid</code>. Implement same in backend. Image is uploaded to <code>community_posts</code> bucket before post creation.</div>
+    </section>
+
+    <section id="storage" class="section">
+      <div class="section-head"><div class="num">8</div><div><h2>Storage — 5 Buckets</h2><p>All file uploads previously via Supabase Storage.</p></div></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Bucket</th><th>Public</th><th>Max</th><th>Types</th><th>Path pattern</th><th>Used by</th></tr></thead>
+        <tbody>
+          <tr><td><code>profiles</code></td><td>Yes</td><td>5 MB</td><td>jpg, png, webp</td><td><code>{userId}/{ts}.{ext}</code></td><td>technician_onboarding, personal_data</td></tr>
+          <tr><td><code>account_verification</code></td><td>No (signed)</td><td>10 MB</td><td>jpg, png, pdf</td><td><code>{userId}/front_{ts}.{ext}</code></td><td>id_verification_screen, account_verification</td></tr>
+          <tr><td><code>request</code></td><td>No</td><td>10 MB</td><td>jpg, png</td><td><code>{requestId}/{ts}.{ext}</code></td><td>request_service_screen</td></tr>
+          <tr><td><code>task_images</code></td><td>No</td><td>10 MB</td><td>jpg, png</td><td><code>{requestId}/{ts}.{ext}</code></td><td>complete_task_page</td></tr>
+          <tr><td><code>community_posts</code></td><td>Yes</td><td>5 MB</td><td>jpg, png, gif</td><td><code>{postId}/{ts}.{ext}</code></td><td>community post creation</td></tr>
+        </tbody>
+      </table></div>
+      <div class="endpoint" style="margin-top:12px">
+        <div class="endpoint-head"><span class="method post">POST</span><span class="path">/storage/upload</span><div class="meta"><span class="tag">multipart</span></div></div>
+        <div class="endpoint-body"><pre><code>POST /storage/upload
+Content-Type: multipart/form-data
+Fields: bucket="profiles"|"account_verification"|"request"|"task_images"|"community_posts"
+        documentId="..."   // used to build path
+File:   file=@/path/to/image.jpg
+Response: { url:"https://cdn.basita.example.com/{bucket}/{path}", path:"{documentId}/{ts}.jpg" }
+
+GET /storage/{bucket}/{path}  → file (public) or 302 signed URL (private)
+DELETE /storage/{bucket}/{path} → auth + owner
+</code></pre></div>
+      </div>
+      <div class="callout" style="margin-top:10px"><b>Path rule:</b> <code>$documentId/${DateTime.now().millisecondsSinceEpoch}.$ext</code> with <code>cacheControl:3600, upsert:false</code>. Consolidate legacy <code>user_profiles</code> → <code>profiles</code>.</div>
+    </section>
+
+    <section id="search" class="section">
+      <div class="section-head"><div class="num">9</div><div><h2>Search</h2><p>Full-text over technicians/services/posts.</p></div></div>
+      <div class="endpoint">
+        <div class="endpoint-head"><span class="method get">GET</span><span class="path">/search</span></div>
+        <div class="endpoint-body"><p class="small">Replaces Supabase <code>search_index</code> table + <code>search_entities(q, etype, gov, lim)</code> RPC (tsvector + GIN + <code>ts_rank</code>).</p><pre><code>GET /search?q=سباكة&amp;entityType=technician&amp;governorate=القاهرة&amp;limit=20
+→ {
+  results: [
+    { entityType:"technician", entityId:"+2010...", title:"...", description:"...", governorate:"القاهرة", specialty:"سباكة", rank:0.92 }
+  ]
+}
+
+POST /search/index   { entityType, entityId, title, description, governorate, specialty }  → upsert
+DELETE /search/index/{entityType}/{entityId}
+</code></pre></div>
+      </div>
+      <div class="callout" style="margin-top:10px"><b>Implementation:</b> Postgres <code>tsvector</code> (as before) or Meilisearch/Typesense. Index on <code>(governorate, entity_type)</code> + GIN on <code>search_vector</code>. Keep <code>unique(entity_type, entity_id)</code>.</div>
+    </section>
+
+    <section id="notifications" class="section">
+      <div class="section-head"><div class="num">10</div><div><h2>Notifications & Push</h2><p>In-app inbox + FCM fan-out.</p></div></div>
+      <div class="endpoint">
+        <div class="endpoint-head"><span class="method get">GET</span><span class="path">/notifications</span></div>
+        <div class="endpoint-body"><pre><code>GET /notifications?userId={id}&amp;unreadOnly=true&amp;limit=50
+→ { notifications: [ { id, userId, userType:"user"|"technician", title, body, type:"request_update"|"payment"|"chat"|"system"|"promo"|"verification", data:{}, isRead, createdAt } ] }
+
+POST /notifications        { userId, userType, title, body, type, data }
+PATCH /notifications/{id}  { isRead:true }
+POST /notifications/mark-all-read  { userId }
+
+GET /notifications/unread-count?userId={id} → { count }
+</code></pre></div>
+      </div>
+      <div class="endpoint" style="margin-top:10px">
+        <div class="endpoint-head"><span class="method post">POST</span><span class="path">/push/send</span><div class="meta"><span class="tag">→ FCM</span></div></div>
+        <div class="endpoint-body"><p class="small">Replaces Edge Function <code>send-notification</code> (POST, JWT) which inserted into <code>notifications</code> + called FCM HTTP v1 <code>messages:send</code>.</p><pre><code>POST /push/send
+Body: { userId, userType, title, body, type, data, tokenOrTopic:"user_{uid}"|"requests_{governorate}" }
+Steps: insert notifications row → resolve FCM token(s) → FCM HTTP v1 send → log result
+Response: { success:true, fcmMessageId:"..." }
+</code></pre></div>
+      </div>
+      <div class="callout" style="margin-top:10px"><b>Topics:</b> <code>user_{uid}</code>, <code>technician_{phone}</code>, <code>requests_{governorate}</code>. Keep <code>idx_notifications_user (user_id, is_read, created_at desc)</code>.</div>
+    </section>
+
+    <section id="support" class="section">
+      <div class="section-head"><div class="num">11</div><div><h2>Support Tickets, Reviews, Visits</h2><p>Helpdesk + ratings + history.</p></div></div>
+      <div class="grid2">
+        <div class="endpoint"><div class="endpoint-head"><span class="method get">GET</span><span class="path">/support-tickets</span></div><div class="endpoint-body"><pre><code>GET /support-tickets?userId={id}
+POST /support-tickets { userId, userType, subject, description, priority:"low"|"medium"|"high"|"urgent" }
+GET /support-tickets/{id}
+PATCH /support-tickets/{id} { status:"open"|"in_progress"|"resolved"|"closed", adminReply }
+</code></pre></div></div>
+        <div class="endpoint"><div class="endpoint-head"><span class="method get">GET</span><span class="path">/reviews</span></div><div class="endpoint-body"><pre><code>GET /reviews?technicianId={phone}
+→ { reviews:[ { id, requestId, reviewerId, technicianId, rating:1..5, comment, createdAt } ], avg:4.7 }
+
+POST /reviews { requestId, reviewerId, technicianId, rating, comment }
+DELETE /reviews/{id} → reviewer only
+</code></pre></div></div>
+      </div>
+      <div class="endpoint" style="margin-top:10px">
+        <div class="endpoint-head"><span class="method get">GET</span><span class="path">/visits</span></div>
+        <div class="endpoint-body"><p class="small">Replaces <code>visits_screen.dart</code> which filtered <code>requests.where(userId, status=completed)</code>.</p><pre><code>GET /visits?userId={id}&amp;status=completed&amp;sort=createdAt.desc
+→ { visits: [ { id, requestId, userId, technicianId, serviceName, status, amount, visitDate, completedAt } ] }
+
+GET /technicians/{phone}/transactions?sort=createdAt.desc → wallet history (sale_screen)
+</code></pre></div>
+      </div>
+    </section>
+
+    <section id="appointments" class="section">
+      <div class="section-head"><div class="num">12</div><div><h2>Appointments & Booking Variants</h2><p>Scheduling that was missing a table.</p></div></div>
+      <div class="card"><div class="card-pad">
+        <p class="small"><b>Note:</b> <code>lib/core/models/appointment.dart</code> + <code>appointment_repository.dart</code> + <code>lib/features/booking/</code> (electrical/carpentry/plumbing/painting) existed but the Supabase <code>appointments</code> table was never created in the greenfield project. External backend must create it.</p>
+      </div></div>
+      <div class="endpoint" style="margin-top:10px">
+        <div class="endpoint-head"><span class="method post">POST</span><span class="path">/appointments</span></div>
+        <div class="endpoint-body"><pre><code>POST /appointments
+Body: {
+  requestId, clientId, technicianId, serviceType:"electrical"|"plumbing"|"painting"|"carpentry",
+  serviceName, appointmentDate:"2026-08-30", appointmentTime:"14:00",
+  clientAddress, clientLatitude, clientLongitude, technicianLatitude, technicianLongitude,
+  estimatedDuration, price, notes
+}
+// Also:
+POST /appointments/upsert-on-accept  → called from OrderAcceptService
+PATCH /appointments/{id}/status { status:"pending"|"scheduled"|"confirmed"|"completed"|"cancelled" }
+PATCH /appointments/{id}/location { role:"technician"|"client", latitude, longitude }
+PATCH /appointments/by-request/{requestId}/complete { technicianLatitude, technicianLongitude, clientLatitude, clientLongitude }
+GET /appointments?userId={id}
+GET /appointments?technicianId={phone}
+GET /appointments/{id}
+GET /appointments?requestId={id}
+</code></pre></div>
+      </div>
+      <div class="callout" style="margin-top:10px"><b>Booking variants:</b> <code>electrical_bookings_service.dart</code>, <code>carpentry_booking_screen.dart</code>, etc. each wrote to <code>electrical_bookings</code> / specialized request collections. Consolidate to <code>serviceType</code> on the single <code>service_requests</code> table, but keep <code>GET /service-requests?serviceType=carpentry</code> for compat.</div>
+    </section>
+
+    <section id="family" class="section">
+      <div class="section-head"><div class="num">13</div><div><h2>Family & Account Verification</h2></div></div>
+      <div class="grid2">
+        <div class="endpoint"><div class="endpoint-head"><span class="method get">GET</span><span class="path">/families</span></div><div class="endpoint-body"><pre><code>// Firestore: users/{uid}/family_members subcollection
+GET /users/{uid}/family-members          → list
+POST /users/{uid}/family-members         { memberName, memberPhone, relationship, role:"member" }
+DELETE /users/{uid}/family-members/{id}
+POST /families/join  { phone, familyCode }  // phone lookup + add
+
+GET /families/{code} → { family, members, invitees }
+</code></pre></div></div>
+        <div class="endpoint"><div class="endpoint-head"><span class="method post">POST</span><span class="path">/verification</span></div><div class="endpoint-body"><pre><code>POST /verification
+Body: { userId, name, phone, email, city, governorate, frontIdPath, backIdPath }
+→ frontIdPath/backIdPath are URLs from /storage/upload (bucket account_verification)
+
+GET /verification?userId={id} → { status:"pending"|"approved"|"rejected", ... }
+PATCH /verification/{userId} { status, reviewedAt }  // admin
+// Replaces Firestore verified/{uid} and Supabase account_verification bucket
+</code></pre></div></div>
+      </div>
+      <div class="endpoint" style="margin-top:10px">
+        <div class="endpoint-head"><span class="method get">GET</span><span class="path">/ai/assistant</span><div class="meta"><span class="tag">Phase 2</span></div></div>
+        <div class="endpoint-body"><p class="small">Replaces Edge Function <code>ai-assistant</code> (proxy to OpenAI/Gemini). Keep prompt prefix: "You are a home maintenance assistant for Basita in Egypt, help with diagnosing issues, estimating costs in EGP, services: electrical, plumbing, painting, carpentry, AC maintenance."</p><pre><code>POST /ai/assistant  { query, userContext:{ governorate, serviceHistory } }
+→ { reply:"..." }
+</code></pre></div>
+      </div>
+    </section>
+
+    <section id="security" class="section">
+      <div class="section-head"><div class="num">14</div><div><h2>Security, RLS & Rules</h2><p>Translate Firestore rules + Supabase RLS to backend authz.</p></div></div>
+      <div class="grid2">
+        <div class="card"><div class="card-pad">
+          <div class="kicker">Firestore rules → backend checks</div>
+          <pre><code>// users/{uid}: read any auth, create if uid==docId, update if uid==owner
+// technicians/{phone}: read any auth, create any auth, update if phoneNumber==phone
+// requests/{id}: read if userId==uid OR technicianId==phone, create if auth, update if owner or tech
+// offers/{id}: read any auth, create if technicianId==phone, update if tech owner
+// conversations: read if customerId==uid OR technicianId==phone
+// PaymentCards: owner only (userId==uid)
+// transactions: technician only (technicianId==phone)
+// posts: read any auth, create/update/delete if authorId==uid
+// verified: owner only
+</code></pre>
+        </div></div>
+        <div class="card"><div class="card-pad">
+          <div class="kicker">Supabase RLS → Postgres policies (or app-level)</div>
+          <pre><code>-- Example (translate to app checks or PG RLS with JWT sub)
+-- notifications: owner read, system insert
+-- reviews: public read, auth insert/update own
+-- promo_codes: public read active, service_role manage
+-- support_tickets: owner scoped
+-- search_index: public read
+-- payment_logs: owner read, system insert
+-- appointments: owner scoped
+-- After JWT: using (auth.uid()::text = user_id)</code></pre>
+          <p class="small" style="margin-top:8px">Keep <code>is_active AND valid_until &gt; now()</code> for promo visibility, and <code>using (true)</code> → tighten to <code>auth.uid()</code> after JWT.</p>
+        </div></div>
+      </div>
+      <div class="callout danger" style="margin-top:12px"><b>Must preserve:</b> No plaintext cards, rate-limit OTP, enforce phone ownership on technician writes, sign private bucket URLs (account_verification, request, task_images), validate <code>max_uses/used_count</code> atomically via <code>increment_used_count</code> RPC.</div>
+    </section>
+
+    <section id="realtime" class="section">
+      <div class="section-head"><div class="num">15</div><div><h2>Realtime, Offline & Scheduled Jobs</h2></div></div>
+      <div class="grid2">
+        <div class="card"><div class="card-pad">
+          <div class="kicker">Realtime</div>
+          <p class="small">Old: Firestore <code>snapshots()</code> for <code>requests, offers, conversations/messages, posts, verified, PaymentCards, transactions, technicians</code> + Supabase Realtime on <code>notifications</code>.</p>
+          <div class="table-wrap" style="margin-top:8px"><table>
+            <thead><tr><th>Data</th><th>External approach</th><th>Flutter</th></tr></thead>
+            <tbody>
+              <tr><td>requests / offers</td><td>WebSocket topic <code>requests:{gov}</code> + <code>offers:{requestId}</code> or long-poll <code>GET /service-requests?since=</code></td><td><code>StreamBuilder</code> → poll or socket</td></tr>
+              <tr><td>chat messages</td><td>WebSocket <code>chat:room:{id}</code></td><td><code>watchMessages</code></td></tr>
+              <tr><td>posts / likes</td><td>Poll + SSE</td><td><code>posts.snapshots()</code></td></tr>
+              <tr><td>notifications</td><td>WebSocket <code>notifications:{userId}</code></td><td><code>watchNotifications</code></td></tr>
+            </tbody>
+          </table></div>
+        </div></div>
+        <div class="card"><div class="card-pad">
+          <div class="kicker">Scheduled Jobs</div>
+          <div class="table-wrap" style="margin-top:8px"><table>
+            <thead><tr><th>Job</th><th>Schedule</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td>Daily earnings reset</td><td>00:00 daily</td><td>Reset <code>todayEarnings, todayOrdersCount</code> → was Edge Function <code>daily-reset</code> via pg_cron</td></tr>
+              <tr><td>Expire old offers</td><td>Every 6h</td><td>Mark <code>offers</code> older than 48h as <code>expired</code></td></tr>
+              <tr><td>Cleanup drafts</td><td>Weekly</td><td>Delete <code>draftNotes</code> &gt;30d</td></tr>
+              <tr><td>Invoice reminder</td><td>09:00 daily</td><td>Push unpaid invoices</td></tr>
+              <tr><td>Search index GC</td><td>Daily</td><td>Remove stale <code>search_index</code></td></tr>
+            </tbody>
+          </table></div>
+          <p class="small" style="margin-top:8px">Implement with <code>pg_cron</code>, BullMQ, or cloud scheduler calling <code>POST /jobs/{name}</code> with <code>CRON_SECRET</code>.</p>
+        </div></div>
+      </div>
+      <div class="callout" style="margin-top:12px"><b>Offline:</b> Firestore had <code>persistenceEnabled:true</code> by default. External backend: cache last 50 notifications/messages in <code>SharedPreferences</code>/Hive and refresh on resume. Add <code>ETag / If-None-Match</code> to GETs.</div>
+    </section>
+
+    <section id="models" class="section">
+      <div class="section-head"><div class="num">16</div><div><h2>Data Models — Complete Schemas</h2><p>Reference for every table/collection previously in Supabase + Firestore.</p></div></div>
+      <div class="card"><div class="card-pad">
+        <div class="kicker">Postgres tables (9 core + 2 chat) — keep these DDLs</div>
+        <pre><code>-- 1notifications (push log + inbox)
+create table notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null, user_type text check (user_type in ('user','technician')),
+  title text not null, body text not null,
+  type text check (type in ('request_update','payment','chat','system','promo','verification')),
+  data jsonb default '{}', is_read boolean default false, created_at timestamptz default now()
+);
+create index idx_notifications_user on notifications (user_id, is_read, created_at desc);
+
+-- 2 reviews
+create table reviews (
+  id uuid primary key default gen_random_uuid(),
+  request_id text not null, reviewer_id text not null, technician_id text not null,
+  rating int check (rating between 1 and 5), comment text, created_at timestamptz default now()
+);
+
+-- 3 promo_codes
+create table promo_codes (
+  id uuid primary key default gen_random_uuid(),
+  code text unique not null, discount_type text check (discount_type in ('percentage','fixed')),
+  discount_value numeric not null, min_order_amount numeric default 0,
+  max_uses int, used_count int default 0, valid_from timestamptz not null, valid_until timestamptz not null,
+  is_active boolean default true, created_at timestamptz default now()
+);
+
+-- 4 support_tickets
+create table support_tickets (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null, user_type text check (user_type in ('user','technician')),
+  subject text not null, description text not null,
+  status text default 'open' check (status in ('open','in_progress','resolved','closed')),
+  priority text default 'medium' check (priority in ('low','medium','high','urgent')),
+  admin_reply text, created_at timestamptz default now(), updated_at timestamptz default now()
+);
+
+-- 5 search_index (tsvector)
+create table search_index (
+  id uuid primary key default gen_random_uuid(),
+  entity_type text check (entity_type in ('technician','service','post')),
+  entity_id text not null, title text not null, description text, governorate text, specialty text,
+  search_vector tsvector generated always as (to_tsvector('simple', coalesce(title,'')||' '||coalesce(description,'')||' '||coalesce(specialty,''))) stored,
+  created_at timestamptz default now(), unique (entity_type, entity_id)
+);
+create index idx_search_vector on search_index using gin (search_vector);
+
+-- 6 payment_logs
+create table payment_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id text, request_id text, technician_id text,
+  amount numeric not null, currency text default 'EGP',
+  payment_method text check (payment_method in ('card','cash','wallet','instapay')),
+  status text default 'pending' check (status in ('pending','completed','failed','refunded')),
+  gateway_response jsonb, created_at timestamptz default now()
+);
+
+-- 7 appointments
+create table appointments (
+  id uuid primary key default gen_random_uuid(),
+  request_id text not null, client_id text not null, technician_id text not null,
+  service_type text not null, service_name text, appointment_date date, appointment_time text,
+  client_address text, client_latitude double precision, client_longitude double precision,
+  technician_latitude double precision, technician_longitude double precision,
+  estimated_duration text, price numeric, notes text,
+  status text default 'scheduled' check (status in ('pending','scheduled','confirmed','in_progress','completed','cancelled')),
+  created_at timestamptz default now(), updated_at timestamptz default now()
+);
+
+-- 8 chat_rooms + 9 chat_messages
+create table chat_rooms (
+  id uuid primary key default gen_random_uuid(),
+  client_id text not null, technician_id text not null, request_id text,
+  service_type text, is_active boolean default true,
+  created_at timestamptz default now(), updated_at timestamptz default now()
+);
+create table chat_messages (
+  id uuid primary key default gen_random_uuid(),
+  room_id uuid references chat_rooms(id) on delete cascade,
+  sender_id text not null, sender_type text check (sender_type in ('user','technician')),
+  message text not null, is_read boolean default false, created_at timestamptz default now()
+);
+-- plus: users, technicians, service_requests, offers, posts, payment_cards, transactions, verified, family_members (see Firestore § below)
+</code></pre>
+      </div></div>
+      <div class="card" style="margin-top:12px"><div class="card-pad">
+        <div class="kicker">Firestore collections → Postgres / JSON (for migration)</div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Firestore</th><th>Doc ID</th><th>Key fields</th><th>REST table</th></tr></thead>
+          <tbody>
+            <tr><td><code>users/{uid}</code> + <code>family_members</code> sub</td><td>Firebase UID</td><td>name, phone, email, governorate, city, region, placeType, profileImagePath, familyId, verificationData</td><td><code>users</code></td></tr>
+            <tr><td><code>technicians/{phone}</code></td><td>Phone</td><td>fullName, phone, experience, specialty, governorate, area, profileImagePath, role, isVerified, walletBalance, rating, completedOrdersCount, todayEarnings...</td><td><code>technicians</code></td></tr>
+            <tr><td><code>requests/{id}</code> (+ carpentry/plumbing/painting)</td><td>Auto</td><td>All fields in §3</td><td><code>service_requests</code></td></tr>
+            <tr><td><code>offers/{id}</code></td><td>Auto</td><td>All fields in §4</td><td><code>offers</code></td></tr>
+            <tr><td><code>conversations/{id}/messages</code></td><td>Auto</td><td>customerId, technicianId, requestId, text, timestamp</td><td><code>chat_rooms/messages</code></td></tr>
+            <tr><td><code>PaymentCards/{id}</code></td><td>Auto</td><td>userId, cardLast4, cardHolder, expiryDate, cardType, isDefault <b>(no cardNumber)</b></td><td><code>payment_cards</code></td></tr>
+            <tr><td><code>transactions/{id}</code></td><td>Auto</td><td>technicianId, requestId, serviceName, amount, type, paymentMethod, dateStr</td><td><code>transactions</code></td></tr>
+            <tr><td><code>posts/{id}</code></td><td>Auto</td><td>authorId, authorName, authorRole, title, content, imagePath, likes, likedBy, isQuestion, category, createdAt</td><td><code>posts</code></td></tr>
+            <tr><td><code>verified/{uid}</code></td><td>UID</td><td>name, phone, email, city, governorate, frontIdPath, backIdPath, status</td><td><code>verifications</code></td></tr>
+            <tr><td><code>orders/{id}</code></td><td>Legacy</td><td>—</td><td>Deprecate</td></tr>
+          </tbody>
+        </table></div>
+        <div class="callout" style="margin-top:10px"><b>Field renames to normalize:</b> <code>firebase_user_id → user_id</code>, <code>firebase_request_id → request_id</code>, <code>createdAt (Firestore Timestamp)</code> → <code>created_at (timestamptz)</code>, <code>cardNumber → cardLast4</code>.</div>
+      </div></div>
+    </section>
+
+    <section id="env" class="section">
+      <div class="section-head"><div class="num">17</div><div><h2>Environments, Config & Migration</h2></div></div>
+      <div class="card"><div class="card-pad">
+        <div class="grid2">
+          <div>
+            <div class="kicker">Flutter config (frontend-only now)</div>
+            <pre><code>// lib/core/network/api_config.dart
+ApiConfig.baseUrl  // from --dart-define=API_BASE_URL (default http://basseeyta.duckdns.org)
+ApiConfig.apiKey   // from --dart-define=API_KEY
+ApiConfig.headers  // { Content-Type, Accept, Authorization: Bearer ... }
+
+// Run:
+flutter run --dart-define=API_BASE_URL=http://basseeyta.duckdns.org \
+            --dart-define=API_KEY=... \
+            --dart-define=USE_MOCK_OTP=true   // dev bypass
+
+// Mock layer:
+// lib/core/network/mock_backend.dart keeps the app building with Future.delayed + empty lists.
+// Remove mock imports once real API is wired.
+</code></pre>
+          </div>
+          <div>
+            <div class="kicker">Backend env</div>
+            <pre><code>DATABASE_URL=postgres://...
+STORAGE_ENDPOINT=s3:// or R2://  (buckets: profiles, account_verification, request, task_images, community_posts)
+JWT_SECRET=...  (or RS256 keys)
+FCM_SERVICE_ACCOUNT_JSON=...  (for /push/send)
+STRIPE_SECRET_KEY=...  FAWRY_...  INSTAPAY_...  (for /payments)
+OPENAI_API_KEY=...  (for /ai/assistant)
+CRON_SECRET=...  (for /jobs/*)
+</code></pre>
+            <div class="callout warn" style="margin-top:10px"><b>Do not commit</b> <code>supabaseUrl / anonKey / FirebaseOptions</code> in repo — they are removed. Old values were <code>eczybgjywdppvyyygnrd.supabase.co</code> + Firebase <code>bassyta-851a5</code> — now archived, do not reuse.</div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="kicker">Migration checklist (from Firebase/Supabase to external)</div>
+        <div class="table-wrap" style="margin-top:8px"><table>
+          <thead><tr><th>#</th><th>Task</th><th>Files to verify</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Create Postgres DB + run 9+ table DDLs (§16) + extensions <code>pgcrypto, uuid-ossp, pg_trgm</code></td><td>Supabase migrations → your DB</td></tr>
+            <tr><td>2</td><td>Create 5 storage buckets + policies</td><td>lib/core/services/storage_service.dart</td></tr>
+            <tr><td>3</td><td>Implement Auth (OTP + JWT) + /users, /technicians</td><td>login_screen, otp_screen, l.dart</td></tr>
+            <tr><td>4</td><td>Implement /service-requests + /offers + transactional accept</td><td>request_service_screen, OrderAcceptService</td></tr>
+            <tr><td>5</td><td>Implement /chat/* (rooms + messages)</td><td>chat_repository, l.dart</td></tr>
+            <tr><td>6</td><td>Implement /payments + /payment-cards + wallet credit</td><td>final_payment_screen, payment_cards_screen</td></tr>
+            <tr><td>7</td><td>Implement /posts + likes</td><td>comm1..6, community_screen</td></tr>
+            <tr><td>8</td><td>Implement /storage/upload + signed URLs</td><td>all upload paths</td></tr>
+            <tr><td>9</td><td>Add /search, /notifications, /push/send, /support-tickets, /reviews, /appointments, /families, /verification, /ai/assistant</td><td>search, notifications, etc.</td></tr>
+            <tr><td>10</td><td>Wire Flutter: replace mock delays in <code>lib/core/repositories/*</code> with real <code>ApiClient</code> calls</td><td>All repos</td></tr>
+            <tr><td>11</td><td>Remove <code>lib/core/network/mock_backend.dart</code> imports</td><td>40+ feature files</td></tr>
+            <tr><td>12</td><td>E2E: request → offer → accept → chat → payment → review → notification</td><td>Manual + <code>flutter test</code></td></tr>
+          </tbody>
+        </table></div>
+        <div class="divider"></div>
+        <div class="kicker">Files changed in extraction (for reviewer)</div>
+        <p class="small"><code>pubspec.yaml</code> removed <code>firebase_*</code> + <code>supabase_flutter</code>, added <code>http</code>. <code>lib/main.dart</code> now only <code>ApiConfig.init()</code>. Deleted <code>lib/core/config/firebase_options.dart</code> + <code>env.dart</code> (stubbed). All 11 repos in <code>lib/core/repositories/*</code> now stub to <code>ApiClient</code>. All 5 services in <code>lib/core/services/*</code> stubbed. <code>lib/core/network/api_client.dart + api_config.dart + mock_backend.dart</code> added. 40 feature files patched to use mocks. <code>firebase.json, firestore.rules, firestore.indexes.json</code> archived (see below). Tests updated.</p>
+        <div class="callout" style="margin-top:10px"><b>Archive:</b> Old backend files (<code>BACKEND_PLAN.md, BACKEND_SERVICES.md, backend-plan.html, firestore.rules</code> etc.) kept for reference but no longer used. New source of truth for backend is <b>this PRD</b>.</div>
+      </div></div>
+    </section>
+
+    <section class="section">
+      <div class="card" style="background:linear-gradient(135deg,var(--primary) 0%, #1565C0 100%);color:#fff;border:none">
+        <div class="card-pad" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+          <div style="flex:1;min-width:260px">
+            <h3 style="color:#fff;margin:0">Ready to build 🚀</h3>
+            <p style="margin:6px 0 0;opacity:.9;font-size:13px">Start with Auth (§2), then Requests (§3). Every endpoint above has a concrete former Firestore/Supabase query it replaces — grep the file paths to see the exact call site. When the backend is live, flip <code style="background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.25);color:#fff">API_BASE_URL</code> and the app goes live.</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <a class="btn" href="#auth" style="background:#fff;color:var(--primary)">Start at Auth →</a>
+            <a class="btn" href="#models" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.3)">Jump to models</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+<footer class="footer">Basita (بسيطة) — External Backend PRD · Generated 2026-08-30 · Frontend is now backend-free. Build the API against this spec. · See also: <code>lib/core/network/api_client.dart</code> · <code>WORK_LOG.md</code></footer>
+<script>
+// Smooth active nav
+const sections=[...document.querySelectorAll('.section')];
+const links=[...document.querySelectorAll('.nav a')];
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      const id=e.target.id;
+      links.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+id));
+    }
+  });
+},{rootMargin:'-40% 0px -50% 0px',threshold:0});
+sections.forEach(s=>obs.observe(s));
+// Highlight first
+document.querySelector('.nav a')?.classList.add('active');
+</script>
+</body>
+</html>

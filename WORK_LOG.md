@@ -2,9 +2,9 @@
 
 > **Project:** `basita1` — Flutter home-services platform  
 > **Firebase Project:** `bassyta-851a5` (project number: `718849850419`)  
-> **Supabase Project:** `wduombkxwcqhipdumxmn`  
-> **Supabase URL:** `https://wduombkxwcqhipdumxmn.supabase.co`  
-> **Date:** August 25, 2026
+> **Supabase Project:** `eczybgjywdppvyyygnrd` (`eu-west-1`, PG 17.6.1) — https://eczybgjywdppvyyygnrd.supabase.co  
+> **Legacy Supabase Project (archived):** `wduombkxwcqhipdumxmn` — https://wduombkxwcqhipdumxmn.supabase.co (data migrated 2026-08-29)  
+> **Date:** August 29, 2026 (Phase 1 — greenfield migration completed)
 
 ---
 
@@ -270,9 +270,10 @@ CREATE INDEX idx_payment_logs_tech ON payment_logs(technician_id, created_at DES
 |-----------|--------|---------|
 | `pgcrypto` | `extensions` | UUID generation, encryption |
 | `uuid-ossp` | `extensions` | UUID generation |
-| `pg_cron` | `cron` | Scheduled jobs (daily reset) |
-| `http` | `extensions` | Outbound HTTP requests |
-| `pg_trgm` | `extensions` | Fuzzy text search |
+| `pg_cron` | `pg_catalog` (1.6.4) | Scheduled jobs (daily reset) |
+| `http` | `extensions` (1.6) | Outbound HTTP requests |
+| `pg_trgm` | `extensions` (1.6) | Fuzzy text search |
+| `vector` | `extensions` (0.8.2) | Vector embeddings (future AI) |
 
 ---
 
@@ -591,11 +592,14 @@ All repositories in `lib/core/repositories/`.
 ### main.dart Initialization
 
 ```dart
+// Now via lib/core/config/env.dart — reads --dart-define with fallback to new project
+import 'package:basita1/core/config/env.dart';
 await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 await Supabase.initialize(
-  url: 'https://wduombkxwcqhipdumxmn.supabase.co',
-  anonKey: 'eyJ...',
+  url: Env.supabaseUrl, // https://eczybgjywdppvyyygnrd.supabase.co
+  anonKey: Env.supabaseAnonKey,
 );
+// Legacy URL wduombkxwcqhipdumxmn kept as Env.legacySupabaseUrl for reference
 ```
 
 ---
@@ -606,13 +610,13 @@ await Supabase.initialize(
 |----------|-------|--------|
 | Files moved (Clean Architecture) | 93 | ✅ Complete |
 | Firestore security rules deployed | 11 collections | ✅ Deployed |
-| Supabase PostgreSQL tables | 6 | ✅ Created |
-| Supabase RLS policies | 6 tables | ✅ Enabled |
-| Supabase extensions enabled | 5 | ✅ Enabled |
-| Supabase storage buckets | 5 | ✅ Created |
-| Supabase storage RLS policies | 5 buckets | ✅ Applied |
-| Supabase Edge Functions | 3 | ✅ Deployed |
-| Supabase RPC functions | 2 | ✅ Created |
+| Supabase PostgreSQL tables | 7 (notifications, reviews, promo_codes, support_tickets, search_index, payment_logs, appointments) | ✅ Created (2026-08-29 new project eczybgjywdppvyyygnrd) |
+| Supabase RLS policies | 7 tables (19 policies) | ✅ Enabled |
+| Supabase extensions enabled | 5 (pgcrypto, uuid-ossp, pg_cron 1.6.4, pg_trgm 1.6, http 1.6, vector 0.8.2) | ✅ Enabled |
+| Supabase storage buckets | 5 (profiles, account_verification, request, task_images, community_posts) | ✅ Created |
+| Supabase storage RLS policies | 5 buckets (13 policies) | ✅ Applied |
+| Supabase Edge Functions | 3 (planned — Phase 2) | ⏳ Pending |
+| Supabase RPC functions | 3 (search_entities, increment_used_count, handle_updated_at) + rls_auto_enable | ✅ Created |
 | Flutter auth flow fixed | 1 screen | ✅ Real Firebase Auth |
 | Flutter card security fixed | 3 files | ✅ Last-4-only storage |
 | Flutter data models | 5 | ✅ Created |

@@ -112,7 +112,9 @@ class SuccessScreen extends StatelessWidget {
                                       color: primaryBlue,
                                       boxShadow: [
                                         BoxShadow(
-                                          color: primaryBlue.withValues(alpha: 0.25),
+                                          color: primaryBlue.withValues(
+                                            alpha: 0.25,
+                                          ),
                                           blurRadius: 16,
                                           spreadRadius: 1,
                                           offset: const Offset(0, 8),

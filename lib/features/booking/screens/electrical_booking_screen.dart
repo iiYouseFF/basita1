@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:basita1/features/booking/screens/electrical_bookings_service.dart'; // استدعاء ملف خدمة الفايربيس
 
 class ElectricalBookingScreen extends StatefulWidget {
-  const ElectricalBookingScreen({Key? key}) : super(key: key);
+  const ElectricalBookingScreen({super.key});
 
   @override
   State<ElectricalBookingScreen> createState() =>
@@ -192,7 +192,7 @@ class _ElectricalBookingScreenState extends State<ElectricalBookingScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? const Color(0xFF0066FF).withOpacity(0.1)
+                            ? const Color(0xFF0066FF).withValues(alpha: 0.1)
                             : Colors.white,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
@@ -231,7 +231,7 @@ class _ElectricalBookingScreenState extends State<ElectricalBookingScreen> {
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: _selectedRoomsCount,
+                initialValue: _selectedRoomsCount,
                 hint: Text(
                   'اختر عدد الغرف',
                   style: textStyleBase.copyWith(
@@ -441,7 +441,7 @@ class _ElectricalBookingScreenState extends State<ElectricalBookingScreen> {
             color: Colors.white,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, -4),
               ),

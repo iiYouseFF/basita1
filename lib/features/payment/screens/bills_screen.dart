@@ -1,11 +1,12 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+// removed: firebase_auth
 import 'package:google_fonts/google_fonts.dart';
 
 // استدعاء ملف جلسة المستخدم لجلب معلوماته للتحقق الأمني
 import 'package:basita1/core/session/user_session.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 // ==========================================
 // 1. نموذج بيانات الفاتورة
@@ -138,7 +139,7 @@ class _InvoicesListScreenState extends State<InvoicesListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final String currentUserId = MockAuth.currentUser?.uid ?? '';
     final String currentUserPhone = UserSession.instance.phone;
 
     return Directionality(
@@ -171,9 +172,8 @@ class _InvoicesListScreenState extends State<InvoicesListScreen> {
             ],
           ),
         ),
-        body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-          stream: FirebaseFirestore.instance
-              .collection('requests')
+        body: StreamBuilder<dynamic>(
+          stream: MockFirestore.collection('requests')
               .where(
                 Filter.or(
                   Filter('userId', isEqualTo: currentUserId),
@@ -467,7 +467,7 @@ class _InvoicesListScreenState extends State<InvoicesListScreen> {
           border: Border.all(color: borderGrey, width: 0.5),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -874,7 +874,7 @@ class InvoiceDetailsScreen extends StatelessWidget {
                   onPressed: () {},
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(
-                      color: textGrey.withOpacity(0.5),
+                      color: textGrey.withValues(alpha: 0.5),
                       width: 1.5,
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 14),

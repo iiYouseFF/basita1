@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Basita (بسيطة) — Backend System Plan</title>
+<meta name="description" content="Hybrid Firebase + Supabase backend plan for Basita home-services platform">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --primary:#0D47A1; --primary-700:#0a357a; --primary-50:#e8effb; --primary-100:#d0ddf5;
+  --accent:#00BFA5; --accent-50:#e0f7f4; --warn:#FF6F00; --warn-50:#fff3e0;
+  --danger:#D32F2F; --danger-50:#ffebee; --success:#2E7D32;
+  --bg:#f8f9fb; --surface:#ffffff; --surface-2:#f1f4f8; --border:#e3e8ef; --border-strong:#d0d7e3;
+  --text:#0f172a; --muted:#64748b; --muted-2:#94a3b8;
+  --radius:14px; --radius-sm:9px; --shadow:0 4px 24px rgba(13,71,161,.07), 0 1px 3px rgba(0,0,0,.06);
+  --shadow-lg:0 12px 40px rgba(13,71,161,.11), 0 4px 12px rgba(0,0,0,.08);
+  --mono:'JetBrains Mono', monospace; --sans:'Inter','Cairo',system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--primary);text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);padding:.18em .42em;border-radius:6px;border:1px solid var(--border)}
+pre{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:#0f172a;color:#e2e8f0;padding:16px;border-radius:12px;overflow:auto;border:1px solid #1e293b;white-space:pre-wrap;word-break:break-word}
+pre code{background:none;border:none;padding:0;color:inherit}
+
+/* Header */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.topbar-inner{max-width:1180px;margin:0 auto;padding:14px 22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,var(--primary),#1976D2);display:grid;place-items:center;color:#fff;font-weight:800;font-size:18px;box-shadow:0 4px 14px rgba(13,71,161,.3)}
+.brand h1{margin:0;font-size:18px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.brand h1 span{color:var(--primary)}
+.brand p{margin:2px 0 0;font-size:12px;color:var(--muted);font-weight:500}
+.topbar-actions{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pill{font-size:12px;font-weight:700;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.pill-dot{width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 0 4px rgba(46,125,50,.15)}
+.pill.warn{background:var(--warn-50);border-color:#ffcc80;color:#e65100}
+.pill.success{background:#e8f5e9;border-color:#a5d6a7;color:#1b5e20}
+.btn{appearance:none;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);font:600 13px var(--sans);padding:8px 13px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:.15s;white-space:nowrap}
+.btn:hover{transform:translateY(-1px);box-shadow:var(--shadow);border-color:var(--primary-100)}
+.btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+.btn.primary:hover{background:var(--primary-700)}
+.btn.ghost{background:transparent}
+.btn.small{padding:6px 10px;font-size:12px;border-radius:8px}
+
+/* Layout */
+.shell{max-width:1180px;margin:0 auto;padding:22px;display:grid;grid-template-columns:260px 1fr;gap:22px}
+@media(max-width:980px){.shell{grid-template-columns:1fr}.side{position:static !important}}
+.side{position:sticky;top:72px;align-self:start;display:flex;flex-direction:column;gap:16px}
+.main{display:flex;flex-direction:column;gap:18px;min-width:0}
+
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.card-pad{padding:18px}
+.card h3{margin:0 0 8px;font-size:14px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.card h3 .icon{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-size:14px}
+.muted{color:var(--muted);font-size:13px}
+.small{font-size:12px;color:var(--muted)}
+.kicker{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--primary)}
+.divider{height:1px;background:var(--border);margin:14px 0}
+
+/* Progress */
+.progress-wrap{margin:10px 0 6px}
+.progress-track{height:10px;background:var(--surface-2);border-radius:999px;overflow:hidden;border:1px solid var(--border)}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--primary),#1976D2 60%, var(--accent));border-radius:999px;transition:width .45s cubic-bezier(.22,1,.36,1);width:0}
+.progress-meta{display:flex;justify-content:space-between;align-items:center;margin-top:7px;font-size:12px;font-weight:600}
+.progress-meta b{font-size:13px}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chip{font:700 11px var(--sans);padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;transition:.15s}
+.chip.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.search{width:100%;margin-top:10px;padding:9px 12px;border:1px solid var(--border-strong);border-radius:10px;font:500 13px var(--sans);background:var(--surface);outline:none}
+.search:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-50)}
+
+/* Nav */
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav a{padding:8px 10px;border-radius:9px;font:600 13px var(--sans);color:var(--muted);display:flex;align-items:center;gap:8px;border:1px solid transparent}
+.nav a.active{background:var(--primary);color:#fff}
+.nav a:hover{background:var(--surface-2);color:var(--text);text-decoration:none}
+.nav a.active:hover{background:var(--primary-700);color:#fff}
+.badge{font:800 10px var(--mono);padding:2px 6px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);color:var(--muted);margin-left:auto}
+.nav a.active .badge{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.25);color:#fff}
+
+/* Hero */
+.hero{background:linear-gradient(135deg,var(--primary) 0%, #1565C0 55%, #1976D2 100%);color:#fff;border-radius:18px;padding:22px;position:relative;overflow:hidden;box-shadow:var(--shadow-lg)}
+.hero::after{content:"";position:absolute;inset:auto -60px -60px auto;width:220px;height:220px;background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.18), transparent 65%);border-radius:50%}
+.hero-grid{display:grid;grid-template-columns:1.2fr .9fr;gap:16px;position:relative}
+@media(max-width:780px){.hero-grid{grid-template-columns:1fr}}
+.hero h2{margin:0;font-size:26px;font-weight:800;letter-spacing:-.03em;line-height:1.15}
+.hero h2 span{opacity:.95;font-weight:400}
+.hero p{margin:10px 0 14px;opacity:.9;font-size:14px;line-height:1.6;max-width:54ch}
+.hero-actions{display:flex;gap:8px;flex-wrap:wrap}
+.hero .btn{background:#fff;color:var(--primary);border-color:#fff}
+.hero .btn.secondary{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.35);backdrop-filter:blur(6px)}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.stat{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:13px;backdrop-filter:blur(6px)}
+.stat b{font-size:20px;font-weight:800;display:block;line-height:1}
+.stat span{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.85}
+
+/* Section */
+.section{scroll-margin-top:84px}
+.section-head{display:flex;align-items:center;gap:12px;margin:0 0 12px}
+.section-head h2{margin:0;font-size:18px;font-weight:800;letter-spacing:-.02em}
+.section-head .num{width:32px;height:32px;border-radius:10px;background:var(--primary);color:#fff;display:grid;place-items:center;font:800 13px var(--mono)}
+.section-head p{margin:0;color:var(--muted);font-size:13px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:780px){.grid2{grid-template-columns:1fr}}
+.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:520px}
+th{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;background:var(--surface-2);padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:none}
+.tag{font:700 11px var(--mono);padding:3px 7px;border-radius:999px;border:1px solid var(--border);background:var(--surface-2);white-space:nowrap}
+.tag.primary{background:var(--primary-50);border-color:var(--primary-100);color:var(--primary)}
+.tag.success{background:#e8f5e9;border-color:#a5d6a7;color:#1b5e20}
+.tag.warn{background:var(--warn-50);border-color:#ffcc80;color:#e65100}
+.tag.danger{background:var(--danger-50);border-color:#ef9a9a;color:#b71c1c}
+
+/* Architecture visual */
+.arch{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:780px){.arch{grid-template-columns:1fr}}
+.arch-col{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface)}
+.arch-col-head{padding:12px 14px;font:800 12px var(--sans);letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.arch-col-head.firebase{background:#fff3e0;border-bottom:1px solid #ffcc80;color:#e65100}
+.arch-col-head.supabase{background:#e8f5e9;border-bottom:1px solid #a5d6a7;color:#1b5e20}
+.arch-body{padding:10px 14px;display:flex;flex-direction:column;gap:8px}
+.arch-item{display:flex;gap:10px;align-items:flex-start;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2)}
+.arch-item b{font-size:13px}
+.arch-item p{margin:2px 0 0;font-size:12px;color:var(--muted);line-height:1.5}
+.arch-arrow{display:flex;align-items:center;justify-content:center;color:var(--primary);font-weight:800}
+
+/* Phases */
+.phase{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--surface);box-shadow:var(--shadow)}
+.phase-head{padding:16px 18px;display:flex;gap:14px;align-items:center;cursor:pointer;user-select:none;background:linear-gradient(180deg, #fff, #fbfdff)}
+.phase-head:hover{background:var(--surface-2)}
+.phase-meta{flex:1;min-width:0}
+.phase-title{margin:0;font-size:15px;font-weight:800;letter-spacing:-.01em;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.phase-title .phase-badge{font:800 11px var(--mono);padding:4px 8px;border-radius:999px;background:var(--primary);color:#fff}
+.phase-desc{margin:4px 0 0;font-size:12px;color:var(--muted)}
+.phase-stats{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.phase-progress{width:110px}
+.phase-progress .progress-track{height:8px}
+.phase-toggle{width:30px;height:30px;border-radius:9px;border:1px solid var(--border);background:var(--surface);display:grid;place-items:center;transition:.2s}
+.phase.open .phase-toggle{transform:rotate(180deg);background:var(--primary);color:#fff;border-color:var(--primary)}
+.phase-body{border-top:1px solid var(--border);padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--surface)}
+.phase-body.collapsed{display:none}
+.branch{font:600 12px var(--mono);background:#0f172a;color:#e2e8f0;padding:6px 10px;border-radius:999px;display:inline-flex;align-items:center;gap:6px;width:fit-content}
+.task{border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;gap:12px;align-items:flex-start;background:var(--surface);transition:.15s}
+.task:hover{border-color:var(--primary-100);box-shadow:0 4px 14px rgba(13,71,161,.06)}
+.task.done{opacity:.72;background:var(--surface-2)}
+.task.done .task-title{text-decoration:line-through;color:var(--muted)}
+.task input[type=checkbox]{width:18px;height:18px;margin-top:2px;accent-color:var(--primary);flex-shrink:0;cursor:pointer}
+.task-main{flex:1;min-width:0}
+.task-title{margin:0;font-size:13px;font-weight:700;line-height:1.4}
+.task-desc{margin:4px 0 6px;font-size:12px;color:var(--muted);line-height:1.6}
+.task-foot{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.task-foot .tag{font-size:10px}
+.task-actions{display:flex;gap:6px}
+.icon-btn{width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:var(--surface);display:grid;place-items:center;cursor:pointer;font-size:12px}
+.icon-btn:hover{background:var(--surface-2)}
+
+/* Timeline bar */
+.timeline{display:flex;gap:8px;align-items:center;padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;flex-wrap:wrap}
+.timeline b{font-size:12px}
+.dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--surface)}
+.dot.done{background:var(--success)}
+.dot.todo{background:var(--border-strong)}
+
+/* Callout */
+.callout{border-left:4px solid var(--primary);background:var(--primary-50);border-radius:10px;padding:12px 14px;font-size:13px}
+.callout.warn{border-color:var(--warn);background:var(--warn-50)}
+.callout.danger{border-color:var(--danger);background:var(--danger-50)}
+.callout.success{border-color:var(--success);background:#e8f5e9}
+
+/* Footer */
+.footer{padding:18px;text-align:center;font-size:12px;color:var(--muted)}
+.kbd{font:700 11px var(--mono);border:1px solid var(--border-strong);border-bottom-width:2px;background:var(--surface);padding:2px 6px;border-radius:6px}
+
+/* Details */
+details{border:1px solid var(--border);border-radius:12px;background:var(--surface);overflow:hidden}
+details summary{padding:12px 14px;font:700 13px var(--sans);cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;background:var(--surface-2)}
+details summary::-webkit-details-marker{display:none}
+details[open] summary{border-bottom:1px solid var(--border)}
+details .details-body{padding:14px}
+
+/* Responsive tweaks */
+@media print{.topbar,.side,.btn,.filters,.search{display:none !important}.shell{grid-template-columns:1fr}.card,.phase{break-inside:avoid;box-shadow:none}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-mark">ب</div>
+      <div>
+        <h1>Basita <span>بسيطة</span> — Backend Plan</h1>
+        <p>Flutter · Firebase + Supabase · Clean Architecture</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span class="pill"><span class="pill-dot"></span> Supabase <code style="background:none;border:none;padding:0">eczybgjywdppvyyygnrd</code> · ACTIVE_HEALTHY</span>
+      <span class="pill warn">DB empty — 0 tables · greenfield</span>
+      <button class="btn small" id="btnPrint">🖨️ Print</button>
+      <button class="btn small primary" id="btnReset">↺ Reset</button>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="side">
+    <div class="card">
+      <div class="card-pad">
+        <div class="kicker">Progress</div>
+        <h3 style="margin-top:6px"><span class="icon" style="background:var(--primary-50);color:var(--primary)">✓</span> Execution Tracker</h3>
+        <div class="progress-wrap">
+          <div class="progress-track"><div class="progress-bar" id="overallBar"></div></div>
+          <div class="progress-meta"><span id="overallText">0 / 0 done</span><b id="overallPct">0%</b></div>
+        </div>
+        <div class="filters">
+          <button class="chip active" data-filter="all">All</button>
+          <button class="chip" data-filter="todo">To do</button>
+          <button class="chip" data-filter="done">Done</button>
+          <button class="chip" data-filter="critical">Critical</button>
+        </div>
+        <input class="search" id="search" placeholder="Search tasks, tables, files…">
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn small" id="btnExpand" style="flex:1">Expand all</button>
+          <button class="btn small" id="btnCollapse" style="flex:1">Collapse</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn small" id="btnExport" style="flex:1">⬇ Export JSON</button>
+          <button class="btn small" id="btnCopyLink" style="flex:1">🔗 Copy link</button>
+        </div>
+        <p class="small" style="margin:10px 0 0">Checked state saves to <span class="kbd">localStorage</span> automatically. Use <span class="kbd">backend-plan.html</span> in repo root.</p>
+      </div>
+    </div>
+
+    <nav class="card">
+      <div class="card-pad" style="padding:12px">
+        <div class="kicker" style="margin-bottom:8px">On this page</div>
+        <div class="nav">
+          <a href="#audit" class="active">1 · Audit <span class="badge">live 2026-08-29</span></a>
+          <a href="#arch">2 · Architecture</a>
+          <a href="#tables">3 · Supabase Tables <span class="badge">7</span></a>
+          <a href="#storage">4 · Storage Buckets <span class="badge">5</span></a>
+          <a href="#auth">5 · Auth — Mock vs Real OTP</a>
+          <a href="#security">6 · Security & RLS</a>
+          <a href="#roadmap">7 · Phases & Tasks <span class="badge" id="navTodoBadge">36</span></a>
+          <a href="#migrations">8 · Migrations</a>
+          <a href="#apis">9 · API Surface</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="card">
+      <div class="card-pad">
+        <h3><span class="icon" style="background:var(--warn-50)">⚡</span> Do this next</h3>
+        <p class="small" id="nextUp">Loading…</p>
+        <div class="divider"></div>
+        <div class="kicker">Branches</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+          <code>feat/backend-phase-1-schema</code>
+          <code>feat/backend-phase-2-functions</code>
+          <code>feat/backend-phase-3-repos</code>
+          <code>feat/backend-phase-4-hardening</code>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <section class="hero">
+      <div class="hero-grid">
+        <div>
+          <div class="kicker" style="color:rgba(255,255,255,.85)">Project: basita1 · 2026-08-29</div>
+          <h2>Hybrid backend<br><span>— Firebase for identity & realtime, Supabase for relational, files & server logic.</span></h2>
+          <p>No duplicate source of truth. Firestore stays for <b>users / requests / offers / chat / posts</b>. Supabase owns <b>notifications / reviews / promos / tickets / search / payments / appointments</b> + Storage + Edge Functions.</p>
+          <div class="hero-actions">
+            <a class="btn" href="#roadmap">Jump to tasks ↓</a>
+            <a class="btn secondary" href="BACKEND_PLAN.md" target="_blank">Read BACKEND_PLAN.md</a>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="stat"><b>7</b><span>Postgres tables</span></div>
+          <div class="stat"><b>5</b><span>Storage buckets</span></div>
+          <div class="stat"><b>3+3</b><span>Edge Functions (MVP + Phase 2)</span></div>
+          <div class="stat"><b>36</b><span>Tracked tasks</span></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="timeline card">
+      <div style="flex:1;min-width:220px">
+        <div class="kicker">Timeline</div>
+        <b>12 days · 4 phases</b>
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center">
+          <span style="display:flex;gap:6px;align-items:center;font:700 12px var(--sans)"><span class="dot done"></span> Phase 1 · D1–2 Foundation</span>
+          <span style="display:flex;gap:6px;align-items:center;font:700 12px var(--sans)"><span class="dot todo"></span> Phase 2 · D3–5 Functions</span>
+          <span style="display:flex;gap:6px;align-items:center;font:700 12px var(--sans)"><span class="dot todo"></span> Phase 3 · D6–9 Repos</span>
+          <span style="display:flex;gap:6px;align-items:center;font:700 12px var(--sans)"><span class="dot todo"></span> Phase 4 · D10–12 Hardening</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span class="pill success">Firestore rules ✓ deployed</span>
+        <span class="pill warn">Firestore indexes ✗ empty</span>
+        <span class="pill warn">Supabase greenfield</span>
+        <span class="pill">Mock OTP required · <code style="background:none;border:none;padding:0">PROMPT.MD</code></span>
+      </div>
+    </div>
+
+    <!-- 1 Audit -->
+    <section id="audit" class="section">
+      <div class="section-head">
+        <div class="num">1</div>
+        <div>
+          <h2>Current State Audit — Live 2026-08-29</h2>
+          <p>Verified via Supabase MCP + repo inspection. Stale ref <code>wduombkxwcqhipdumxmn</code> replaced by <code>eczybgjywdppvyyygnrd</code>.</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Layer</th><th>Live State</th><th>Status</th><th>Evidence</th></tr></thead>
+          <tbody>
+            <tr><td><b>Supabase DB</b></td><td>Empty — 0 tables in <code>public</code>, 0 migrations</td><td><span class="tag warn">greenfield</span></td><td><code>supabase_list_tables</code></td></tr>
+            <tr><td><b>Supabase Project</b></td><td><code>eczybgjywdppvyyygnrd</code> · eu-west-1 · PG 17.6.1 · ACTIVE_HEALTHY</td><td><span class="tag success">live</span></td><td><code>supabase_list_projects</code></td></tr>
+            <tr><td><b>Extensions</b></td><td><code>pgcrypto</code> ✓ · <code>uuid-ossp</code> ✓ · <code>pg_cron</code> ✗ · <code>pg_trgm</code> ✗ · <code>http</code> ✗</td><td><span class="tag warn">install 3</span></td><td><code>supabase_list_extensions</code></td></tr>
+            <tr><td><b>Storage</b></td><td>No buckets yet — 5 to recreate</td><td><span class="tag danger">missing</span></td><td><code>storage.buckets</code></td></tr>
+            <tr><td><b>Edge Functions</b></td><td>None deployed in new project</td><td><span class="tag warn">todo</span></td><td>old project had 3</td></tr>
+            <tr><td><b>Firebase Auth</b></td><td>Mock OTP — any 6 digits passes per <code>PROMPT.MD:1</code></td><td><span class="tag primary">dev mode</span></td><td><code>otp_screen.dart</code></td></tr>
+            <tr><td><b>Firestore</b></td><td>9 collections live: users, technicians, requests(+3), offers, conversations, PaymentCards, transactions, posts, verified</td><td><span class="tag success">live</span></td><td><code>firestore.rules</code></td></tr>
+            <tr><td><b>Firestore Rules</b></td><td>11 collections secured (owner/phone checks)</td><td><span class="tag success">deployed</span></td><td><code>firestore.rules:1</code></td></tr>
+            <tr><td><b>Firestore Indexes</b></td><td><code>firestore.indexes.json</code> = <code>[]</code> — 4 composites needed</td><td><span class="tag danger">empty</span></td><td><code>firestore.indexes.json:1</code></td></tr>
+            <tr><td><b>Flutter Repos</b></td><td>6 Supabase repos coded but point at non-existent tables</td><td><span class="tag warn">blocked</span></td><td><code>lib/core/repositories/</code></td></tr>
+            <tr><td><b>Payment Security</b></td><td>Fixed — <code>cardLast4</code> only, fallback for legacy <code>cardNumber</code></td><td><span class="tag success">fixed</span></td><td><code>WORK_LOG.md:378</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout" style="margin-top:12px"><b>Implication:</b> New Supabase is greenfield — do not attempt to reuse old project ID. Re-apply all 7 tables + 5 buckets + 3 functions in Phase 1. This HTML file tracks that work.</div>
+    </section>
+
+    <!-- 2 Architecture -->
+    <section id="arch" class="section">
+      <div class="section-head">
+        <div class="num">2</div>
+        <div><h2>Architecture & Responsibility Split</h2><p><code>lib/main.dart:7</code> initializes both SDKs. No direct Firestore calls in widgets — via <code>core/repositories/</code>.</p></div>
+      </div>
+      <div class="arch">
+        <div class="arch-col">
+          <div class="arch-col-head firebase">🔥 Firebase — Identity + Realtime</div>
+          <div class="arch-body">
+            <div class="arch-item"><span>🔐</span><div><b>Auth (Phone OTP)</b><p>Primary. <code>verifyPhoneNumber → PhoneAuthCredential → signInWithCredential</code>. Mock in dev.</p></div></div>
+            <div class="arch-item"><span>📄</span><div><b>Firestore (Documents)</b><p>users, technicians, requests, offers, chat, posts, PaymentCards, verified. <code>snapshots()</code> realtime.</p></div></div>
+            <div class="arch-item"><span>🔔</span><div><b>FCM</b><p>Delivery layer. Called by Supabase Edge Function <code>send-notification</code>.</p></div></div>
+            <div class="arch-item"><span>📊</span><div><b>Analytics + Crashlytics</b><p>Events: login, request_created, offer_submitted, payment_completed, chat_message_sent, post_created.</p></div></div>
+          </div>
+        </div>
+        <div class="arch-col">
+          <div class="arch-col-head supabase">⚡ Supabase — Relational + Files + Logic</div>
+          <div class="arch-body">
+            <div class="arch-item"><span>🐘</span><div><b>PostgreSQL (7 tables)</b><p>notifications, reviews, promo_codes, support_tickets, search_index (tsvector), payment_logs, appointments.</p></div></div>
+            <div class="arch-item"><span>🗄️</span><div><b>Storage (5 buckets)</b><p>profiles, account_verification, request, task_images, community_posts.</p></div></div>
+            <div class="arch-item"><span>⚙️</span><div><b>Edge Functions</b><p>send-notification, process-payment (Stripe/Fawry), daily-reset (cron).</p></div></div>
+            <div class="arch-item"><span>🔍</span><div><b>Search + Cron</b><p><code>search_entities(q)</code> ranked by <code>ts_rank</code> · <code>pg_cron</code> nightly.</p></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="card-pad">
+          <div class="kicker">Decision matrix</div>
+          <div class="table-wrap" style="margin-top:10px">
+            <table>
+              <thead><tr><th>Concern</th><th>Owner</th><th>Why</th></tr></thead>
+              <tbody>
+                <tr><td>Phone OTP identity</td><td><span class="tag primary">Firebase</span></td><td>Best SMS deliverability in Egypt</td></tr>
+                <tr><td>Profiles / Requests / Offers / Chat / Posts</td><td><span class="tag primary">Firestore</span></td><td>Already live + realtime snapshots</td></tr>
+                <tr><td>Notifications / Reviews / Promos / Tickets / Search / Payments</td><td><span class="tag success">Supabase PG</span></td><td>Needs joins, tsvector, cron, audit</td></tr>
+                <tr><td>All file uploads</td><td><span class="tag success">Supabase Storage</span></td><td>Cheaper, already in <code>storage_service.dart</code></td></tr>
+                <tr><td>Payments (Stripe/Fawry)</td><td><span class="tag success">Edge Function</span></td><td>Secrets must not be on client</td></tr>
+                <tr><td>Push fan-out</td><td><span class="tag success">Edge → FCM</span></td><td>Throttling + logging to <code>notifications</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <details style="margin-top:12px"><summary>📦 Data flow — Service request example</summary><div class="details-body">
+            <pre><code>Customer: request_service_screen.dart
+  → upload images to Supabase `request` bucket (storage_service.dart)
+  → Firestore requests.add({userId: Firebase UID, governorate, images: [urls]})
+  → Edge Function send-notification → FCM topic requests_{governorate}
+
+Technician: technician_dashboard.dart
+  → Firestore requests.where(status==pending, governorate==techGov).snapshots()
+  → submit offer → Firestore offers.add({requestId, technicianId: phone})
+  → Customer: offers.where(requestId==...).snapshots() → accept
+  → Firestore requests.update(status=accepted, technicianId, acceptedPrice)
+  → Supabase notifications.insert() + FCM push both sides</code></pre>
+          </div></details>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 Tables -->
+    <section id="tables" class="section">
+      <div class="section-head">
+        <div class="num">3</div>
+        <div><h2>Supabase PostgreSQL — 7 Tables</h2><p>All: <code>id UUID PK gen_random_uuid()</code> · <code>created_at TIMESTAMPTZ</code> · RLS enabled. Models already in <code>lib/core/models/</code>.</p></div>
+      </div>
+      <div class="grid2">
+        <details open><summary>🔔 notifications — in-app inbox + push log</summary><div class="details-body">
+          <pre><code>user_id text (Firebase UID/phone)
+user_type text  user|technician
+title, body text
+type text  request_update|payment|chat|system|promo|verification
+data jsonb default '{}'
+is_read bool
+idx: (user_id, is_read, created_at desc)</code></pre>
+          <p class="small">Dart: <code>app_notification.dart:1</code> + <code>notification_repository.dart:1</code> matches 1:1. Realtime: <code>stream(primaryKey:['id']).eq('user_id', uid)</code></p>
+        </div></details>
+        <details open><summary>⭐ reviews — technician ratings</summary><div class="details-body">
+          <pre><code>request_id text, reviewer_id text (UID)
+technician_id text (phone → technicians/{phone})
+rating int 1..5, comment text
+idx: (technician_id, created_at desc) + (request_id)</code></pre>
+          <p class="small">Dart: <code>review.dart</code> ✓</p>
+        </div></details>
+        <details open><summary>🎟️ promo_codes</summary><div class="details-body">
+          <pre><code>code text unique, discount_type percentage|fixed
+discount_value numeric, min_order_amount numeric
+max_uses int, used_count int
+valid_from, valid_until timestamptz
+is_active bool
+idx: (code) where is_active</code></pre>
+          <p class="small">Method <code>calculateDiscount(orderAmount)</code> in model. RPC <code>increment_used_count(uuid)</code> atomic.</p>
+        </div></details>
+        <details open><summary>🎧 support_tickets</summary><div class="details-body">
+          <pre><code>user_id, user_type, subject, description
+status open|in_progress|resolved|closed
+priority low|medium|high|urgent
+admin_reply text, updated_at timestamptz
+idx: (user_id,status) + (status,priority)</code></pre>
+        </div></details>
+        <details open><summary>🔍 search_index — full-text (tsvector)</summary><div class="details-body">
+          <pre><code>entity_type technician|service|post
+entity_id text (Firestore doc ID/phone)
+title, description, governorate, specialty
+search_vector tsvector GENERATED AS
+  to_tsvector('simple', title||description||specialty) STORED
+unique(entity_type, entity_id)
+idx: GIN(search_vector) + (governorate, entity_type)</code></pre>
+          <p class="small">RPC <code>search_entities(q, etype, gov, lim)</code> ranked by <code>ts_rank</code>.</p>
+        </div></details>
+        <details open><summary>💳 payment_logs — audit trail</summary><div class="details-body">
+          <pre><code>firebase_request_id, firebase_user_id (UID)
+technician_id (phone), amount numeric, currency EGP
+payment_method card|cash|wallet|instapay
+status pending|completed|failed|refunded
+stripe_payment_id, gateway_response jsonb
+idx: (firebase_user_id, created_at) + (technician_id, created_at)</code></pre>
+          <p class="small">Reuse for Instapay or create <code>instapay_transactions</code> if separate flow (<code>instapay_repository.dart</code> exists).</p>
+        </div></details>
+        <details open><summary>📅 appointments — booking/consultation (NEW)</summary><div class="details-body">
+          <pre><code>user_id text, technician_id text
+service_type electrical|plumbing|painting|carpentry
+scheduled_at timestamptz, status pending|confirmed|in_progress|completed|cancelled
+notes text, updated_at timestamptz
+idx: (user_id, scheduled_at) + (technician_id, scheduled_at)</code></pre>
+          <p class="small">Missing table but <code>lib/core/models/appointment.dart</code> + <code>appointment_repository.dart</code> + <code>lib/features/booking/</code> exist.</p>
+        </div></details>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="card-pad">
+          <div class="kicker">Extensions</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+            <span class="tag success">pgcrypto ✓ installed</span>
+            <span class="tag success">uuid-ossp ✓ installed</span>
+            <span class="tag warn">pg_cron ✗ to install</span>
+            <span class="tag warn">pg_trgm ✗ to install</span>
+            <span class="tag warn">http ✗ to install</span>
+            <span class="tag">vector · optional for AI embeddings</span>
+          </div>
+          <pre style="margin-top:12px"><code>create extension if not exists "pg_cron" with schema cron;
+create extension if not exists "pg_trgm" with schema extensions;
+create extension if not exists "http" with schema extensions;</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 Storage -->
+    <section id="storage" class="section">
+      <div class="section-head">
+        <div class="num">4</div>
+        <div><h2>Supabase Storage — 5 Buckets</h2><p>All missing today — recreate in Phase 1. Pattern from <code>storage_service.dart:1</code>.</p></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Bucket</th><th>Public</th><th>Max</th><th>Types</th><th>Path</th><th>Policy</th></tr></thead>
+          <tbody>
+            <tr><td><code>profiles</code></td><td>Yes</td><td>5 MB</td><td>jpg, png, webp</td><td><code>{uid}/{ts}.{ext}</code></td><td>Public read, auth write</td></tr>
+            <tr><td><code>account_verification</code></td><td>No</td><td>10 MB</td><td>jpg, png, pdf</td><td><code>{uid}/front_{ts}.{ext}</code></td><td>Auth only</td></tr>
+            <tr><td><code>request</code></td><td>No</td><td>10 MB</td><td>jpg, png</td><td><code>{requestId}/{ts}.{ext}</code></td><td>Auth read/write</td></tr>
+            <tr><td><code>task_images</code></td><td>No</td><td>10 MB</td><td>jpg, png</td><td><code>{requestId}/{ts}.{ext}</code></td><td>Auth read/write</td></tr>
+            <tr><td><code>community_posts</code></td><td>Yes</td><td>5 MB</td><td>jpg, png, gif</td><td><code>{postId}/{ts}.{ext}</code></td><td>Public read, auth write/delete</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <pre style="margin-top:12px"><code>final ext = file.path.split('.').last;
+final path = '$docId/${DateTime.now().millisecondsSinceEpoch}.$ext';
+await supabase.storage.from('request').upload(path, file,
+  fileOptions: FileOptions(cacheControl: '3600', upsert: false));
+final url = supabase.storage.from('request').getPublicUrl(path);</code></pre>
+    </section>
+
+    <!-- 5 Auth -->
+    <section id="auth" class="section">
+      <div class="section-head">
+        <div class="num">5</div>
+        <div><h2>Auth — Mock OTP (Dev) + Real Phone OTP (Prod)</h2><p>Requirement conflict: <code>PROMPT.MD:1</code> says mock (any 6 digits), <code>WORK_LOG.md:8</code> built real. Solution: feature flag.</p></div>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-pad">
+            <div class="kicker">Dev — current requirement</div>
+            <h3>🟠 Mock OTP</h3>
+            <p class="muted">Launch with <code>--dart-define=USE_MOCK_OTP=true</code></p>
+            <pre><code>// lib/core/config/app_config.dart
+class AppConfig {
+  static const useMockOtp =
+    bool.fromEnvironment('USE_MOCK_OTP', defaultValue: true);
+}
+// otp_screen.dart: any 6 digits → SharedPreferences → Home
+// Skip FirebaseAuth.verifyPhoneNumber entirely</code></pre>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-pad">
+            <div class="kicker">Prod — ready behind flag</div>
+            <h3>🔵 Real Firebase Phone Auth</h3>
+            <p class="muted">Launch with <code>--dart-define=USE_MOCK_OTP=false</code></p>
+            <pre><code>verifyPhoneNumber(
+  phoneNumber: '+20...',
+  verificationCompleted: (c) =&gt; signInWithCredential(c),
+  verificationFailed: (e) =&gt; Crashlytics.recordError(e),
+  codeSent: (vid, token) =&gt; push OtpScreen(vid),
+)
+PhoneAuthProvider.credential(vid, smsCode)
+  → signInWithCredential → Firestore lookup → Home</code></pre>
+          </div>
+        </div>
+      </div>
+      <div class="callout warn" style="margin-top:12px"><b>Guard:</b> <code>assert(!kReleaseMode || !AppConfig.useMockOtp)</code> — never ship mock to production. Supabase RLS mirror is Phase 2 Option B (exchange Firebase token → Supabase JWT).</div>
+    </section>
+
+    <!-- 6 Security -->
+    <section id="security" class="section">
+      <div class="section-head">
+        <div class="num">6</div>
+        <div><h2>Security — RLS + Firestore Rules</h2><p><code>firestore.rules:1</code> deployed. Supabase RLS to apply in Migration 5. Fix <code>SECURITY DEFINER</code> linter warning.</p></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><div class="card-pad">
+          <div class="kicker">Firestore Rules ✓</div>
+          <h3>11 collections secured</h3>
+          <p class="small">users owner-only · technicians phone check · requests owner or tech · offers tech-only · PaymentCards owner · transactions tech-only · posts auth. One gap: <code>posts</code> delete is <code>auth != null</code> → tighten to author after adding <code>authorId</code>.</p>
+          <details><summary>View posts fix</summary><div class="details-body"><pre><code>// add authorId field to posts
+allow delete: if request.auth != null
+  && resource.data.authorId == request.auth.uid;</code></pre></div></details>
+        </div></div>
+        <div class="card"><div class="card-pad">
+          <div class="kicker">Supabase RLS — Phase 1</div>
+          <h3>All tables <code>ENABLE ROW LEVEL SECURITY</code></h3>
+          <p class="small">MVP uses permissive <code>using (true)</code> + app filters; tighten to <code>auth.uid()::text = user_id</code> after JWT mirror. Also fix:</p>
+          <pre><code>revoke execute on function public.rls_auto_enable()
+  from anon, authenticated;</code></pre>
+          <p class="small">Linter warn <code>supabase_get_advisors:1</code> — anon can execute SECURITY DEFINER.</p>
+        </div></div>
+      </div>
+      <div class="callout danger" style="margin-top:12px"><b>Secrets:</b> Never store <code>cardNumber</code>/CVV — only <code>cardLast4</code> ✓ already fixed (<code>WORK_LOG.md:378</code>). Stripe/Fawry → <code>supabase secrets set</code> + <code>vault</code>. <code>anonKey</code> in <code>lib/main.dart:14</code> is public but move to <code>--dart-define</code> in Phase 1.</div>
+    </section>
+
+    <!-- 7 Roadmap / Tasks -->
+    <section id="roadmap" class="section">
+      <div class="section-head">
+        <div class="num">7</div>
+        <div><h2>Phased Roadmap — Tasks</h2><p>Check off as you go — progress saves locally. Branches are per-phase, atomic commits.</p></div>
+      </div>
+
+      <!-- Phase 1 -->
+      <div class="phase open" data-phase="p1">
+        <div class="phase-head" data-toggle="p1">
+          <div class="phase-meta">
+            <p class="phase-title"><span class="phase-badge">Phase 1</span> Foundation — D1–2 <span class="tag warn">do this first</span></p>
+            <p class="phase-desc">Greenfield DB init · extensions · 7 tables · RLS · RPCs · 5 buckets · indexes · docs</p>
+            <div style="margin-top:8px"><span class="branch">⎇ feat/backend-phase-1-schema</span></div>
+          </div>
+          <div class="phase-stats">
+            <div class="phase-progress"><div class="progress-track"><div class="progress-bar" id="bar-p1"></div></div><div class="small" id="txt-p1" style="text-align:center;margin-top:4px">0 / 10</div></div>
+            <div class="phase-toggle">⌄</div>
+          </div>
+        </div>
+        <div class="phase-body" id="body-p1"></div>
+      </div>
+
+      <!-- Phase 2 -->
+      <div class="phase open" data-phase="p2">
+        <div class="phase-head" data-toggle="p2">
+          <div class="phase-meta">
+            <p class="phase-title"><span class="phase-badge" style="background:#009688">Phase 2</span> Edge Functions + Auth Flag — D3–5</p>
+            <p class="phase-desc">3 Edge Functions · secrets · Firestore composite indexes · AppConfig.useMockOtp</p>
+            <div style="margin-top:8px"><span class="branch">⎇ feat/backend-phase-2-functions</span></div>
+          </div>
+          <div class="phase-stats">
+            <div class="phase-progress"><div class="progress-track"><div class="progress-bar" id="bar-p2"></div></div><div class="small" id="txt-p2" style="text-align:center;margin-top:4px">0 / 8</div></div>
+            <div class="phase-toggle">⌄</div>
+          </div>
+        </div>
+        <div class="phase-body" id="body-p2"></div>
+      </div>
+
+      <!-- Phase 3 -->
+      <div class="phase open" data-phase="p3">
+        <div class="phase-head" data-toggle="p3">
+          <div class="phase-meta">
+            <p class="phase-title"><span class="phase-badge" style="background:#EF6C00">Phase 3</span> Repositories & Feature Wiring — D6–9</p>
+            <p class="phase-desc">Firestore repos · harden Supabase repos · wire booking/payment/offers/community/chat screens · E2E</p>
+            <div style="margin-top:8px"><span class="branch">⎇ feat/backend-phase-3-repos</span></div>
+          </div>
+          <div class="phase-stats">
+            <div class="phase-progress"><div class="progress-track"><div class="progress-bar" id="bar-p3"></div></div><div class="small" id="txt-p3" style="text-align:center;margin-top:4px">0 / 9</div></div>
+            <div class="phase-toggle">⌄</div>
+          </div>
+        </div>
+        <div class="phase-body" id="body-p3"></div>
+      </div>
+
+      <!-- Phase 4 -->
+      <div class="phase open" data-phase="p4">
+        <div class="phase-head" data-toggle="p4">
+          <div class="phase-meta">
+            <p class="phase-title"><span class="phase-badge" style="background:#2E7D32">Phase 4</span> Hardening & Launch Prep — D10–12</p>
+            <p class="phase-desc">Tighten RLS · Firestore author checks · Analytics/Crashlytics · device test · docs · tag</p>
+            <div style="margin-top:8px"><span class="branch">⎇ feat/backend-phase-4-hardening</span></div>
+          </div>
+          <div class="phase-stats">
+            <div class="phase-progress"><div class="progress-track"><div class="progress-bar" id="bar-p4"></div></div><div class="small" id="txt-p4" style="text-align:center;margin-top:4px">0 / 9</div></div>
+            <div class="phase-toggle">⌄</div>
+          </div>
+        </div>
+        <div class="phase-body" id="body-p4"></div>
+      </div>
+    </section>
+
+    <!-- 8 Migrations -->
+    <section id="migrations" class="section">
+      <div class="section-head">
+        <div class="num">8</div>
+        <div><h2>What to Build First — 5 Migrations (Copy-Paste)</h2><p>Run in order via <code>supabase_apply_migration</code>. Verify after each: <code>supabase_list_tables</code> + <code>supabase_get_advisors</code>.</p></div>
+      </div>
+      <div class="grid2">
+        <details open><summary>① init_extensions</summary><div class="details-body"><pre><code>create extension if not exists "pg_cron" with schema cron;
+create extension if not exists "pg_trgm" with schema extensions;
+create extension if not exists "http" with schema extensions;
+-- vector optional
+create extension if not exists "vector" with schema extensions;</code></pre></div></details>
+        <details open><summary>② create_notifications_reviews</summary><div class="details-body"><pre><code>-- notifications (§3) + reviews — see tables section
+create table public.notifications (...);
+create table public.reviews (...);
+create index idx_notifications_user on public.notifications (user_id, is_read, created_at desc);
+create index idx_reviews_technician on public.reviews (technician_id, created_at desc);</code></pre></div></details>
+        <details open><summary>③ create_promo_support_search</summary><div class="details-body"><pre><code>-- promo_codes + support_tickets + search_index
+-- includes tsvector GIN index and unique(entity_type, entity_id)</code></pre></div></details>
+        <details open><summary>④ create_payment_appointments</summary><div class="details-body"><pre><code>-- payment_logs + appointments
+create index idx_payment_logs_user on public.payment_logs (firebase_user_id, created_at desc);
+create index idx_appointments_user on public.appointments (user_id, scheduled_at desc);</code></pre></div></details>
+        <details open><summary>⑤ enable_rls_and_rpcs</summary><div class="details-body"><pre><code>-- all RLS policies (§6) + RPCs
+create or replace function public.search_entities(q text, etype text, gov text, lim int) ...;
+create or replace function public.increment_used_count(pid uuid) ...;
+revoke execute on function public.rls_auto_enable() from anon, authenticated;</code></pre></div></details>
+      </div>
+      <div class="card" style="margin-top:12px"><div class="card-pad">
+        <div class="kicker">Firestore indexes — firestore.indexes.json</div>
+        <p class="small">Currently <code>[]</code>. Add 4 composites: requests (status+governorate+createdAt), requests (userId+status+createdAt), offers (requestId+createdAt), transactions (technicianId+createdAt). Deploy: <code>firebase deploy --only firestore:indexes</code></p>
+        <pre><code>{
+  "indexes": [
+    {"collectionGroup":"requests","queryScope":"COLLECTION","fields":[
+      {"fieldPath":"status","order":"ASCENDING"},
+      {"fieldPath":"userGovernorate","order":"ASCENDING"},
+      {"fieldPath":"createdAt","order":"DESCENDING"}]},
+    {"collectionGroup":"requests","queryScope":"COLLECTION","fields":[
+      {"fieldPath":"userId","order":"ASCENDING"},
+      {"fieldPath":"status","order":"ASCENDING"},
+      {"fieldPath":"createdAt","order":"DESCENDING"}]},
+    {"collectionGroup":"offers","queryScope":"COLLECTION","fields":[
+      {"fieldPath":"requestId","order":"ASCENDING"},
+      {"fieldPath":"createdAt","order":"DESCENDING"}]},
+    {"collectionGroup":"transactions","queryScope":"COLLECTION","fields":[
+      {"fieldPath":"technicianId","order":"ASCENDING"},
+      {"fieldPath":"createdAt","order":"DESCENDING"}]}
+  ]
+}</code></pre>
+      </div></div>
+    </section>
+
+    <!-- 9 APIs -->
+    <section id="apis" class="section">
+      <div class="section-head">
+        <div class="num">9</div>
+        <div><h2>API Surface Summary</h2><p>Via <code>core/repositories/</code> — no direct SDK calls in widgets. Every call wrapped in <code>try/catch → Crashlytics</code>.</p></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Operation</th><th>Collection / Table / Bucket</th><th>Method</th><th>Repo / Screen</th></tr></thead>
+          <tbody>
+            <tr><td>Login lookup</td><td><code>users</code> / <code>technicians</code></td><td><code>where('phone').get()</code></td><td><code>login_screen.dart</code></td></tr>
+            <tr><td>Create request</td><td><code>requests</code></td><td><code>add()</code></td><td><code>request_service_screen.dart</code> → <code>request_repository.dart</code> (NEW)</td></tr>
+            <tr><td>Watch requests</td><td><code>requests</code></td><td><code>where(status, gov).snapshots()</code></td><td><code>home1.dart</code>, <code>orders_screen.dart</code></td></tr>
+            <tr><td>Submit / watch offers</td><td><code>offers</code></td><td><code>add()</code> / <code>where(requestId).snapshots()</code></td><td><code>submit_offer_page.dart</code> / <code>offers_dashboard_screen.dart</code></td></tr>
+            <tr><td>Chat</td><td><code>conversations/{id}/messages</code></td><td><code>add()</code> + <code>snapshots()</code></td><td><code>chat_screen.dart</code> → <code>chat_repository.dart</code></td></tr>
+            <tr><td>Posts (like, delete)</td><td><code>posts</code></td><td><code>add()</code> / <code>update(likes)</code></td><td><code>comm1..6.dart</code></td></tr>
+            <tr><td>Save card</td><td><code>PaymentCards</code></td><td><code>add({cardLast4})</code></td><td><code>payment_cards_screen.dart</code></td></tr>
+            <tr><td>Notify</td><td><code>notifications</code> (PG)</td><td><code>insert()</code> / <code>stream()</code></td><td><code>notification_repository.dart:1</code></td></tr>
+            <tr><td>Reviews</td><td><code>reviews</code></td><td><code>select/insert</code></td><td><code>review_repository.dart</code></td></tr>
+            <tr><td>Promo</td><td><code>promo_codes</code></td><td><code>rpc search_entities</code> → <code>increment_used_count</code></td><td><code>promo_code_repository.dart</code></td></tr>
+            <tr><td>Payments</td><td><code>payment_logs</code></td><td><code>logPayment()</code> via Edge Function</td><td><code>payment_log_repository.dart:1</code> + <code>final_payment_screen.dart</code></td></tr>
+            <tr><td>Uploads</td><td><code>profiles</code> / <code>request</code> / <code>task_images</code> / <code>community_posts</code> / <code>account_verification</code></td><td><code>storage.from(bucket).upload()</code></td><td><code>storage_service.dart</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-wrap" style="margin-top:12px">
+        <table>
+          <thead><tr><th>Edge Function</th><th>Method</th><th>Called From</th></tr></thead>
+          <tbody>
+            <tr><td><code>POST /functions/v1/send-notification</code></td><td><code>supabase_service.dart:15 invokeFunction</code></td><td>After request/offer/payment/chat</td></tr>
+            <tr><td><code>POST /functions/v1/process-payment</code></td><td><code>invokeFunction</code></td><td><code>final_payment_screen.dart</code></td></tr>
+            <tr><td><code>POST /functions/v1/daily-reset</code></td><td>cron</td><td><code>pg_cron</code> nightly 00:00</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout" style="margin-top:12px"><b>Environments:</b> Dev <code>--dart-define=USE_MOCK_OTP=true</code> vs Prod <code>false</code>. Secrets via <code>supabase secrets set STRIPE_SECRET_KEY=... FCM_SERVICE_ACCOUNT=...</code>. Do not hardcode <code>anonKey</code> in <code>lib/main.dart:14</code> for prod — use <code>String.fromEnvironment</code>.</div>
+    </section>
+
+    <div class="footer">Generated 2026-08-29 from live audit of <code>eczybgjywdppvyyygnrd</code> + <code>BACKEND_PLAN.md:1</code> · File: <code>backend-plan.html</code> in repo root · Open in browser, check off tasks, export JSON for PR description.</div>
+  </main>
+</div>
+
+<script>
+const TASKS = {
+  p1: [
+    {id:'p1-1', title:'Create branch feat/backend-phase-1-schema', desc:'git checkout -b feat/backend-phase-1-schema from main. Atomic commits per migration.', pri:'high', time:'10m', file:'git'},
+    {id:'p1-2', title:'Enable extensions pg_cron, pg_trgm, http (+ vector optional)', desc:'supabase_execute_sql: create extension if not exists pg_cron/pg_trgm/http. Verify supabase_list_extensions.', pri:'critical', time:'15m', file:'supabase'},
+    {id:'p1-3', title:'Migration ②: create notifications + reviews tables', desc:'Apply SQL from §3. Includes idx_notifications_user, idx_reviews_technician. Enable RLS.', pri:'critical', time:'20m', file:'supabase_apply_migration'},
+    {id:'p1-4', title:'Migration ③: create promo_codes + support_tickets + search_index', desc:'search_index needs GIN(search_vector) + unique(entity_type, entity_id). tsvector simple config.', pri:'critical', time:'20m', file:'supabase_apply_migration'},
+    {id:'p1-5', title:'Migration ④: create payment_logs + appointments', desc:'payment_logs includes gateway_response jsonb + stripe_payment_id. appointments is new table for lib/core/models/appointment.dart.', pri:'critical', time:'20m', file:'supabase_apply_migration'},
+    {id:'p1-6', title:'Migration ⑤: enable RLS policies + RPCs', desc:'6 tables policies (permissive MVP) + search_entities(q) ranked by ts_rank + increment_used_count(uuid) SECURITY DEFINER. Revoke rls_auto_enable from anon.', pri:'critical', time:'20m', file:'supabase_apply_migration'},
+    {id:'p1-7', title:'Create 5 Storage buckets + policies', desc:'profiles (public), account_verification (private), request, task_images, community_posts (public). 5MB/10MB limits, jpg/png/webp/gif/pdf.', pri:'high', time:'20m', file:'storage.buckets'},
+    {id:'p1-8', title:'Verify: list_tables shows 7, advisors clean, buckets exist', desc:'Run supabase_list_tables, supabase_get_advisors(security+performance), select * from storage.buckets. Check 7 tables present.', pri:'high', time:'10m', file:'verify'},
+    {id:'p1-9', title:'Move anonKey from lib/main.dart:14 to --dart-define + env.dart', desc:'Read via String.fromEnvironment(SUPABASE_URL/ANON_KEY). Do not commit prod keys. Keep fallback for dev.', pri:'medium', time:'15m', file:'lib/main.dart:14'},
+    {id:'p1-10', title:'Update BACKEND_SERVICES.md + WORK_LOG.md refs (wduombkxwcqhipdumxmn → eczybgjywdppvyyygnrd)', desc:'Replace stale old project ref everywhere. Update WORK_LOG Supabase URL and project_id.', pri:'medium', time:'10m', file:'BACKEND_SERVICES.md, WORK_LOG.md'},
+  ],
+  p2: [
+    {id:'p2-1', title:'Create branch feat/backend-phase-2-functions', desc:'git checkout -b feat/backend-phase-2-functions', pri:'high', time:'5m', file:'git'},
+    {id:'p2-2', title:'Deploy Edge Function send-notification (Deno)', desc:'POST {userId, userType, title, body, type, data} → insert notifications + FCM HTTP v1 messages:send. JWT required.', pri:'critical', time:'45m', file:'supabase/functions/send-notification'},
+    {id:'p2-3', title:'Deploy Edge Function process-payment (Stripe/Fawry)', desc:'POST {amount, currency, paymentMethodId, requestId, userId, technicianId} → validate → gateway → payment_logs completed → update Firestore requests.isPaid + technicians.walletBalance via Admin SDK.', pri:'critical', time:'60m', file:'supabase/functions/process-payment'},
+    {id:'p2-4', title:'Deploy Edge Function daily-reset + schedule pg_cron 00:00', desc:'POST {} (cron secret) → delete search_index >30d, expire promo_codes, close stale support_tickets. Schedule via pg_cron or GitHub Actions.', pri:'high', time:'30m', file:'supabase/functions/daily-reset'},
+    {id:'p2-5', title:'Set secrets: STRIPE_SECRET_KEY, FCM_SERVICE_ACCOUNT, cron_secret', desc:'supabase secrets set ... + vault. Never commit to repo.', pri:'critical', time:'15m', file:'supabase secrets'},
+    {id:'p2-6', title:'Wire SupabaseService.invokeFunction to real endpoints', desc:'lib/core/services/supabase_service.dart:15 — test invokeFunction(send-notification) and process-payment from Flutter.', pri:'high', time:'20m', file:'lib/core/services/supabase_service.dart:15'},
+    {id:'p2-7', title:'Implement AppConfig.useMockOtp feature flag', desc:'lib/core/config/app_config.dart static const useMockOtp = bool.fromEnvironment(USE_MOCK_OTP, defaultValue:true). Keep mock OTP for dev per PROMPT.MD:1, real behind flag.', pri:'high', time:'30m', file:'lib/core/config/app_config.dart, otp_screen.dart'},
+    {id:'p2-8', title:'Add firestore.indexes.json 4 composites + deploy', desc:'requests (status+governorate+createdAt), requests (userId+status+createdAt), offers (requestId+createdAt), transactions (technicianId+createdAt). firebase deploy --only firestore:indexes', pri:'high', time:'20m', file:'firestore.indexes.json:1'},
+  ],
+  p3: [
+    {id:'p3-1', title:'Create branch feat/backend-phase-3-repos', desc:'git checkout -b feat/backend-phase-3-repos', pri:'high', time:'5m', file:'git'},
+    {id:'p3-2', title:'Create Firestore request_repository.dart + technician_repository.dart', desc:'Wrap all FirebaseFirestore.instance calls. Methods: createRequest, watchUserRequests, watchGovernorateRequests, updateRequestStatus. No direct calls in widgets after this.', pri:'critical', time:'60m', file:'lib/core/repositories/request_repository.dart (NEW)'},
+    {id:'p3-3', title:'Harden 6 Supabase repos: try/catch → Crashlytics + Either<Failure,T>', desc:'notification_repository.dart:1, review_repository.dart, promo_code_repository.dart, support_ticket_repository.dart, payment_log_repository.dart:1, search_repository.dart. Add Crashlytics.recordError on all catches.', pri:'high', time:'45m', file:'lib/core/repositories/'},
+    {id:'p3-4', title:'Wire booking: request_service_screen.dart → StorageService + RequestRepository', desc:'Upload to request bucket → Firestore requests.add → send-notification Edge Function → FCM topic. Handle image picking + upload errors.', pri:'high', time:'40m', file:'lib/features/booking/screens/request_service_screen.dart'},
+    {id:'p3-5', title:'Wire payments: final_payment_screen.dart → process-payment + payment_log_repository', desc:'Card (Edge Function) vs Cash. Credit technician wallet on success. Create transactions doc. Keep cardLast4 only.', pri:'critical', time:'45m', file:'lib/features/payment/screens/final_payment_screen.dart'},
+    {id:'p3-6', title:'Wire offers: offers_dashboard + submit_offer_page → ReviewRepository', desc:'Show technician rating/reviews from Supabase reviews table alongside Firestore offers. Submit offer via offers collection.', pri:'medium', time:'30m', file:'lib/features/offers/'},
+    {id:'p3-7', title:'Wire community: community_screen + comm1..6 → community_posts bucket', desc:'Upload post images to community_posts bucket, public read. Create posts doc in Firestore.', pri:'medium', time:'25m', file:'lib/features/community/'},
+    {id:'p3-8', title:'Add appointments CRUD to booking flows', desc:'appointments table ↔ appointment_repository.dart ↔ booking screens. schedule, confirm, cancel, list.', pri:'medium', time:'35m', file:'lib/features/booking/screens/ + appointment_repository.dart'},
+    {id:'p3-9', title:'E2E test: request → offer → accept → chat → pay → review', desc:'Manual test on device with mock OTP. Verify Firestore statuses, Supabase notifications + payment_logs + reviews, Storage URLs, FCM delivery.', pri:'critical', time:'60m', file:'manual QA'},
+  ],
+  p4: [
+    {id:'p4-1', title:'Create branch feat/backend-phase-4-hardening', desc:'git checkout -b feat/backend-phase-4-hardening', pri:'high', time:'5m', file:'git'},
+    {id:'p4-2', title:'Tighten Supabase RLS to auth.uid()::text = user_id (after JWT mirror)', desc:'Replace permissive using(true) policies with strict ones, or keep Edge Function gateway and service_role pattern. Requires Firebase→Supabase JWT exchange.', pri:'high', time:'45m', file:'RLS policies'},
+    {id:'p4-3', title:'Implement Firebase→Supabase JWT mirror (exchange-firebase-token Edge Function)', desc:'Verify Firebase ID token via Admin SDK → mint Supabase JWT with sub=firebaseUid → client auth.setSession. Then RLS strict mode works.', pri:'high', time:'60m', file:'supabase/functions/exchange-firebase-token'},
+    {id:'p4-4', title:'Tighten Firestore: posts delete → authorId check, add authorId field', desc:'Add authorId to posts docs. Rule: allow delete if resource.data.authorId == request.auth.uid. Migrate old posts.', pri:'medium', time:'20m', file:'firestore.rules:93'},
+    {id:'p4-5', title:'Add firebase_analytics + firebase_crashlytics', desc:'pubspec.yaml:23 — add packages, init in lib/main.dart:7 (FlutterError.onError + PlatformDispatcher.onError), create analytics_service.dart, log 7 events.', pri:'high', time:'40m', file:'pubspec.yaml, lib/main.dart:7'},
+    {id:'p4-6', title:'dart analyze + flutter test + device test (flip USE_MOCK_OTP=false)', desc:'Zero analyzer issues. Run unit/widget tests. Manual real-phone OTP test on Android/iOS device (SHA certs, APNs).', pri:'critical', time:'40m', file:'QA'},
+    {id:'p4-7', title:'Write docs/ARCHITECTURE.md + update README.md', desc:'README.md:1 is template — replace with Basita overview, setup, env vars, run commands. ARCHITECTURE.md mirrors this plan.', pri:'medium', time:'30m', file:'README.md:1, docs/ARCHITECTURE.md'},
+    {id:'p4-8', title:'Tag v1.0-backend-ready + open PR to main', desc:'git tag v1.0-backend-ready, push, gh pr create with checklist exported from this HTML. Request copilot review.', pri:'medium', time:'15m', file:'git tag, PR'},
+    {id:'p4-9', title:'(Stretch) generate-invoice + ai-assistant + search-technicians Edge Functions', desc:'Phase 2 stretch: PDF invoice via pdf-lib → Storage, AI proxy to OpenAI/Gemini, location search via search_index + geo.', pri:'low', time:'90m', file:'supabase/functions/* (phase 2 stretch)'},
+  ]
+};
+
+const STORAGE_KEY = 'basita-backend-plan-v1';
+let filter = 'all';
+let searchQ = '';
+
+function loadState(){
+  try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }catch{return {}}
+}
+function saveState(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+
+function render(){
+  const state = loadState();
+  let total=0, done=0;
+  const phaseIds = ['p1','p2','p3','p4'];
+  phaseIds.forEach(pid=>{
+    const container = document.getElementById('body-'+pid);
+    container.innerHTML = '';
+    let pTotal=0, pDone=0;
+    TASKS[pid].forEach(t=>{
+      const isDone = !!state[t.id];
+      const priClass = t.pri==='critical' ? 'danger' : t.pri==='high' ? 'warn' : t.pri==='low' ? '' : 'primary';
+      const showByFilter = filter==='all' || (filter==='todo' && !isDone) || (filter==='done' && isDone) || (filter==='critical' && t.pri==='critical');
+      const showBySearch = !searchQ || (t.title+t.desc+t.file).toLowerCase().includes(searchQ);
+      if(!showBySearch || !showByFilter){
+        // still count for progress even if filtered? no, count all
+      }
+      pTotal++; total++;
+      if(isDone){ pDone++; done++; }
+      if(!showByFilter || !showBySearch) return;
+      const div = document.createElement('div');
+      div.className = 'task' + (isDone ? ' done' : '');
+      div.innerHTML = `
+        <input type="checkbox" ${isDone?'checked':''} data-task="${t.id}" aria-label="done">
+        <div class="task-main">
+          <p class="task-title">${t.title}</p>
+          <p class="task-desc">${t.desc}</p>
+          <div class="task-foot">
+            <span class="tag ${priClass}">${t.pri}</span>
+            <span class="tag">⏱ ${t.time}</span>
+            <span class="tag" style="background:#0f172a;color:#e2e8f0;border-color:#1e293b">📄 ${t.file}</span>
+          </div>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+    // phase bar always reflects true progress, not filtered
+    const pct = pTotal ? Math.round(pDone/pTotal*100) : 0;
+    const bar = document.getElementById('bar-'+pid);
+    const txt = document.getElementById('txt-'+pid);
+    if(bar){ bar.style.width = pct+'%'; }
+    if(txt){ txt.textContent = pDone+' / '+pTotal+' · '+pct+'%'; }
+  });
+  const overallPct = total ? Math.round(done/total*100) : 0;
+  document.getElementById('overallBar').style.width = overallPct+'%';
+  document.getElementById('overallPct').textContent = overallPct+'%';
+  document.getElementById('overallText').textContent = done+' / '+total+' done';
+  document.getElementById('navTodoBadge').textContent = total;
+  // next up
+  const allTasks = phaseIds.flatMap(pid=>TASKS[pid]);
+  const next = allTasks.find(t=>!loadState()[t.id]);
+  document.getElementById('nextUp').innerHTML = next
+    ? `<b>${next.title}</b><br><span class="small">${next.desc}</span><br><span class="tag ${next.pri==='critical'?'danger':next.pri==='high'?'warn':'primary'}" style="margin-top:6px;display:inline-block">${next.pri} · ${next.time}</span> <span class="tag" style="margin-top:6px;display:inline-block">${next.file}</span>`
+    : `🎉 All ${total} tasks done — tag <code>v1.0-backend-ready</code> and open PR!`;
+
+  // bind checkboxes
+  containerLoop: for(const pid of phaseIds){
+    document.querySelectorAll(`#body-${pid} input[type=checkbox]`).forEach(cb=>{
+      cb.addEventListener('change', e=>{
+        const s = loadState();
+        s[e.target.dataset.task] = e.target.checked;
+        saveState(s);
+        render();
+      });
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  render();
+  // filters
+  document.querySelectorAll('.chip').forEach(ch=>{
+    ch.addEventListener('click', ()=>{
+      document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+      ch.classList.add('active');
+      filter = ch.dataset.filter;
+      render();
+    });
+  });
+  document.getElementById('search').addEventListener('input', e=>{
+    searchQ = e.target.value.trim().toLowerCase();
+    render();
+  });
+  // phase toggles
+  document.querySelectorAll('[data-toggle]').forEach(h=>{
+    h.addEventListener('click', ()=>{
+      const pid = h.dataset.toggle;
+      const body = document.getElementById('body-'+pid);
+      const phase = document.querySelector(`[data-phase="${pid}"]`);
+      body.classList.toggle('collapsed');
+      phase.classList.toggle('open');
+    });
+  });
+  document.getElementById('btnExpand').addEventListener('click', ()=>{
+    document.querySelectorAll('.phase-body').forEach(b=>b.classList.remove('collapsed'));
+    document.querySelectorAll('.phase').forEach(p=>p.classList.add('open'));
+  });
+  document.getElementById('btnCollapse').addEventListener('click', ()=>{
+    document.querySelectorAll('.phase-body').forEach(b=>b.classList.add('collapsed'));
+    document.querySelectorAll('.phase').forEach(p=>p.classList.remove('open'));
+  });
+  document.getElementById('btnPrint').addEventListener('click', ()=>window.print());
+  document.getElementById('btnReset').addEventListener('click', ()=>{
+    if(confirm('Reset all checkboxes? This clears localStorage for this plan.')){
+      localStorage.removeItem(STORAGE_KEY);
+      render();
+    }
+  });
+  document.getElementById('btnExport').addEventListener('click', ()=>{
+    const state = loadState();
+    const rows = ['Phase,Task,Priority,Time,File,Done'];
+    Object.entries(TASKS).forEach(([phase, list])=>{
+      list.forEach(t=>{
+        const done = state[t.id] ? 'x' : '';
+        const esc = s => `"${String(s).replace(/"/g,'""')}"`;
+        rows.push([phase, esc(t.title), t.pri, t.time, esc(t.file), done].join(','));
+      });
+    });
+    const blob = new Blob([rows.join('\n')], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'basita-backend-tasks.csv'; a.click();
+    URL.revokeObjectURL(url);
+  });
+  document.getElementById('btnCopyLink').addEventListener('click', async ()=>{
+    const state = loadState();
+    const doneIds = Object.entries(state).filter(([,v])=>v).map(([k])=>k).join(',');
+    const url = location.href.split('#')[0] + '#roadmap';
+    try{ await navigator.clipboard.writeText(url + ' — done: ' + doneIds); }catch{}
+    const btn = document.getElementById('btnCopyLink');
+    const prev = btn.textContent;
+    btn.textContent = '✓ Copied';
+    setTimeout(()=>btn.textContent=prev, 1400);
+  });
+  // nav active on scroll
+  const sections = document.querySelectorAll('.section');
+  const navLinks = document.querySelectorAll('.nav a');
+  const obs = new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        navLinks.forEach(a=>a.classList.remove('active'));
+        const id = e.target.id;
+        const link = document.querySelector(`.nav a[href="#${id}"]`);
+        if(link) link.classList.add('active');
+      }
+    });
+  }, {rootMargin:'-40% 0px -50% 0px', threshold:0});
+  sections.forEach(s=>obs.observe(s));
+});
+</script>
+</body>
+</html>

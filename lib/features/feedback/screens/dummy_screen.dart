@@ -83,7 +83,7 @@ class HomeInsuranceScreen extends StatelessWidget {
   // ==========================================
 
   // شريط التطبيق العلوي (AppBar)
- PreferredSizeWidget _buildAppBar(BuildContext context) {
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 0,

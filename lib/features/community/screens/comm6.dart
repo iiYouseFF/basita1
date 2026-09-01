@@ -1,10 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
 import 'package:image_picker/image_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'; // 👈 استيراد مكتبة Supabase
+// removed: supabase_flutter
 import 'package:basita1/core/session/user_session.dart'; // استدعاء ملف الـ UserSession الموحد في تطبيقك
+import 'package:basita1/core/network/mock_backend.dart';
 
 // ==========================================
 // 1. Data Models (نموذج بيانات المنشور)
@@ -48,7 +49,7 @@ class ElectricityPostModel {
       'comments': comments,
       'isQuestion': isQuestion,
       'likedBy': likedBy,
-      'createdAt': FieldValue.serverTimestamp(),
+      'createdAt': DateTime.now(),
     };
   }
 
@@ -153,10 +154,9 @@ class _acCommunityScreenState extends State<acCommunityScreen>
               onPressed: () async {
                 Navigator.pop(ctx);
                 try {
-                  await FirebaseFirestore.instance
-                      .collection('post_ac')
-                      .doc(postId)
-                      .delete();
+                  await MockFirestore.collection(
+                    'post_ac',
+                  ).doc(postId).delete();
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -192,7 +192,7 @@ class _acCommunityScreenState extends State<acCommunityScreen>
 
   // --- دالة عرض نافذة التعليقات ---
   void _showCommentsSheet(BuildContext context, String postId) {
-    final TextEditingController _commentController = TextEditingController();
+    final TextEditingController commentController = TextEditingController();
 
     showModalBottomSheet(
       context: context,
@@ -224,8 +224,7 @@ class _acCommunityScreenState extends State<acCommunityScreen>
                   const Divider(),
                   Expanded(
                     child: StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('post_ac')
+                      stream: MockFirestore.collection('post_ac')
                           .doc(postId)
                           .collection('comments')
                           .orderBy('createdAt', descending: false)
@@ -286,7 +285,7 @@ class _acCommunityScreenState extends State<acCommunityScreen>
                       children: [
                         Expanded(
                           child: TextField(
-                            controller: _commentController,
+                            controller: commentController,
                             style: GoogleFonts.cairo(),
                             decoration: InputDecoration(
                               hintText: "اكتب تعليقاً...",
@@ -311,26 +310,23 @@ class _acCommunityScreenState extends State<acCommunityScreen>
                               size: 20,
                             ),
                             onPressed: () {
-                              if (_commentController.text.trim().isNotEmpty) {
-                                FirebaseFirestore.instance
-                                    .collection('post_ac')
-                                    .doc(postId)
-                                    .collection('comments')
-                                    .add({
-                                      'text': _commentController.text.trim(),
-                                      'authorName':
-                                          UserSession.instance.name.isNotEmpty
-                                          ? UserSession.instance.name
-                                          : 'مستخدم',
-                                      'createdAt': FieldValue.serverTimestamp(),
-                                    });
-                                FirebaseFirestore.instance
-                                    .collection('post_ac')
-                                    .doc(postId)
-                                    .update({
-                                      'comments': FieldValue.increment(1),
-                                    });
-                                _commentController.clear();
+                              if (commentController.text.trim().isNotEmpty) {
+                                MockFirestore.collection(
+                                  'post_ac',
+                                ).doc(postId).collection('comments').add({
+                                  'text': commentController.text.trim(),
+                                  'authorName':
+                                      UserSession.instance.name.isNotEmpty
+                                      ? UserSession.instance.name
+                                      : 'مستخدم',
+                                  'createdAt': DateTime.now(),
+                                });
+                                MockFirestore.collection(
+                                  'post_ac',
+                                ).doc(postId).update({
+                                  'comments': MockFieldValue.increment(1),
+                                });
+                                commentController.clear();
                               }
                             },
                           ),
@@ -492,10 +488,9 @@ class _acCommunityScreenState extends State<acCommunityScreen>
         ),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('post_ac')
-                .orderBy('createdAt', descending: true)
-                .snapshots(),
+            stream: MockFirestore.collection(
+              'post_ac',
+            ).orderBy('createdAt', descending: true).snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -588,10 +583,9 @@ class _acCommunityScreenState extends State<acCommunityScreen>
         ),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('post_ac')
-                .orderBy('createdAt', descending: true)
-                .snapshots(),
+            stream: MockFirestore.collection(
+              'post_ac',
+            ).orderBy('createdAt', descending: true).snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -727,7 +721,7 @@ class _acCommunityScreenState extends State<acCommunityScreen>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: post.isQuestion
-            ? Colors.blue.shade50.withOpacity(0.5)
+            ? Colors.blue.shade50.withValues(alpha: 0.5)
             : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200),
@@ -838,7 +832,7 @@ class _acCommunityScreenState extends State<acCommunityScreen>
             post.content,
             style: GoogleFonts.cairo(fontSize: 14, height: 1.5),
           ),
-          // 👇 عرض الصورة بأمان (سواء رابط سحابي من Supabase أو ملف محلي)
+          // 👇 عرض الصورة بأمان (سواء رابط سحابي من dynamic أو ملف محلي)
           if (post.imagePath != null && post.imagePath!.isNotEmpty) ...[
             const SizedBox(height: 12),
             ClipRRect(
@@ -868,18 +862,20 @@ class _acCommunityScreenState extends State<acCommunityScreen>
               InkWell(
                 onTap: () {
                   if (post.id != null && currentUserName.isNotEmpty) {
-                    final postRef = FirebaseFirestore.instance
-                        .collection('post_ac')
-                        .doc(post.id);
+                    final postRef = MockFirestore.collection(
+                      'post_ac',
+                    ).doc(post.id);
                     if (isLiked) {
                       postRef.update({
-                        'likes': FieldValue.increment(-1),
-                        'likedBy': FieldValue.arrayRemove([currentUserName]),
+                        'likes': MockFieldValue.increment(-1),
+                        'likedBy': MockFieldValue.arrayRemove([
+                          currentUserName,
+                        ]),
                       });
                     } else {
                       postRef.update({
-                        'likes': FieldValue.increment(1),
-                        'likedBy': FieldValue.arrayUnion([currentUserName]),
+                        'likes': MockFieldValue.increment(1),
+                        'likedBy': MockFieldValue.arrayUnion([currentUserName]),
                       });
                     }
                   }
@@ -976,7 +972,7 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
 }
 
 // ==========================================
-// 3. Create Electricity Post Screen (إنشاء منشور التكييف مع Supabase)
+// 3. Create Electricity Post Screen (إنشاء منشور التكييف مع dynamic)
 // ==========================================
 class CreateElectricityPostScreen extends StatefulWidget {
   const CreateElectricityPostScreen({super.key});
@@ -1027,7 +1023,7 @@ class _CreateElectricityPostScreenState
     }
   }
 
-  // 👇 رفع الصورة إلى Supabase Storage وحفظ الرابط السحابي في فايربيز
+  // 👇 رفع الصورة إلى dynamic Storage وحفظ الرابط السحابي في فايربيز
   Future<void> _publishPost() async {
     if (_contentController.text.trim().isEmpty &&
         _titleController.text.trim().isEmpty &&
@@ -1042,11 +1038,11 @@ class _CreateElectricityPostScreenState
     try {
       String? imageUrl;
 
-      // 1. رفع الصورة إلى Supabase Storage إذا تم اختيار صورة
+      // 1. رفع الصورة إلى dynamic Storage إذا تم اختيار صورة
       if (_selectedImage != null) {
         final fileName = 'ac_post_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
-        await Supabase.instance.client.storage
+        await MockSupabase.storage
             .from('community_images')
             .upload(
               fileName,
@@ -1054,8 +1050,8 @@ class _CreateElectricityPostScreenState
               fileOptions: const FileOptions(contentType: 'image/jpeg'),
             );
 
-        // 2. الحصول على رابط الصورة المباشر من Supabase
-        imageUrl = Supabase.instance.client.storage
+        // 2. الحصول على رابط الصورة المباشر من dynamic
+        imageUrl = MockSupabase.storage
             .from('community_images')
             .getPublicUrl(fileName);
       }
@@ -1075,9 +1071,7 @@ class _CreateElectricityPostScreenState
       );
 
       // 4. الحفظ في فايربيز (مجموعة التكييف)
-      await FirebaseFirestore.instance
-          .collection('post_ac')
-          .add(newPost.toMap());
+      await MockFirestore.collection('post_ac').add(newPost.toMap());
 
       if (mounted) {
         Navigator.pop(context);
@@ -1105,7 +1099,7 @@ class _CreateElectricityPostScreenState
 
   @override
   Widget build(BuildContext context) {
-    ImageProvider _getCreateProfileImage(String? path) {
+    ImageProvider getCreateProfileImage(String? path) {
       if (path != null && path.isNotEmpty) {
         if (path.startsWith('http')) {
           return NetworkImage(path);
@@ -1194,7 +1188,7 @@ class _CreateElectricityPostScreenState
                         CircleAvatar(
                           radius: 26,
                           backgroundColor: Colors.grey.shade200,
-                          backgroundImage: _getCreateProfileImage(displayImage),
+                          backgroundImage: getCreateProfileImage(displayImage),
                         ),
                         const SizedBox(width: 12),
                         Column(
@@ -1365,7 +1359,7 @@ class _CreateElectricityPostScreenState
                 border: Border.all(color: Colors.grey.shade200),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
+                    color: Colors.black.withValues(alpha: 0.03),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -1489,9 +1483,7 @@ class _CreateElectricityQuestionScreenState
         likedBy: [],
       );
 
-      await FirebaseFirestore.instance
-          .collection('post_ac')
-          .add(newQuestion.toMap());
+      await MockFirestore.collection('post_ac').add(newQuestion.toMap());
 
       if (mounted) {
         Navigator.pop(context);
@@ -1518,7 +1510,7 @@ class _CreateElectricityQuestionScreenState
 
   @override
   Widget build(BuildContext context) {
-    ImageProvider _getQuestionProfileImage(String? path) {
+    ImageProvider getQuestionProfileImage(String? path) {
       if (path != null && path.isNotEmpty) {
         if (path.startsWith('http')) {
           return NetworkImage(path);
@@ -1601,7 +1593,7 @@ class _CreateElectricityQuestionScreenState
                   CircleAvatar(
                     radius: 26,
                     backgroundColor: Colors.grey.shade200,
-                    backgroundImage: _getQuestionProfileImage(displayImage),
+                    backgroundImage: getQuestionProfileImage(displayImage),
                   ),
                   const SizedBox(width: 12),
                   Column(

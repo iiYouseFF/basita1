@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:basita1/features/orders/screens/technical_report_screen.dart';
 
 class FeedbackScreen extends StatefulWidget {
-  const FeedbackScreen({Key? key}) : super(key: key);
+  const FeedbackScreen({super.key});
 
   @override
   State<FeedbackScreen> createState() => _FeedbackScreenState();
@@ -130,7 +130,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 15,
             spreadRadius: 5,
           ),
@@ -160,7 +160,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 20,
             spreadRadius: 0,
             offset: const Offset(0, 4),
@@ -284,7 +284,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
-              color: isSelected ? primaryBlue.withOpacity(0.08) : Colors.white,
+              color: isSelected
+                  ? primaryBlue.withValues(alpha: 0.08)
+                  : Colors.white,
               border: Border.all(
                 color: isSelected ? primaryBlue : Colors.grey.shade400,
                 width: 1.2,
@@ -386,14 +388,13 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           // ==========================================
           // كود النافيجاتور للانتقال للصفحة الجديدة
           // ==========================================
-          
+
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const TechnicalReportScreen(), 
+              builder: (context) => const TechnicalReportScreen(),
             ),
           );
-        
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -432,7 +433,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       decoration: BoxDecoration(
         color: lightBlueBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: primaryBlue.withOpacity(0.2)),
+        border: Border.all(color: primaryBlue.withValues(alpha: 0.2)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -444,7 +445,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
               "تقييمك يساعد الآخرين في اختيار المحترف المناسب لمشاريعهم القادمة.",
               style: GoogleFonts.cairo(
                 fontSize: 13,
-                color: primaryBlue.withOpacity(0.9),
+                color: primaryBlue.withValues(alpha: 0.9),
                 fontWeight: FontWeight.w600,
                 height: 1.4,
               ),

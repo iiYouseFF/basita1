@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
 import 'package:basita1/features/home/screens/home_screen.dart';
 import 'package:basita1/features/chat/screens/chat_screen.dart';
 import 'package:basita1/features/profile/screens/profile_screen.dart';
 import 'package:basita1/features/family/screens/family_join_screen.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 // ==========================================
 // 1. نموذج بيانات العرض (OfferModel)
@@ -41,7 +42,7 @@ class OfferModel {
   });
 
   factory OfferModel.fromMap(Map<String, dynamic> map, String docId) {
-    // جلب صورة الفني ديناميكياً من قاعدة البيانات أو من بيانات الجلسة (UserDataSession / Supabase) لضمان عدم وجود قيم وهمية
+    // جلب صورة الفني ديناميكياً من قاعدة البيانات أو من بيانات الجلسة (UserDataSession / dynamic) لضمان عدم وجود قيم وهمية
     String resolvedImage =
         map['imagePath'] ??
         map['profileImage'] ??
@@ -53,7 +54,7 @@ class OfferModel {
     return OfferModel(
       offerId: docId,
       requestId: map['requestId'] ?? '',
-      technicianId: map['technicianId'] ?? UserDataSession.uid,
+      technicianId: map['technicianId'] ?? UserDataSession.uid ?? '',
       name:
           map['technicianName'] ??
           map['name'] ??
@@ -62,12 +63,7 @@ class OfferModel {
               : "فني محترف"),
       rating: (map['rating'] ?? 5.0).toDouble(),
       reviewsCount: map['reviewsCount'] ?? 0,
-      // التعديل هنا: قراءة finalPrice أولاً لو تم التفاوض عليه
-      price:
-          map['finalPrice']?.toString() ??
-          map['price']?.toString() ??
-          map['offerPrice']?.toString() ??
-          "0",
+      price: map['price']?.toString() ?? map['offerPrice']?.toString() ?? "0",
       experienceYears: map['experienceYears'] ?? 3,
       arrivalTime: map['arrivalTime'] ?? "يصل خلال 30 دقيقة",
       imagePath: resolvedImage,
@@ -102,21 +98,17 @@ class _AvailableOffersScreenState extends State<AvailableOffersScreen> {
   // دالة قبول العرض الحقيقي وتحديث Firebase
   Future<void> _acceptOffer(BuildContext context, OfferModel offer) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('offers')
-          .doc(offer.offerId)
-          .update({'status': 'accepted', 'finalPrice': offer.price});
+      await MockFirestore.collection(
+        'offers',
+      ).doc(offer.offerId).update({'status': 'accepted'});
 
-      await FirebaseFirestore.instance
-          .collection('requests')
-          .doc(widget.requestId)
-          .update({
-            'status': 'in_progress', // متوافق مع تعديل حالة الفني
-            'acceptedTechnicianName': offer.name,
-            'acceptedPrice': offer.price,
-            'acceptedOfferId': offer.offerId,
-            'clientAccepted': true,
-          });
+      await MockFirestore.collection('requests').doc(widget.requestId).update({
+        'status': 'in_progress', // متوافق مع تعديل حالة الفني
+        'acceptedTechnicianName': offer.name,
+        'acceptedPrice': offer.price,
+        'acceptedOfferId': offer.offerId,
+        'clientAccepted': true,
+      });
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -152,10 +144,9 @@ class _AvailableOffersScreenState extends State<AvailableOffersScreen> {
         backgroundColor: bgLightGrey,
         appBar: _buildTopAppBar(context),
         body: StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('requests')
-              .doc(widget.requestId)
-              .snapshots(),
+          stream: MockFirestore.collection(
+            'requests',
+          ).doc(widget.requestId).snapshots(),
           builder: (context, requestSnapshot) {
             String requestTitle = "تركيب وتصليح مكيف";
             if (requestSnapshot.hasData && requestSnapshot.data!.exists) {
@@ -169,10 +160,9 @@ class _AvailableOffersScreenState extends State<AvailableOffersScreen> {
             }
 
             return StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('offers')
-                  .where('requestId', isEqualTo: widget.requestId)
-                  .snapshots(),
+              stream: MockFirestore.collection(
+                'offers',
+              ).where('requestId', isEqualTo: widget.requestId).snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
@@ -221,11 +211,6 @@ class _AvailableOffersScreenState extends State<AvailableOffersScreen> {
                   );
                 } catch (e) {
                   acceptedOffer = null;
-                }
-
-                // إصلاح المشكلة: في حالة وجود عرض مقبول، نعرضه هو فقط ونخفي باقي العروض
-                if (acceptedOffer != null) {
-                  offers = [acceptedOffer];
                 }
 
                 return Column(
@@ -368,7 +353,7 @@ class _AvailableOffersScreenState extends State<AvailableOffersScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -513,7 +498,7 @@ class _AvailableOffersScreenState extends State<AvailableOffersScreen> {
                 ),
                 decoration: BoxDecoration(
                   color: offer.hasGreenArrivalTag
-                      ? tagBgGreen.withOpacity(0.15)
+                      ? tagBgGreen.withValues(alpha: 0.15)
                       : tagBgBlue,
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -666,17 +651,13 @@ class _AvailableOffersScreenState extends State<AvailableOffersScreen> {
                           color: Colors.white,
                           size: 18,
                         ),
-                        const SizedBox(width: 4),
-                        // التعديل هنا: إظهار السعر داخل زر القبول لو تم الاتفاق
-                        Expanded(
-                          child: Text(
-                            isAccepted ? "مقبول (${offer.price})" : "قبول",
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.cairo(
-                              color: Colors.white,
-                              fontSize: isAccepted ? 12 : 14,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        const SizedBox(width: 6),
+                        Text(
+                          isAccepted ? "تم القبول" : "قبول",
+                          style: GoogleFonts.cairo(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
@@ -710,7 +691,7 @@ class _AvailableOffersScreenState extends State<AvailableOffersScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, -3),
           ),
@@ -1057,21 +1038,17 @@ class _DynamicNegotiationScreenState extends State<DynamicNegotiationScreen> {
     });
 
     try {
-      await FirebaseFirestore.instance
-          .collection('offers')
-          .doc(widget.offer.offerId)
-          .update({'status': 'accepted', 'finalPrice': currentPrice});
+      await MockFirestore.collection('offers').doc(widget.offer.offerId).update(
+        {'status': 'accepted', 'finalPrice': currentPrice},
+      );
 
-      await FirebaseFirestore.instance
-          .collection('requests')
-          .doc(widget.requestId)
-          .update({
-            'status': 'in_progress',
-            'acceptedTechnicianName': widget.offer.name,
-            'acceptedPrice': currentPrice,
-            'acceptedOfferId': widget.offer.offerId,
-            'clientAccepted': true,
-          });
+      await MockFirestore.collection('requests').doc(widget.requestId).update({
+        'status': 'in_progress',
+        'acceptedTechnicianName': widget.offer.name,
+        'acceptedPrice': currentPrice,
+        'acceptedOfferId': widget.offer.offerId,
+        'clientAccepted': true,
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1105,10 +1082,9 @@ class _DynamicNegotiationScreenState extends State<DynamicNegotiationScreen> {
     });
 
     try {
-      await FirebaseFirestore.instance
-          .collection('offers')
-          .doc(widget.offer.offerId)
-          .update({'status': 'rejected'});
+      await MockFirestore.collection(
+        'offers',
+      ).doc(widget.offer.offerId).update({'status': 'rejected'});
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1304,7 +1280,7 @@ class _DynamicNegotiationScreenState extends State<DynamicNegotiationScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: badgeGreen.withOpacity(0.15),
+                  color: badgeGreen.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -1428,7 +1404,7 @@ class _DynamicNegotiationScreenState extends State<DynamicNegotiationScreen> {
             border: Border.all(color: const Color(0xFFD6E4F0), width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
@@ -1451,7 +1427,7 @@ class _DynamicNegotiationScreenState extends State<DynamicNegotiationScreen> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: brandBlue.withOpacity(0.1),
+                      color: brandBlue.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -1532,7 +1508,7 @@ class _DynamicNegotiationScreenState extends State<DynamicNegotiationScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
-                    color: badgeGreen.withOpacity(0.1),
+                    color: badgeGreen.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: badgeGreen),
                   ),
@@ -1542,9 +1518,8 @@ class _DynamicNegotiationScreenState extends State<DynamicNegotiationScreen> {
                     children: [
                       const Icon(Icons.check_circle, color: badgeGreen),
                       const SizedBox(width: 8),
-                      // التعديل هنا: إظهار السعر النهائي في رسالة التأكيد
                       Text(
-                        "تم قبول العرض بسعر $currentPrice ج.م",
+                        "تم قبول العرض والاتفاق نهائياً",
                         style: GoogleFonts.cairo(
                           color: badgeGreen,
                           fontWeight: FontWeight.bold,
@@ -1594,7 +1569,7 @@ class _DynamicNegotiationScreenState extends State<DynamicNegotiationScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, -4),
           ),
@@ -1951,7 +1926,7 @@ class _DynamicChatScreenState extends State<DynamicChatScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, -4),
           ),

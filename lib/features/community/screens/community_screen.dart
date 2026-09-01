@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+// removed: firebase_auth
 
 // الفايلات المرتبطة والمستوردة في المشروع
 import 'package:basita1/core/session/user_session.dart';
@@ -15,6 +15,7 @@ import 'package:basita1/features/community/screens/comm3.dart';
 import 'package:basita1/features/community/screens/comm4.dart';
 import 'package:basita1/features/community/screens/comm5.dart';
 import 'package:basita1/features/community/screens/comm6.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 // =========================================================
 // شاشة المجتمع المحدثة والمربوطة بالكامل بـ Firebase User Account
@@ -47,18 +48,16 @@ class _CommunityScreenPerfectState extends State<CommunityScreenPerfect> {
   // دالة لجلب معرّف المستخدم (UID) الحالي
   Future<String?> _getUserId() async {
     // 1. تجربة جلب ID من حساب Firebase Auth الحالي
-    String? uid = FirebaseAuth.instance.currentUser?.uid;
+    String? uid = MockAuth.currentUser?.uid;
     if (uid != null && uid.isNotEmpty) return uid;
 
     // 2. البحث برقم الهاتف كخيار احتياطي من الجلسة
     String phone = UserSession.instance.phone.trim();
     if (phone.isNotEmpty) {
       try {
-        var query = await FirebaseFirestore.instance
-            .collection('users')
-            .where('phone', isEqualTo: phone)
-            .limit(1)
-            .get();
+        var query = await MockFirestore.collection(
+          'users',
+        ).where('phone', isEqualTo: phone).limit(1).get();
         if (query.docs.isNotEmpty) {
           return query.docs.first.id;
         }
@@ -74,10 +73,7 @@ class _CommunityScreenPerfectState extends State<CommunityScreenPerfect> {
     try {
       String? userId = await _getUserId();
       if (userId != null) {
-        var doc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userId)
-            .get();
+        var doc = await MockFirestore.collection('users').doc(userId).get();
 
         if (doc.exists && doc.data() != null) {
           var data = doc.data()!;
@@ -112,9 +108,9 @@ class _CommunityScreenPerfectState extends State<CommunityScreenPerfect> {
     try {
       String? userId = await _getUserId();
       if (userId != null) {
-        await FirebaseFirestore.instance.collection('users').doc(userId).set({
-          'joinedCommunities': FieldValue.arrayUnion([communityId]),
-        }, SetOptions(merge: true));
+        await MockFirestore.collection('users').doc(userId).set({
+          'joinedCommunities': MockFieldValue.arrayUnion([communityId]),
+        }, MockSetOptions(merge: true));
       }
     } catch (e) {
       debugPrint("خطأ أثناء الانضمام للمجتمع في الفايربيس: $e");

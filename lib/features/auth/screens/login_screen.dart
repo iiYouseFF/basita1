@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // 👈 التخزين المحلي
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:basita1/core/repositories/auth_repository.dart';
 import 'package:basita1/features/auth/screens/otp_screen.dart';
+import 'package:basita1/features/home/screens/home_screen.dart';
 import 'package:basita1/core/session/user_session.dart';
 import 'package:basita1/core/utils/phone_utils.dart';
 
@@ -20,6 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
 
   final _formKey = GlobalKey<FormState>();
+  final _authRepo = AuthRepository();
 
   Future<void> _checkPhoneNumberInFirestore() async {
     bool isValid = _formKey.currentState?.validate() ?? false;
@@ -39,85 +41,48 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       String cleanNumber = rawPhoneDigits.trim();
-
       if (cleanNumber.startsWith('0')) {
         cleanNumber = cleanNumber.substring(1);
       }
+      final rawPhone = '+$countryCode$cleanNumber';
+      final normalizedPhone = normalizeEgyptPhone(rawPhone);
 
-      String formatWithCountryAndZero = '+${countryCode}0$cleanNumber';
-      String formatWithCountryNoZero = '+$countryCode$cleanNumber';
-      String formatLocalWithZero = '0$cleanNumber';
-      String formatLocalNoZero = cleanNumber;
-
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .where(
-            'phone',
-            whereIn: [
-              formatWithCountryAndZero,
-              formatWithCountryNoZero,
-              formatLocalWithZero,
-              formatLocalNoZero,
-            ],
-          )
-          .get();
-
-      setState(() => _isLoading = false);
-
-      if (!mounted) return;
-
-      if (querySnapshot.docs.isNotEmpty) {
-        var userDoc = querySnapshot.docs.first;
-        var data = userDoc.data();
-
-        // حفظ في الجلسة المؤقتة
-        UserSession.instance.saveUserData(
-          name: data['name'] ?? '',
-          phone: data['phone'] ?? '',
-          email: data['email'] ?? '',
-          governorate: data['governorate'] ?? '',
-          city: data['city'] ?? '',
-          region: data['region'] ?? '',
-          placeType: data['placeType'] ?? '',
-          profileImagePath: data['profileImagePath'],
-        );
-
-        // 👈 حفظ حالة الدخول + بياناتك بالكامل محلياً لكي لا تختفي أبداً
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('isLoggedIn', true);
-        await prefs.setString('userType', 'user');
-        await prefs.setString('userName', data['name'] ?? '');
-        await prefs.setString('userPhone', data['phone'] ?? '');
-        await prefs.setString('userEmail', data['email'] ?? '');
-        await prefs.setString('userGov', data['governorate'] ?? '');
-        await prefs.setString('userCity', data['city'] ?? '');
-        await prefs.setString('userRegion', data['region'] ?? '');
-        await prefs.setString('userPlaceType', data['placeType'] ?? '');
-        if (data['profileImagePath'] != null) {
-          await prefs.setString('userImage', data['profileImagePath']);
+      // Check existence via Node API: GET /users?phone= and /technicians?phone=
+      bool exists = false;
+      Map<String, dynamic>? userData;
+      try {
+        final users = await _authRepo.lookupUsersByPhone(normalizedPhone);
+        if (users.isNotEmpty) {
+          exists = true;
+          userData = Map<String, dynamic>.from(users.first as Map);
+        } else {
+          final techs = await _authRepo.lookupTechniciansByPhone(
+            normalizedPhone,
+          );
+          if (techs.isNotEmpty) {
+            exists = true;
+            final t = Map<String, dynamic>.from(techs.first as Map);
+            // Normalize technician shape to user shape
+            userData = {
+              'name': t['fullName'] ?? t['name'] ?? '',
+              'phone': t['phone'] ?? normalizedPhone,
+              'email': t['email'] ?? '',
+              'governorate': t['governorate'] ?? '',
+              'city': t['city'] ?? '',
+              'region': t['area'] ?? t['region'] ?? '',
+              'placeType': t['placeType'] ?? '',
+              'profileImagePath': t['profileImageUrl'] ?? t['profileImagePath'],
+            };
+          }
         }
+      } catch (_) {
+        // If lookup fails, allow OTP anyway (backend will handle)
+        exists = true;
+      }
 
-        String userName = data['name'] ?? 'مستخدم';
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('أهلاً بك يا $userName، يرجى إدخال رمز التحقق'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => OtpScreen(
-              phoneNumber: normalizeEgyptPhone(
-                data['phone'] ?? formatWithCountryNoZero,
-              ),
-            ),
-          ),
-        );
-      } else {
+      if (!exists || userData == null) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('رقم الهاتف غير مسجل لدينا، يرجى إنشاء حساب جديد'),
@@ -125,10 +90,70 @@ class _LoginScreenState extends State<LoginScreen> {
             duration: Duration(seconds: 3),
           ),
         );
+        return;
       }
-    } catch (e) {
-      setState(() => _isLoading = false);
+
+      // Save to session
+      UserSession.instance.saveUserData(
+        name: userData['name'] ?? '',
+        phone: userData['phone'] ?? normalizedPhone,
+        email: userData['email'] ?? '',
+        governorate: userData['governorate'] ?? '',
+        city: userData['city'] ?? '',
+        region: userData['region'] ?? '',
+        placeType: userData['placeType'] ?? '',
+        profileImagePath: userData['profileImagePath'],
+      );
+
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+      await prefs.setString('userType', 'user');
+      await prefs.setString('userName', userData['name'] ?? '');
+      await prefs.setString('userPhone', userData['phone'] ?? normalizedPhone);
+      await prefs.setString('userEmail', userData['email'] ?? '');
+      await prefs.setString('userGov', userData['governorate'] ?? '');
+      await prefs.setString('userCity', userData['city'] ?? '');
+      await prefs.setString('userRegion', userData['region'] ?? '');
+      await prefs.setString('userPlaceType', userData['placeType'] ?? '');
+      if (userData['profileImagePath'] != null) {
+        await prefs.setString('userImage', userData['profileImagePath']);
+      }
+
+      // Request OTP via Node API: POST /auth/request-otp
+      String? verificationId;
+      try {
+        final otpRes = await _authRepo.requestOtp(phone: normalizedPhone);
+        verificationId = otpRes['verificationId']?.toString();
+      } catch (e) {
+        // Even if request-otp fails, still allow mock OTP flow in dev
+        debugPrint('[Login] request-otp failed: $e');
+      }
+
       if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'أهلاً بك يا ${userData['name'] ?? 'مستخدم'}، يرجى إدخال رمز التحقق',
+          ),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OtpScreen(
+            phoneNumber: normalizedPhone,
+            verificationId: verificationId,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('حدث خطأ أثناء التحقق: $e'),

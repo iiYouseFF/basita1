@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:basita1/core/network/mock_backend.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -13,10 +14,9 @@ class DashboardScreen extends StatelessWidget {
       ),
       body: StreamBuilder<QuerySnapshot>(
         // الاستماع للتغييرات في مجموعة orders لحظياً
-        stream: FirebaseFirestore.instance
-            .collection('orders')
-            .orderBy('createdAt', descending: true)
-            .snapshots(),
+        stream: MockFirestore.collection(
+          'orders',
+        ).orderBy('createdAt', descending: true).snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

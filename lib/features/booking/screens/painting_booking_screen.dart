@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:basita1/core/network/mock_backend.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
 
 class PaintingBookingScreen extends StatefulWidget {
-  const PaintingBookingScreen({Key? key}) : super(key: key);
+  const PaintingBookingScreen({super.key});
 
   @override
   State<PaintingBookingScreen> createState() => _PaintingBookingScreenState();
@@ -59,7 +60,7 @@ class _PaintingBookingScreenState extends State<PaintingBookingScreen> {
 
     try {
       // إنشاء كولكشن جديد باسم painting_requests
-      await FirebaseFirestore.instance.collection('painting_requests').add({
+      await MockFirestore.collection('painting_requests').add({
         'workType': 'نقاشة',
         'finishingType': selectedFinishingType,
         'paintType': selectedPaintType,
@@ -69,7 +70,7 @@ class _PaintingBookingScreenState extends State<PaintingBookingScreen> {
         'budget': _budgetController.text.trim(),
         'notes': _notesController.text.trim(),
         'status': 'pending', // حالة الطلب
-        'createdAt': FieldValue.serverTimestamp(),
+        'createdAt': DateTime.now(),
       });
 
       // TODO: قم بإلغاء التعليق عن الكود التالي وضع اسم صفحة النجاح الخاصة بك
@@ -164,7 +165,7 @@ class _PaintingBookingScreenState extends State<PaintingBookingScreen> {
               padding: const EdgeInsets.only(left: 16.0),
               child: Center(
                 child: CircleAvatar(
-                  backgroundColor: primaryBlue.withOpacity(0.1),
+                  backgroundColor: primaryBlue.withValues(alpha: 0.1),
                   child: const Icon(
                     Icons.format_paint,
                     color: primaryBlue,
@@ -226,7 +227,7 @@ class _PaintingBookingScreenState extends State<PaintingBookingScreen> {
                 child: DropdownButtonFormField<String>(
                   decoration: _inputDecoration(),
                   hint: Text('اختر نوع الدهان', style: GoogleFonts.tajawal()),
-                  value: selectedPaintType,
+                  initialValue: selectedPaintType,
                   icon: const Icon(Icons.keyboard_arrow_down),
                   items: paintTypes.map((String type) {
                     return DropdownMenuItem<String>(
@@ -344,7 +345,7 @@ class _PaintingBookingScreenState extends State<PaintingBookingScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
