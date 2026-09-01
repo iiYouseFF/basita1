@@ -6,6 +6,6 @@
 class DefaultFirebaseOptions {
   @Deprecated('Firebase removed')
   static dynamic get currentPlatform => throw UnsupportedError(
-        'Firebase removed. Configure external backend via ApiConfig.baseUrl.',
-      );
+    'Firebase removed. Configure external backend via ApiConfig.baseUrl.',
+  );
 }

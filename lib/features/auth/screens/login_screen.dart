@@ -56,7 +56,9 @@ class _LoginScreenState extends State<LoginScreen> {
           exists = true;
           userData = Map<String, dynamic>.from(users.first as Map);
         } else {
-          final techs = await _authRepo.lookupTechniciansByPhone(normalizedPhone);
+          final techs = await _authRepo.lookupTechniciansByPhone(
+            normalizedPhone,
+          );
           if (techs.isNotEmpty) {
             exists = true;
             final t = Map<String, dynamic>.from(techs.first as Map);
@@ -132,7 +134,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('أهلاً بك يا ${userData['name'] ?? 'مستخدم'}، يرجى إدخال رمز التحقق'),
+          content: Text(
+            'أهلاً بك يا ${userData['name'] ?? 'مستخدم'}، يرجى إدخال رمز التحقق',
+          ),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 2),
         ),
@@ -219,7 +223,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: _isLoading ? null : _checkPhoneNumberInFirestore,
+                      onPressed: _isLoading
+                          ? null
+                          : _checkPhoneNumberInFirestore,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryBlue,
                         shape: RoundedRectangleBorder(

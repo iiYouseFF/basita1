@@ -20,15 +20,18 @@ void main() {
       expect(TechnicianRepository, isA<Type>());
     });
 
-    test('RequestRepository file exists and defines expected methods', () async {
-      const expectedMethods = [
-        'createRequest',
-        'watchUserRequests',
-        'watchAvailableRequests',
-      ];
-      expect(expectedMethods, contains('createRequest'));
-      expect(expectedMethods.length, 3);
-    });
+    test(
+      'RequestRepository file exists and defines expected methods',
+      () async {
+        const expectedMethods = [
+          'createRequest',
+          'watchUserRequests',
+          'watchAvailableRequests',
+        ];
+        expect(expectedMethods, contains('createRequest'));
+        expect(expectedMethods.length, 3);
+      },
+    );
   });
 
   group('Phase 3 — Repositories (external backend stub)', () {

@@ -25,11 +25,14 @@ class AuthRepository {
     String? verificationId,
   }) async {
     try {
-      final res = await _api.post('/auth/verify-otp', body: {
-        'phone': phone,
-        'code': code,
-        if (verificationId != null) 'verificationId': verificationId,
-      });
+      final res = await _api.post(
+        '/auth/verify-otp',
+        body: {
+          'phone': phone,
+          'code': code,
+          if (verificationId != null) 'verificationId': verificationId,
+        },
+      );
       final data = (res['data'] as Map<String, dynamic>?) ?? res;
       final token = data['token'] as String?;
       final user = data['user'] as Map<String, dynamic>?;
@@ -44,13 +47,31 @@ class AuthRepository {
       return data;
     } on ApiException catch (e) {
       // Fallback for dev: backend is in prod mode (mock:false) but Flutter is in mock mode
-      if (AppConfig.useMockOtp && e.statusCode == 401 && RegExp(r'^\d{6}$').hasMatch(code)) {
+      if (AppConfig.useMockOtp &&
+          e.statusCode == 401 &&
+          RegExp(r'^\d{6}$').hasMatch(code)) {
         // Generate local mock token so UI can proceed; real API calls will work for public GETs,
         // but protected POSTs will still fail until backend USE_MOCK_OTP=true — user should set it.
-        final mockToken = base64Url.encode(utf8.encode('mock:$phone:${DateTime.now().millisecondsSinceEpoch}'));
-        final mockUser = {'id': 'mock_${phone.hashCode}', 'phone': phone, 'userType': 'user'};
-        await AuthSession.instance.save(token: mockToken, userId: mockUser['id'], phone: phone, userType: 'user');
-        return {'token': mockToken, 'user': mockUser, 'mockFallback': true, 'backendError': e.message};
+        final mockToken = base64Url.encode(
+          utf8.encode('mock:$phone:${DateTime.now().millisecondsSinceEpoch}'),
+        );
+        final mockUser = {
+          'id': 'mock_${phone.hashCode}',
+          'phone': phone,
+          'userType': 'user',
+        };
+        await AuthSession.instance.save(
+          token: mockToken,
+          userId: mockUser['id'],
+          phone: phone,
+          userType: 'user',
+        );
+        return {
+          'token': mockToken,
+          'user': mockUser,
+          'mockFallback': true,
+          'backendError': e.message,
+        };
       }
       rethrow;
     }
@@ -67,16 +88,19 @@ class AuthRepository {
     String? placeType,
     String? profileImageUrl,
   }) async {
-    final res = await _api.post('/auth/register', body: {
-      'name': name,
-      'phone': phone,
-      if (email != null && email.isNotEmpty) 'email': email,
-      'governorate': governorate,
-      if (city != null) 'city': city,
-      if (region != null) 'region': region,
-      if (placeType != null) 'placeType': placeType,
-      if (profileImageUrl != null) 'profileImageUrl': profileImageUrl,
-    });
+    final res = await _api.post(
+      '/auth/register',
+      body: {
+        'name': name,
+        'phone': phone,
+        if (email != null && email.isNotEmpty) 'email': email,
+        'governorate': governorate,
+        if (city != null) 'city': city,
+        if (region != null) 'region': region,
+        if (placeType != null) 'placeType': placeType,
+        if (profileImageUrl != null) 'profileImageUrl': profileImageUrl,
+      },
+    );
     final data = (res['data'] as Map<String, dynamic>?) ?? res;
     final token = data['token'] as String?;
     final user = data['user'] as Map<String, dynamic>?;
@@ -101,18 +125,23 @@ class AuthRepository {
     String? area,
     String? profileImageUrl,
   }) async {
-    final res = await _api.post('/auth/technicians/register', body: {
-      'fullName': fullName,
-      'phone': phone,
-      if (experience != null) 'experience': experience,
-      if (specialty != null) 'specialty': specialty,
-      'governorate': governorate,
-      if (area != null) 'area': area,
-      if (profileImageUrl != null) 'profileImageUrl': profileImageUrl,
-    });
+    final res = await _api.post(
+      '/auth/technicians/register',
+      body: {
+        'fullName': fullName,
+        'phone': phone,
+        if (experience != null) 'experience': experience,
+        if (specialty != null) 'specialty': specialty,
+        'governorate': governorate,
+        if (area != null) 'area': area,
+        if (profileImageUrl != null) 'profileImageUrl': profileImageUrl,
+      },
+    );
     final data = (res['data'] as Map<String, dynamic>?) ?? res;
     final token = data['token'] as String?;
-    final tech = (data['technician'] as Map<String, dynamic>?) ?? data['user'] as Map<String, dynamic>?;
+    final tech =
+        (data['technician'] as Map<String, dynamic>?) ??
+        data['user'] as Map<String, dynamic>?;
     if (token != null) {
       await AuthSession.instance.save(
         token: token,
@@ -144,7 +173,8 @@ class AuthRepository {
     final res = await _api.get('/technicians', query: {'phone': phone});
     final data = res['data'];
     if (data is List) return data;
-    if (data is Map && data['technicians'] is List) return data['technicians'] as List;
+    if (data is Map && data['technicians'] is List)
+      return data['technicians'] as List;
     return [];
   }
 

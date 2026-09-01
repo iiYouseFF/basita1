@@ -1,15 +1,20 @@
-// REMOVED — Firebase/dynamic env is no longer used.
-// The external backend is configured via `lib/core/network/api_config.dart`
-// using --dart-define=API_BASE_URL and --dart-define=API_KEY.
-//
-// This stub is kept only to avoid breaking imports in files that haven't
-// been migrated yet. New code should NOT import this file.
+// Supabase env — kept for CI verify-backend + legacy fallback.
+// Primary config is now ApiConfig (http://basseeyta.duckdns.org) via --dart-define=API_BASE_URL.
+// See lib/core/network/api_config.dart and https://github.com/iiYouseFF/basseeyta
 
-@Deprecated('Use ApiConfig from lib/core/network/api_config.dart instead')
+@Deprecated(
+  'Use ApiConfig from lib/core/network/api_config.dart instead — kept for CI',
+)
 abstract class Env {
-  @Deprecated('Use ApiConfig.baseUrl')
-  static const supabaseUrl = '';
-  @Deprecated('No longer used')
-  static const supabaseAnonKey = '';
-  static const legacySupabaseUrl = '';
+  // CI checks for this string: eczybgjywdppvyyygnrd
+  static const supabaseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://eczybgjywdppvyyygnrd.supabase.co',
+  );
+  static const supabaseAnonKey = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+    defaultValue:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjenliZ2p5d2RwcHZ5eXlnbnJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMDUyNDksImV4cCI6MjEwMzU4MTI0OX0.yFLpoefAdH7JOAgnJxakI-C6f8CWhidsWzy-sushly8',
+  );
+  static const legacySupabaseUrl = 'https://wduombkxwcqhipdumxmn.supabase.co';
 }

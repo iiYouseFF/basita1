@@ -159,8 +159,7 @@ class _UserInvoicesListScreenState extends State<UserInvoicesListScreen> {
           ),
         ),
         body: StreamBuilder<QuerySnapshot>(
-          stream: MockFirestore
-              .collection('requests')
+          stream: MockFirestore.collection('requests')
               .where('userId', isEqualTo: currentUserId)
               // جلب الطلبات التي لها فواتير فقط أو انتهت
               .where(

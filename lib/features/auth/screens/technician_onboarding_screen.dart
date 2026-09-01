@@ -224,25 +224,21 @@ class _TechnicianOnboardingScreenState
           '0020$cleanPhone',
         ];
 
-        var query1 = await MockFirestore
-            .collection('technicians')
-            .where('phoneNumber', whereIn: possibleFormats)
-            .get();
+        var query1 = await MockFirestore.collection(
+          'technicians',
+        ).where('phoneNumber', whereIn: possibleFormats).get();
 
-        var query2 = await MockFirestore
-            .collection('technicians')
-            .where('phone', whereIn: possibleFormats)
-            .get();
+        var query2 = await MockFirestore.collection(
+          'technicians',
+        ).where('phone', whereIn: possibleFormats).get();
 
-        var docByPhone = await MockFirestore
-            .collection('technicians')
+        var docByPhone = await MockFirestore.collection('technicians')
             .doc(standardizedPhone) // نبحث بالرقم الموحد
             .get();
 
-        var docByPhoneWithCode = await MockFirestore
-            .collection('technicians')
-            .doc('+20$cleanPhone')
-            .get();
+        var docByPhoneWithCode = await MockFirestore.collection(
+          'technicians',
+        ).doc('+20$cleanPhone').get();
 
         if (query1.docs.isNotEmpty ||
             query2.docs.isNotEmpty ||

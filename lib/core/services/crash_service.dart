@@ -22,11 +22,19 @@ class CrashService {
     };
   }
 
-  static Future<void> setUserContext({String? userId, String? userType, String? governorate}) async {
+  static Future<void> setUserContext({
+    String? userId,
+    String? userType,
+    String? governorate,
+  }) async {
     // TODO(backend): associate logs with user
   }
 
-  static Future<void> recordRepoError(dynamic error, StackTrace stack, {String? reason}) async {
+  static Future<void> recordRepoError(
+    dynamic error,
+    StackTrace stack, {
+    String? reason,
+  }) async {
     if (kDebugMode) {
       // ignore: avoid_print
       print('[CrashService] $reason: $error\n$stack');

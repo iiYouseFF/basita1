@@ -159,13 +159,10 @@ class _CompleteTaskPageState extends State<CompleteTaskPage> {
 
   Future<void> _saveDraft() async {
     try {
-      await MockFirestore
-          .collection('requests')
-          .doc(widget.request.id)
-          .update({
-            'draftNotes': _notesController.text,
-            'draftSavedAt': DateTime.now(),
-          });
+      await MockFirestore.collection('requests').doc(widget.request.id).update({
+        'draftNotes': _notesController.text,
+        'draftSavedAt': DateTime.now(),
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -205,14 +202,11 @@ class _CompleteTaskPageState extends State<CompleteTaskPage> {
         uploadedImageUrls.add(imageUrl);
       }
 
-      await MockFirestore
-          .collection('requests')
-          .doc(widget.request.id)
-          .update({
-            'afterTaskImages': uploadedImageUrls,
-            'technicianNotes': _notesController.text,
-            'status': 'task_finished_pending_invoice',
-          });
+      await MockFirestore.collection('requests').doc(widget.request.id).update({
+        'afterTaskImages': uploadedImageUrls,
+        'technicianNotes': _notesController.text,
+        'status': 'task_finished_pending_invoice',
+      });
 
       // إتمام الموعد في قاعدة المواعيد (dynamic) وعرض موقع الفني والعميل
       await _completeAppointmentWithLocations();
@@ -1230,19 +1224,16 @@ class _FinalInvoiceScreenState extends State<FinalInvoiceScreen> {
       ];
       String selectedPayment = paymentMethods[_selectedPaymentMethodIndex];
 
-      await MockFirestore
-          .collection('requests')
-          .doc(widget.request.id)
-          .update({
-            'status': 'awaiting_payment',
-            'finalTotal': finalTotal,
-            'finalPrice': finalTotal,
-            'laborCost': widget.laborCost,
-            'materialsCost': widget.totalAmount - widget.laborCost,
-            'paymentMethod': selectedPayment,
-            'invoiceNumber': invoiceNumber,
-            'invoiceIssuedAt': DateTime.now(),
-          });
+      await MockFirestore.collection('requests').doc(widget.request.id).update({
+        'status': 'awaiting_payment',
+        'finalTotal': finalTotal,
+        'finalPrice': finalTotal,
+        'laborCost': widget.laborCost,
+        'materialsCost': widget.totalAmount - widget.laborCost,
+        'paymentMethod': selectedPayment,
+        'invoiceNumber': invoiceNumber,
+        'invoiceIssuedAt': DateTime.now(),
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

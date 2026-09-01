@@ -14,10 +14,9 @@ class DashboardScreen extends StatelessWidget {
       ),
       body: StreamBuilder<QuerySnapshot>(
         // الاستماع للتغييرات في مجموعة orders لحظياً
-        stream: MockFirestore
-            .collection('orders')
-            .orderBy('createdAt', descending: true)
-            .snapshots(),
+        stream: MockFirestore.collection(
+          'orders',
+        ).orderBy('createdAt', descending: true).snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

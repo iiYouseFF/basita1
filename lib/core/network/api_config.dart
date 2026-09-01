@@ -31,8 +31,8 @@ abstract class ApiConfig {
   }
 
   static Map<String, String> get headers => {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        if (apiKey.isNotEmpty) 'Authorization': 'Bearer $apiKey',
-      };
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    if (apiKey.isNotEmpty) 'Authorization': 'Bearer $apiKey',
+  };
 }

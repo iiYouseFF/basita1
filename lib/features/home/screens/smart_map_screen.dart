@@ -571,8 +571,7 @@ class _TechnicianMapScreenState extends State<SmartMapScreen> {
   // ------------------------------------------------------------
   Widget _buildOrdersStream() {
     return StreamBuilder<QuerySnapshot>(
-      stream: MockFirestore
-          .collection('requests')
+      stream: MockFirestore.collection('requests')
           .where('status', isEqualTo: 'pending')
           .orderBy('createdAt', descending: true)
           .snapshots(),

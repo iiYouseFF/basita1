@@ -85,10 +85,9 @@ class _TechnicianDashboardSState extends State<TechnicianDashboardS> {
         backgroundColor: bgLight,
         // قراءة حية من Firestore بناءً على رقم التليفون
         body: StreamBuilder<DocumentSnapshot>(
-          stream: MockFirestore
-              .collection('technicians')
-              .doc(currentPhone)
-              .snapshots(),
+          stream: MockFirestore.collection(
+            'technicians',
+          ).doc(currentPhone).snapshots(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(

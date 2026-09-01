@@ -55,11 +55,9 @@ class _CommunityScreenPerfectState extends State<CommunityScreenPerfect> {
     String phone = UserSession.instance.phone.trim();
     if (phone.isNotEmpty) {
       try {
-        var query = await MockFirestore
-            .collection('users')
-            .where('phone', isEqualTo: phone)
-            .limit(1)
-            .get();
+        var query = await MockFirestore.collection(
+          'users',
+        ).where('phone', isEqualTo: phone).limit(1).get();
         if (query.docs.isNotEmpty) {
           return query.docs.first.id;
         }
@@ -75,10 +73,7 @@ class _CommunityScreenPerfectState extends State<CommunityScreenPerfect> {
     try {
       String? userId = await _getUserId();
       if (userId != null) {
-        var doc = await MockFirestore
-            .collection('users')
-            .doc(userId)
-            .get();
+        var doc = await MockFirestore.collection('users').doc(userId).get();
 
         if (doc.exists && doc.data() != null) {
           var data = doc.data()!;

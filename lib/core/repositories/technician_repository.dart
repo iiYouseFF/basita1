@@ -25,11 +25,17 @@ class TechnicianRepository {
     await _api.put('/technicians/$phone', body: data);
   }
 
-  Future<List<dynamic>> searchTechnicians({String? governorate, String? specialty}) async {
-    final res = await _api.get('/technicians', query: {
-      if (governorate != null) 'governorate': governorate,
-      if (specialty != null) 'specialty': specialty,
-    });
+  Future<List<dynamic>> searchTechnicians({
+    String? governorate,
+    String? specialty,
+  }) async {
+    final res = await _api.get(
+      '/technicians',
+      query: {
+        if (governorate != null) 'governorate': governorate,
+        if (specialty != null) 'specialty': specialty,
+      },
+    );
     final d = res['data'];
     if (d is List) return d;
     if (d is Map && d['technicians'] is List) return d['technicians'];

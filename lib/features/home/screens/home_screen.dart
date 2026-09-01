@@ -57,10 +57,7 @@ class _SimpleHomeScreenState extends State<SimpleHomeScreen> {
       QuerySnapshot? querySnapshot;
 
       if (currentUid != null && currentUid.isNotEmpty) {
-        var doc = await MockFirestore
-            .collection('users')
-            .doc(currentUid)
-            .get();
+        var doc = await MockFirestore.collection('users').doc(currentUid).get();
         if (doc.exists && doc.data() != null) {
           _updateSessionFromMap(doc.data() as Map<String, dynamic>);
           return;
@@ -68,10 +65,9 @@ class _SimpleHomeScreenState extends State<SimpleHomeScreen> {
       }
 
       if (userPhone.isNotEmpty) {
-        querySnapshot = await MockFirestore
-            .collection('users')
-            .where('phone', isEqualTo: userPhone)
-            .get();
+        querySnapshot = await MockFirestore.collection(
+          'users',
+        ).where('phone', isEqualTo: userPhone).get();
 
         if (querySnapshot.docs.isNotEmpty) {
           _updateSessionFromMap(

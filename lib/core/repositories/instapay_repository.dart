@@ -15,18 +15,19 @@ class InstaPayRepository {
   }
 
   Map<String, dynamic> _normalize(Map<String, dynamic> j) => {
-        'id': j['id'] ?? '',
-        'request_id': j['requestId'] ?? j['request_id'] ?? '',
-        'sender_id': j['senderId'] ?? j['sender_id'] ?? j['userId'] ?? '',
-        'receiver_id': j['receiverId'] ?? j['receiver_id'] ?? j['technicianId'] ?? '',
-        'amount': j['amount'] ?? 0,
-        'currency': j['currency'] ?? 'EGP',
-        'instapay_code': j['instapayCode'] ?? j['instapay_code'],
-        'verification_code': j['verificationCode'] ?? j['verification_code'],
-        'status': j['status'] ?? 'pending',
-        'verified_at': j['verifiedAt'] ?? j['verified_at'],
-        'created_at': j['createdAt'] ?? j['created_at'],
-      };
+    'id': j['id'] ?? '',
+    'request_id': j['requestId'] ?? j['request_id'] ?? '',
+    'sender_id': j['senderId'] ?? j['sender_id'] ?? j['userId'] ?? '',
+    'receiver_id':
+        j['receiverId'] ?? j['receiver_id'] ?? j['technicianId'] ?? '',
+    'amount': j['amount'] ?? 0,
+    'currency': j['currency'] ?? 'EGP',
+    'instapay_code': j['instapayCode'] ?? j['instapay_code'],
+    'verification_code': j['verificationCode'] ?? j['verification_code'],
+    'status': j['status'] ?? 'pending',
+    'verified_at': j['verifiedAt'] ?? j['verified_at'],
+    'created_at': j['createdAt'] ?? j['created_at'],
+  };
 
   Future<InstaPayTransaction> createTransaction({
     required String requestId,
@@ -35,37 +36,60 @@ class InstaPayRepository {
     required double amount,
     String? instapayCode,
   }) async {
-    final res = await _api.post('/payments/instapay', body: {
-      'requestId': requestId,
-      'senderId': senderId,
-      'receiverId': receiverId,
-      'amount': amount,
-      if (instapayCode != null) 'instapayCode': instapayCode,
-    });
-    final data = (res['data'] as Map<String, dynamic>?)?['transaction'] ?? res['data'] ?? res;
-    return InstaPayTransaction.fromJson(_normalize(Map<String, dynamic>.from(data as Map)));
+    final res = await _api.post(
+      '/payments/instapay',
+      body: {
+        'requestId': requestId,
+        'senderId': senderId,
+        'receiverId': receiverId,
+        'amount': amount,
+        if (instapayCode != null) 'instapayCode': instapayCode,
+      },
+    );
+    final data =
+        (res['data'] as Map<String, dynamic>?)?['transaction'] ??
+        res['data'] ??
+        res;
+    return InstaPayTransaction.fromJson(
+      _normalize(Map<String, dynamic>.from(data as Map)),
+    );
   }
 
   Future<bool> verifyPayment({
     required String transactionId,
     required String code,
   }) async {
-    final res = await _api.post('/payments/instapay/$transactionId/verify', body: {'code': code});
+    final res = await _api.post(
+      '/payments/instapay/$transactionId/verify',
+      body: {'code': code},
+    );
     return res['success'] == true;
   }
 
   Future<List<InstaPayTransaction>> getUserTransactions(String userId) async {
     final res = await _api.get('/payments/instapay', query: {'userId': userId});
     final data = res['data'];
-    final list = data is List ? data : (data is Map && data['transactions'] is List ? data['transactions'] : []);
-    return (list as List).map((e) => InstaPayTransaction.fromJson(_normalize(Map<String, dynamic>.from(e)))).toList();
+    final list = data is List
+        ? data
+        : (data is Map && data['transactions'] is List
+              ? data['transactions']
+              : []);
+    return (list as List)
+        .map(
+          (e) => InstaPayTransaction.fromJson(
+            _normalize(Map<String, dynamic>.from(e)),
+          ),
+        )
+        .toList();
   }
 
   Future<InstaPayTransaction?> getTransaction(String transactionId) async {
     try {
       final res = await _api.get('/payments/instapay/$transactionId');
       final data = (res['data'] as Map<String, dynamic>?) ?? res;
-      return InstaPayTransaction.fromJson(_normalize(Map<String, dynamic>.from(data)));
+      return InstaPayTransaction.fromJson(
+        _normalize(Map<String, dynamic>.from(data)),
+      );
     } catch (_) {
       return null;
     }

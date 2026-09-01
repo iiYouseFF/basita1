@@ -21,7 +21,14 @@ void main() {
 
   group('External backend contract', () {
     test('expected endpoints are documented in PRD', () {
-      const expected = ['/auth/request-otp', '/service-requests', '/chat/rooms', '/payments', '/posts', '/storage/upload'];
+      const expected = [
+        '/auth/request-otp',
+        '/service-requests',
+        '/chat/rooms',
+        '/payments',
+        '/posts',
+        '/storage/upload',
+      ];
       expect(expected, contains('/auth/request-otp'));
       expect(expected, contains('/service-requests'));
       expect(expected, contains('/payments'));

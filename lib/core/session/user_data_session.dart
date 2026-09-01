@@ -33,7 +33,8 @@ class UserDataSession {
     await Future.delayed(const Duration(milliseconds: 400));
     // TODO(backend): POST /storage/upload {bucket: 'profiles', file: imageFile}
     // mock URL:
-    final fileName = 'profile_${phone}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final fileName =
+        'profile_${phone}_${DateTime.now().millisecondsSinceEpoch}.jpg';
     profileImagePath = 'https://cdn.basita.example.com/profiles/$fileName';
   }
 

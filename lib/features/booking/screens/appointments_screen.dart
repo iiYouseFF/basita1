@@ -600,10 +600,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     final url =
         'https://www.google.com/maps/dir/?api=1&destination=$latitude,$longitude';
     try {
-      await MockSupabase.functions.invoke(
-        'open_url',
-        body: {'url': url},
-      );
+      await MockSupabase.functions.invoke('open_url', body: {'url': url});
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -26,8 +26,9 @@ double? parsePriceText(String? price) {
 class OrderAcceptService {
   static String get _currentUserId =>
       UserDataSession.phone.isNotEmpty ? UserDataSession.phone : 'mock_uid';
-  static String get _currentUserName =>
-      UserDataSession.fullName.isNotEmpty ? UserDataSession.fullName : 'بسيطة | الفني';
+  static String get _currentUserName => UserDataSession.fullName.isNotEmpty
+      ? UserDataSession.fullName
+      : 'بسيطة | الفني';
 
   static Future<void> acceptRequest({
     required String requestId,
@@ -56,7 +57,9 @@ class OrderAcceptService {
     //   'technicianId': uid, 'technicianName': techName, 'price': finalPrice, ...
     // });
     // TODO(backend): PATCH /service-requests/$requestId {status: 'offer_submitted'}
-    debugPrint('[OrderAcceptService] MOCK accept $requestId price=$finalPrice tech=$uid ($techName) — backend not connected');
+    debugPrint(
+      '[OrderAcceptService] MOCK accept $requestId price=$finalPrice tech=$uid ($techName) — backend not connected',
+    );
 
     try {
       await ChatRepository().getOrCreateRoom(

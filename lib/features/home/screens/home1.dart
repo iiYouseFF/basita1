@@ -66,10 +66,9 @@ class _MainTechnicianScreenState extends State<MainTechnicianScreen> {
     final String currentTechId = _technicianDocId;
     if (currentTechId.isNotEmpty) {
       try {
-        final doc = await MockFirestore
-            .collection('technicians')
-            .doc(currentTechId)
-            .get();
+        final doc = await MockFirestore.collection(
+          'technicians',
+        ).doc(currentTechId).get();
         if (doc.exists && doc.data()!.containsKey('isAvailable')) {
           if (mounted) {
             setState(() {
@@ -92,10 +91,9 @@ class _MainTechnicianScreenState extends State<MainTechnicianScreen> {
 
     if (currentTechId.isNotEmpty) {
       try {
-        await MockFirestore
-            .collection('technicians')
-            .doc(currentTechId)
-            .update({'isAvailable': isAvailable});
+        await MockFirestore.collection(
+          'technicians',
+        ).doc(currentTechId).update({'isAvailable': isAvailable});
       } catch (e) {
         if (mounted) {
           setState(() {
@@ -312,10 +310,9 @@ class _MainTechnicianScreenState extends State<MainTechnicianScreen> {
 
     return StreamBuilder<dynamic>(
       stream: currentTechId.isNotEmpty
-          ? MockFirestore
-                .collection('technicians')
-                .doc(currentTechId)
-                .snapshots()
+          ? MockFirestore.collection(
+              'technicians',
+            ).doc(currentTechId).snapshots()
           : const Stream.empty(),
       builder: (context, snapshot) {
         double walletBalance = 0.0;
@@ -637,10 +634,9 @@ class _MainTechnicianScreenState extends State<MainTechnicianScreen> {
 
     return StreamBuilder<QuerySnapshot>(
       stream: currentTechId.isNotEmpty
-          ? MockFirestore
-                .collection('transactions')
-                .where('technicianId', isEqualTo: currentTechId)
-                .snapshots()
+          ? MockFirestore.collection(
+              'transactions',
+            ).where('technicianId', isEqualTo: currentTechId).snapshots()
           : const Stream.empty(),
       builder: (context, snapshot) {
         double weeklyTotal = 0.0;

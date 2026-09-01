@@ -12,7 +12,14 @@ class RequestRepository {
     String? serviceType,
   }) async {
     // serviceType determines alias: /service-requests/carpentry etc.
-    final path = serviceType != null && ['carpentry','plumbing','painting','electrical'].contains(serviceType.toLowerCase())
+    final path =
+        serviceType != null &&
+            [
+              'carpentry',
+              'plumbing',
+              'painting',
+              'electrical',
+            ].contains(serviceType.toLowerCase())
         ? '/service-requests/${serviceType.toLowerCase()}'
         : '/service-requests';
     // Backend expects exact keys: userId, userName, userPhone, userGovernorate, title, description, budget, serviceType, scheduledDate, images
@@ -48,25 +55,36 @@ class RequestRepository {
     String userId, {
     String? status,
   }) async* {
-    final query = <String, dynamic>{'userId': userId, 'sort': 'createdAt.desc', 'limit': 50};
+    final query = <String, dynamic>{
+      'userId': userId,
+      'sort': 'createdAt.desc',
+      'limit': 50,
+    };
     if (status != null) query['status'] = status;
     final res = await _api.get('/service-requests', query: query);
     final data = res['data'];
-    final list = data is List ? List<Map<String, dynamic>>.from(data) : <Map<String, dynamic>>[];
+    final list = data is List
+        ? List<Map<String, dynamic>>.from(data)
+        : <Map<String, dynamic>>[];
     yield list;
   }
 
   Stream<List<Map<String, dynamic>>> watchAvailableRequests(
     String governorate,
   ) async* {
-    final res = await _api.get('/service-requests', query: {
-      'status': 'pending',
-      'governorate': governorate,
-      'sort': 'createdAt.desc',
-      'limit': 20,
-    });
+    final res = await _api.get(
+      '/service-requests',
+      query: {
+        'status': 'pending',
+        'governorate': governorate,
+        'sort': 'createdAt.desc',
+        'limit': 20,
+      },
+    );
     final data = res['data'];
-    final list = data is List ? List<Map<String, dynamic>>.from(data) : <Map<String, dynamic>>[];
+    final list = data is List
+        ? List<Map<String, dynamic>>.from(data)
+        : <Map<String, dynamic>>[];
     yield list;
   }
 
@@ -75,11 +93,10 @@ class RequestRepository {
     String status, {
     Map<String, dynamic>? extra,
   }) async {
-    await _api.patch('/service-requests/$requestId/status', body: {
-      'status': status,
-      if (extra != null) 'extra': extra,
-      ...?extra,
-    });
+    await _api.patch(
+      '/service-requests/$requestId/status',
+      body: {'status': status, if (extra != null) 'extra': extra, ...?extra},
+    );
   }
 
   Future<void> deleteRequest(String requestId) async {

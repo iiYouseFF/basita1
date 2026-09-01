@@ -137,10 +137,7 @@ class _CommunityScreenPerfectState extends State<CommunityScreen>
               onPressed: () async {
                 Navigator.pop(ctx);
                 try {
-                  await MockFirestore
-                      .collection('posts')
-                      .doc(postId)
-                      .delete();
+                  await MockFirestore.collection('posts').doc(postId).delete();
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -208,8 +205,7 @@ class _CommunityScreenPerfectState extends State<CommunityScreen>
                   const Divider(),
                   Expanded(
                     child: StreamBuilder<QuerySnapshot>(
-                      stream: MockFirestore
-                          .collection('posts')
+                      stream: MockFirestore.collection('posts')
                           .doc(postId)
                           .collection('comments')
                           .orderBy('createdAt', descending: false)
@@ -296,24 +292,21 @@ class _CommunityScreenPerfectState extends State<CommunityScreen>
                             ),
                             onPressed: () {
                               if (commentController.text.trim().isNotEmpty) {
-                                MockFirestore
-                                    .collection('posts')
-                                    .doc(postId)
-                                    .collection('comments')
-                                    .add({
-                                      'text': commentController.text.trim(),
-                                      'authorName':
-                                          UserSession.instance.name.isNotEmpty
-                                          ? UserSession.instance.name
-                                          : 'مستخدم',
-                                      'createdAt': DateTime.now(),
-                                    });
-                                MockFirestore
-                                    .collection('posts')
-                                    .doc(postId)
-                                    .update({
-                                      'comments': MockFieldValue.increment(1),
-                                    });
+                                MockFirestore.collection(
+                                  'posts',
+                                ).doc(postId).collection('comments').add({
+                                  'text': commentController.text.trim(),
+                                  'authorName':
+                                      UserSession.instance.name.isNotEmpty
+                                      ? UserSession.instance.name
+                                      : 'مستخدم',
+                                  'createdAt': DateTime.now(),
+                                });
+                                MockFirestore.collection(
+                                  'posts',
+                                ).doc(postId).update({
+                                  'comments': MockFieldValue.increment(1),
+                                });
                                 commentController.clear();
                               }
                             },
@@ -488,10 +481,9 @@ class _CommunityScreenPerfectState extends State<CommunityScreen>
         ),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream: MockFirestore
-                .collection('posts')
-                .orderBy('createdAt', descending: true)
-                .snapshots(),
+            stream: MockFirestore.collection(
+              'posts',
+            ).orderBy('createdAt', descending: true).snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -597,10 +589,9 @@ class _CommunityScreenPerfectState extends State<CommunityScreen>
         ),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream: MockFirestore
-                .collection('posts')
-                .orderBy('createdAt', descending: true)
-                .snapshots(),
+            stream: MockFirestore.collection(
+              'posts',
+            ).orderBy('createdAt', descending: true).snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -881,14 +872,16 @@ class _CommunityScreenPerfectState extends State<CommunityScreen>
               InkWell(
                 onTap: () {
                   if (post.id != null && currentUserName.isNotEmpty) {
-                    final postRef = MockFirestore
-                        .collection('posts')
-                        .doc(post.id);
+                    final postRef = MockFirestore.collection(
+                      'posts',
+                    ).doc(post.id);
                     if (isLiked) {
                       // إلغاء الإعجاب
                       postRef.update({
                         'likes': MockFieldValue.increment(-1),
-                        'likedBy': MockFieldValue.arrayRemove([currentUserName]),
+                        'likedBy': MockFieldValue.arrayRemove([
+                          currentUserName,
+                        ]),
                       });
                     } else {
                       // إضافة إعجاب
@@ -1496,9 +1489,7 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
         likedBy: [],
       );
 
-      await MockFirestore
-          .collection('posts')
-          .add(newQuestion.toMap());
+      await MockFirestore.collection('posts').add(newQuestion.toMap());
 
       if (mounted) {
         Navigator.pop(context);

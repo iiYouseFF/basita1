@@ -79,7 +79,11 @@ class _OtpScreenState extends State<OtpScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(res['mock'] == true ? 'تم إرسال كود التحقق (Mock)' : 'تم إرسال كود التحقق عبر SMS'),
+          content: Text(
+            res['mock'] == true
+                ? 'تم إرسال كود التحقق (Mock)'
+                : 'تم إرسال كود التحقق عبر SMS',
+          ),
           backgroundColor: Colors.green,
         ),
       );
@@ -87,7 +91,10 @@ class _OtpScreenState extends State<OtpScreen> {
       if (!mounted) return;
       setState(() => _errorMessage = 'خطأ: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('فشل إرسال الكود: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('فشل إرسال الكود: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -120,7 +127,11 @@ class _OtpScreenState extends State<OtpScreen> {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppConfig.useMockOtp ? 'تم التحقق بنجاح! (Mock)' : 'تم التحقق بنجاح!'),
+          content: Text(
+            AppConfig.useMockOtp
+                ? 'تم التحقق بنجاح! (Mock)'
+                : 'تم التحقق بنجاح!',
+          ),
           backgroundColor: Colors.green,
         ),
       );
@@ -132,12 +143,20 @@ class _OtpScreenState extends State<OtpScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      String msg = e.toString().replaceAll('ApiException', '').replaceAll('Exception:', '').trim();
+      String msg = e
+          .toString()
+          .replaceAll('ApiException', '')
+          .replaceAll('Exception:', '')
+          .trim();
       // Map common errors to Arabic
-      if (msg.contains('Invalid OTP') || msg.contains('401')) msg = 'كود التحقق غير صحيح';
-      if (msg.contains('expired')) msg = 'انتهت صلاحية الكود، اطلب كوداً جديداً';
+      if (msg.contains('Invalid OTP') || msg.contains('401'))
+        msg = 'كود التحقق غير صحيح';
+      if (msg.contains('expired'))
+        msg = 'انتهت صلاحية الكود، اطلب كوداً جديداً';
       setState(() => _errorMessage = msg);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
     }
   }
 

@@ -532,9 +532,7 @@ class _AddCardBottomSheetState extends State<_AddCardBottomSheet> {
       final cardType = cleanNumber.startsWith('4') ? 'visa' : 'mastercard';
 
       // الإشارة إلى المجموعة الرئيسية PaymentCards[cite: 23]
-      final cardsCollection = MockFirestore.collection(
-        'PaymentCards',
-      );
+      final cardsCollection = MockFirestore.collection('PaymentCards');
 
       // إزالة البطاقة الأساسية القديمة لنفس المستخدم إن وُجدت[cite: 23]
       if (_isDefault) {

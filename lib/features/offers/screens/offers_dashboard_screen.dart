@@ -98,21 +98,17 @@ class _AvailableOffersScreenState extends State<AvailableOffersScreen> {
   // دالة قبول العرض الحقيقي وتحديث Firebase
   Future<void> _acceptOffer(BuildContext context, OfferModel offer) async {
     try {
-      await MockFirestore
-          .collection('offers')
-          .doc(offer.offerId)
-          .update({'status': 'accepted'});
+      await MockFirestore.collection(
+        'offers',
+      ).doc(offer.offerId).update({'status': 'accepted'});
 
-      await MockFirestore
-          .collection('requests')
-          .doc(widget.requestId)
-          .update({
-            'status': 'in_progress', // متوافق مع تعديل حالة الفني
-            'acceptedTechnicianName': offer.name,
-            'acceptedPrice': offer.price,
-            'acceptedOfferId': offer.offerId,
-            'clientAccepted': true,
-          });
+      await MockFirestore.collection('requests').doc(widget.requestId).update({
+        'status': 'in_progress', // متوافق مع تعديل حالة الفني
+        'acceptedTechnicianName': offer.name,
+        'acceptedPrice': offer.price,
+        'acceptedOfferId': offer.offerId,
+        'clientAccepted': true,
+      });
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -148,10 +144,9 @@ class _AvailableOffersScreenState extends State<AvailableOffersScreen> {
         backgroundColor: bgLightGrey,
         appBar: _buildTopAppBar(context),
         body: StreamBuilder<DocumentSnapshot>(
-          stream: MockFirestore
-              .collection('requests')
-              .doc(widget.requestId)
-              .snapshots(),
+          stream: MockFirestore.collection(
+            'requests',
+          ).doc(widget.requestId).snapshots(),
           builder: (context, requestSnapshot) {
             String requestTitle = "تركيب وتصليح مكيف";
             if (requestSnapshot.hasData && requestSnapshot.data!.exists) {
@@ -165,10 +160,9 @@ class _AvailableOffersScreenState extends State<AvailableOffersScreen> {
             }
 
             return StreamBuilder<QuerySnapshot>(
-              stream: MockFirestore
-                  .collection('offers')
-                  .where('requestId', isEqualTo: widget.requestId)
-                  .snapshots(),
+              stream: MockFirestore.collection(
+                'offers',
+              ).where('requestId', isEqualTo: widget.requestId).snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
@@ -1044,21 +1038,17 @@ class _DynamicNegotiationScreenState extends State<DynamicNegotiationScreen> {
     });
 
     try {
-      await MockFirestore
-          .collection('offers')
-          .doc(widget.offer.offerId)
-          .update({'status': 'accepted', 'finalPrice': currentPrice});
+      await MockFirestore.collection('offers').doc(widget.offer.offerId).update(
+        {'status': 'accepted', 'finalPrice': currentPrice},
+      );
 
-      await MockFirestore
-          .collection('requests')
-          .doc(widget.requestId)
-          .update({
-            'status': 'in_progress',
-            'acceptedTechnicianName': widget.offer.name,
-            'acceptedPrice': currentPrice,
-            'acceptedOfferId': widget.offer.offerId,
-            'clientAccepted': true,
-          });
+      await MockFirestore.collection('requests').doc(widget.requestId).update({
+        'status': 'in_progress',
+        'acceptedTechnicianName': widget.offer.name,
+        'acceptedPrice': currentPrice,
+        'acceptedOfferId': widget.offer.offerId,
+        'clientAccepted': true,
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1092,10 +1082,9 @@ class _DynamicNegotiationScreenState extends State<DynamicNegotiationScreen> {
     });
 
     try {
-      await MockFirestore
-          .collection('offers')
-          .doc(widget.offer.offerId)
-          .update({'status': 'rejected'});
+      await MockFirestore.collection(
+        'offers',
+      ).doc(widget.offer.offerId).update({'status': 'rejected'});
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

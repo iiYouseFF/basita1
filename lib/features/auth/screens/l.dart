@@ -209,10 +209,9 @@ class _SignUpScreenState extends State<BaseetaSignUpApp> {
           enteredPhone = '0$enteredPhone';
         }
 
-        final existingUser = await MockFirestore
-            .collection('users')
-            .where('phone', isEqualTo: enteredPhone)
-            .get();
+        final existingUser = await MockFirestore.collection(
+          'users',
+        ).where('phone', isEqualTo: enteredPhone).get();
 
         if (existingUser.docs.isNotEmpty) {
           if (mounted) {

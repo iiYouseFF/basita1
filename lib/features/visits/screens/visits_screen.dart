@@ -57,8 +57,7 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
     }
 
     try {
-      final QuerySnapshot snapshot = await MockFirestore
-          .collection('requests')
+      final QuerySnapshot snapshot = await MockFirestore.collection('requests')
           .where('userPhone', isEqualTo: phone)
           .orderBy('createdAt', descending: true)
           .get();
@@ -765,13 +764,10 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
     if (result == null || result <= 0 || !mounted) return;
 
     try {
-      await MockFirestore
-          .collection('requests')
-          .doc(requestId)
-          .update({
-            'clientRating': result,
-            'clientRatedAt': DateTime.now(),
-          });
+      await MockFirestore.collection('requests').doc(requestId).update({
+        'clientRating': result,
+        'clientRatedAt': DateTime.now(),
+      });
 
       await _reloadRequest(requestId, result);
 
@@ -797,10 +793,9 @@ class _VisitsHistoryPageState extends State<BasseytaVisitsApp> {
 
   Future<void> _reloadRequest(String requestId, int rating) async {
     try {
-      final DocumentSnapshot doc = await MockFirestore
-          .collection('requests')
-          .doc(requestId)
-          .get();
+      final DocumentSnapshot doc = await MockFirestore.collection(
+        'requests',
+      ).doc(requestId).get();
       if (!mounted || !doc.exists) return;
       final data = doc.data() as Map<String, dynamic>;
       final int index = _completedRequests.indexWhere(

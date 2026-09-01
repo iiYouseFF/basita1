@@ -50,8 +50,8 @@ class OfferModel {
       timestamp: data['timestamp'] is DateTime
           ? data['timestamp'] as DateTime
           : (data['timestamp'] is Timestamp
-              ? (data['timestamp'] as dynamic).toDate() as DateTime
-              : DateTime.now()),
+                ? (data['timestamp'] as dynamic).toDate() as DateTime
+                : DateTime.now()),
     );
   }
 

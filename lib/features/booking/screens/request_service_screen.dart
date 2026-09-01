@@ -95,10 +95,9 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
 
       if (userName.isEmpty || userPhone.isEmpty) {
         try {
-          DocumentSnapshot userDoc = await MockFirestore
-              .collection('users')
-              .doc(uid)
-              .get();
+          DocumentSnapshot userDoc = await MockFirestore.collection(
+            'users',
+          ).doc(uid).get();
 
           if (userDoc.exists) {
             var data = userDoc.data() as Map<String, dynamic>?;
