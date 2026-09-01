@@ -8,7 +8,7 @@ void main() {
   group('ApiConfig (external backend)', () {
     test('baseUrl is set and looks valid', () {
       expect(ApiConfig.baseUrl, isNotEmpty);
-      expect(ApiConfig.baseUrl, startsWith('https://'));
+      expect(ApiConfig.baseUrl, startsWith('http'));
     });
 
     test('ApiConfig provides headers', () {

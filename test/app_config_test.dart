@@ -10,12 +10,12 @@ void main() {
 
     test('ApiConfig.baseUrl is set', () {
       expect(ApiConfig.baseUrl, isNotEmpty);
-      expect(ApiConfig.baseUrl, startsWith('https://'));
+      expect(ApiConfig.baseUrl, startsWith('http'));
     });
 
     test('ApiConfig.baseUrl default is placeholder', () {
-      // In CI without dart-define, default is https://api.basita.example.com
-      expect(ApiConfig.baseUrl, contains('basita'));
+      // In CI without dart-define, default is http://basseeyta.duckdns.org
+      expect(ApiConfig.baseUrl.toLowerCase(), contains('basseeyta'));
     });
   });
 
