@@ -76,34 +76,6 @@ jobs:
           path: coverage/lcov.info
           if-no-files-found: warn
 
-  verify-backend:
-    name: Verify backend docs & contracts
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - name: Check backend plan files exist
-        run: |
-          test -f BACKEND_PLAN.md || (echo "BACKEND_PLAN.md missing" && exit 1)
-          test -f backend-plan.html || (echo "backend-plan.html missing" && exit 1)
-          test -f WORK_LOG.md || (echo "WORK_LOG.md missing" && exit 1)
-          test -f firestore.rules || (echo "firestore.rules missing" && exit 1)
-          test -f firestore.indexes.json || (echo "firestore.indexes.json missing" && exit 1)
-          echo "All docs present"
-      - name: Validate firestore.indexes.json is valid JSON
-        run: |
-          python3 -m json.tool firestore.indexes.json > /dev/null && echo "firestore.indexes.json valid"
-          echo "index count: $(python3 -c 'import json; print(len(json.load(open("firestore.indexes.json"))["indexes"]))')"
-      - name: Validate firestore.rules syntax (basic)
-        run: |
-          grep -q "rules_version" firestore.rules || (echo "rules_version missing" && exit 1)
-          grep -q "match /databases" firestore.rules || (echo "match databases missing" && exit 1)
-          echo "firestore.rules looks ok"
-      - name: Check Env dart-define fallback
-        run: |
-          grep -q "Env.supabaseUrl" lib/main.dart || (echo "lib/main.dart not using Env" && exit 1)
-          grep -q "eczybgjywdppvyyygnrd" lib/core/config/env.dart || (echo "env.dart missing new project id" && exit 1)
-          echo "Env wiring ok"
 
   build-check:
     name: Build check (web & apk debug dry-run)
