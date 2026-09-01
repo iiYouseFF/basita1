@@ -6,10 +6,10 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// removed: firebase_auth
+// removed: cloud_firestore - see docs/backend-prd.html
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+// removed: supabase_flutter
 import 'package:path/path.dart' as p;
 
 import 'package:basita1/core/session/user_session.dart';
@@ -17,6 +17,7 @@ import 'package:basita1/core/session/user_session.dart';
 import 'login_screen.dart';
 import 'package:basita1/features/home/screens/home_screen.dart';
 import 'package:basita1/features/success/screens/success_screen.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 class BaseetaSignUpApp extends StatefulWidget {
   const BaseetaSignUpApp({super.key});
@@ -36,7 +37,7 @@ class _SignUpScreenState extends State<BaseetaSignUpApp> {
   final TextEditingController _cityController = TextEditingController();
   final TextEditingController _regionController = TextEditingController();
 
-  String _selectedPlaceType = "شقة";
+  final String _selectedPlaceType = "شقة";
   final List<String> _placeTypes = ["شقة", "فيلا", "مكتب", "محل", "أخرى"];
 
   bool _isTermsAccepted = false;
@@ -54,7 +55,7 @@ class _SignUpScreenState extends State<BaseetaSignUpApp> {
   @override
   void initState() {
     super.initState();
-    final currentUser = FirebaseAuth.instance.currentUser;
+    final currentUser = MockAuth.currentUser;
     if (currentUser != null && currentUser.phoneNumber != null) {
       _phoneController.text = currentUser.phoneNumber!;
     }
@@ -208,10 +209,9 @@ class _SignUpScreenState extends State<BaseetaSignUpApp> {
           enteredPhone = '0$enteredPhone';
         }
 
-        final existingUser = await FirebaseFirestore.instance
-            .collection('users')
-            .where('phone', isEqualTo: enteredPhone)
-            .get();
+        final existingUser = await MockFirestore.collection(
+          'users',
+        ).where('phone', isEqualTo: enteredPhone).get();
 
         if (existingUser.docs.isNotEmpty) {
           if (mounted) {
@@ -228,8 +228,8 @@ class _SignUpScreenState extends State<BaseetaSignUpApp> {
           return;
         }
 
-        final currentUser = FirebaseAuth.instance.currentUser;
-        final usersCollection = FirebaseFirestore.instance.collection('users');
+        final currentUser = MockAuth.currentUser;
+        final usersCollection = MockFirestore.collection('users');
         DocumentReference userDocRef;
 
         if (currentUser != null) {
@@ -248,7 +248,7 @@ class _SignUpScreenState extends State<BaseetaSignUpApp> {
             final fileName =
                 '${DateTime.now().millisecondsSinceEpoch}_$finalUid$fileExtension';
 
-            final supabase = Supabase.instance.client;
+            final supabase = MockSupabase;
 
             await supabase.storage
                 .from('user_profiles')
@@ -281,7 +281,7 @@ class _SignUpScreenState extends State<BaseetaSignUpApp> {
           'region': _regionController.text.trim(),
           'placeType': _selectedPlaceType,
           'profileImagePath': profileImageUrl,
-          'createdAt': FieldValue.serverTimestamp(),
+          'createdAt': DateTime.now(),
           'verificationData': {},
         };
 
@@ -748,7 +748,7 @@ class _SignUpScreenState extends State<BaseetaSignUpApp> {
       validator: validator,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: textGrey.withOpacity(0.5)),
+        hintStyle: TextStyle(color: textGrey.withValues(alpha: 0.5)),
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(
@@ -789,7 +789,7 @@ class _SignUpScreenState extends State<BaseetaSignUpApp> {
       },
       decoration: InputDecoration(
         hintText: "01XXXXXXXXX",
-        hintStyle: TextStyle(color: textGrey.withOpacity(0.5)),
+        hintStyle: TextStyle(color: textGrey.withValues(alpha: 0.5)),
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(

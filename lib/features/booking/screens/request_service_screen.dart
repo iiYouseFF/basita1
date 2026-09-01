@@ -3,12 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+// removed: firebase_auth
+// removed: supabase_flutter
+import 'package:basita1/core/repositories/request_repository.dart';
 import 'package:basita1/core/session/user_session.dart';
 import 'package:basita1/core/repositories/chat_repository.dart';
 import 'package:basita1/features/offers/screens/offers_dashboard_screen.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 class RequestServiceScreen extends StatefulWidget {
   const RequestServiceScreen({super.key});
@@ -29,7 +31,7 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
   final TextEditingController _budgetController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
 
-  List<File> _selectedImages = [];
+  final List<File> _selectedImages = [];
   final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
 
@@ -83,7 +85,7 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
     });
 
     try {
-      final currentUser = FirebaseAuth.instance.currentUser;
+      final currentUser = MockAuth.currentUser;
       String uid = currentUser?.uid ?? "unknown_uid";
 
       String userName = UserSession.instance.name;
@@ -93,10 +95,9 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
 
       if (userName.isEmpty || userPhone.isEmpty) {
         try {
-          DocumentSnapshot userDoc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(uid)
-              .get();
+          DocumentSnapshot userDoc = await MockFirestore.collection(
+            'users',
+          ).doc(uid).get();
 
           if (userDoc.exists) {
             var data = userDoc.data() as Map<String, dynamic>?;
@@ -130,12 +131,11 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
 
       List<String> imageUrls = [];
       if (_selectedImages.isNotEmpty) {
-        final supabase = Supabase.instance.client;
+        final supabase = MockSupabase;
         for (int i = 0; i < _selectedImages.length; i++) {
           try {
-            String fileName =
-                '${uid}/${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
-
+            final ts = DateTime.now().millisecondsSinceEpoch;
+            final fileName = '$uid/${ts}_$i.jpg';
             await supabase.storage
                 .from('request')
                 .upload(
@@ -146,14 +146,12 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
                     upsert: false,
                   ),
                 );
-
-            String downloadUrl = supabase.storage
-                .from('request')
-                .getPublicUrl(fileName);
-
-            imageUrls.add(downloadUrl);
+            imageUrls.add(
+              supabase.storage.from('request').getPublicUrl(fileName),
+            );
           } catch (e) {
-            print("Error uploading image $i to Supabase: $e");
+            // ignore: avoid_print
+            print('[RequestServiceScreen] upload $i failed: $e');
           }
         }
       }
@@ -182,25 +180,26 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
         'images': imageUrls,
         'taskImages': imageUrls,
         'image': imageUrls.isNotEmpty ? imageUrls.first : null,
-        'createdAt': FieldValue.serverTimestamp(),
+        'createdAt': DateTime.now(),
       };
 
-      DocumentReference docRef = await FirebaseFirestore.instance
-          .collection('requests')
-          .add(requestData);
-      String requestId = docRef.id;
+      // Use Clean Architecture repository (wraps Firestore, handles typed collections)
+      final requestRepo = RequestRepository();
+      final String requestId = await requestRepo.createRequest(
+        data: requestData,
+      );
 
-      // إنشاء جلسة محادثة مبدئية للطلب فوراً،
-      // سيتم ربط الفني بها عند قبوله للطلب دون إنشاء غرفة مكررة.
+      // Create initial chat placeholder (dynamic chat_rooms) — technician will be linked on accept
       try {
         await ChatRepository().getOrCreateRoom(
-          clientId: userPhone,
+          clientId: userPhone.isNotEmpty ? userPhone : uid,
           technicianId: '',
           requestId: requestId,
           serviceType: _titleController.text.trim(),
         );
       } catch (e) {
-        print("Error creating chat room: $e");
+        // ignore: avoid_print
+        print('[RequestServiceScreen] chat room: $e');
       }
 
       if (!mounted) return;
@@ -402,7 +401,7 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
       decoration: BoxDecoration(
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.01),
+            color: Colors.black.withValues(alpha: 0.01),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -459,7 +458,7 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: brandBlue.withOpacity(0.4),
+                  color: brandBlue.withValues(alpha: 0.4),
                   width: 1.5,
                 ),
               ),
@@ -507,7 +506,7 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
+                      color: Colors.black.withValues(alpha: 0.04),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),
@@ -551,7 +550,7 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withValues(alpha: 0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),

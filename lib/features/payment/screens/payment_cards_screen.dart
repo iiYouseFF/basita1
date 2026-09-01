@@ -1,15 +1,16 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+// removed: firebase_auth
 import 'package:google_fonts/google_fonts.dart';
 
 // استدعاء ملف جلسة المستخدم لجلب معلوماته عند حفظ البطاقة
 import 'package:basita1/core/session/user_session.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 class PaymentCardsScreen extends StatefulWidget {
-  const PaymentCardsScreen({Key? key}) : super(key: key);
+  const PaymentCardsScreen({super.key});
 
   @override
   State<PaymentCardsScreen> createState() => _PaymentCardsScreenState();
@@ -18,7 +19,7 @@ class PaymentCardsScreen extends StatefulWidget {
 class _PaymentCardsScreenState extends State<PaymentCardsScreen> {
   // التحقق من معرف المستخدم عبر Firebase Auth أو UserSession لضمان عدم حدوث خطأ تسجيل الدخول
   String get _userId {
-    final authUid = FirebaseAuth.instance.currentUser?.uid;
+    final authUid = MockAuth.currentUser?.uid;
     if (authUid != null && authUid.isNotEmpty) {
       return authUid;
     }
@@ -26,20 +27,20 @@ class _PaymentCardsScreenState extends State<PaymentCardsScreen> {
   }
 
   bool get _isLoggedIn {
-    final authUid = FirebaseAuth.instance.currentUser?.uid;
+    final authUid = MockAuth.currentUser?.uid;
     final sessionPhone = UserSession.instance.phone.trim();
     return (authUid != null && authUid.isNotEmpty) || sessionPhone.isNotEmpty;
   }
 
   // تحديد مسار الـ Collection ليكون مجموعة رئيسية منفصلة باسم PaymentCards[cite: 23]
   CollectionReference get _cardsCollection =>
-      FirebaseFirestore.instance.collection('PaymentCards');
+      MockFirestore.collection('PaymentCards');
 
   // تعيين بطاقة كبطاقة أساسية للمستخدم الحالي فقط[cite: 23]
   Future<void> _setDefaultCard(String cardId) async {
     if (!_isLoggedIn) return;
 
-    final batch = FirebaseFirestore.instance.batch();
+    final batch = MockFirestore.batch();
 
     // نجلب فقط بطاقات هذا المستخدم لتعديل حالتها[cite: 23]
     final snapshot = await _cardsCollection
@@ -271,7 +272,12 @@ class _PaymentCardsScreenState extends State<PaymentCardsScreen> {
   }
 
   Widget _buildCardItem(String docId, Map<String, dynamic> data) {
-    final cardLast4 = data['cardLast4'] ?? data['cardNumber']?.toString().substring((data['cardNumber']?.toString().length ?? 4) - 4) ?? '0000';
+    final cardLast4 =
+        data['cardLast4'] ??
+        data['cardNumber']?.toString().substring(
+          (data['cardNumber']?.toString().length ?? 4) - 4,
+        ) ??
+        '0000';
     final cardHolder = data['cardHolder'] ?? '';
     final expiryDate = data['expiryDate'] ?? '';
     final isDefault = data['isDefault'] ?? false;
@@ -286,7 +292,7 @@ class _PaymentCardsScreenState extends State<PaymentCardsScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -456,7 +462,7 @@ class _PaymentCardsScreenState extends State<PaymentCardsScreen> {
                       width: 12,
                       height: 12,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF79E1B).withOpacity(0.85),
+                        color: const Color(0xFFF79E1B).withValues(alpha: 0.85),
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -473,7 +479,7 @@ class _PaymentCardsScreenState extends State<PaymentCardsScreen> {
 // ==========================================
 class _AddCardBottomSheet extends StatefulWidget {
   final String userId;
-  const _AddCardBottomSheet({Key? key, required this.userId}) : super(key: key);
+  const _AddCardBottomSheet({super.key, required this.userId});
 
   @override
   State<_AddCardBottomSheet> createState() => _AddCardBottomSheetState();
@@ -526,9 +532,7 @@ class _AddCardBottomSheetState extends State<_AddCardBottomSheet> {
       final cardType = cleanNumber.startsWith('4') ? 'visa' : 'mastercard';
 
       // الإشارة إلى المجموعة الرئيسية PaymentCards[cite: 23]
-      final cardsCollection = FirebaseFirestore.instance.collection(
-        'PaymentCards',
-      );
+      final cardsCollection = MockFirestore.collection('PaymentCards');
 
       // إزالة البطاقة الأساسية القديمة لنفس المستخدم إن وُجدت[cite: 23]
       if (_isDefault) {
@@ -536,7 +540,7 @@ class _AddCardBottomSheetState extends State<_AddCardBottomSheet> {
             .where('userId', isEqualTo: widget.userId)
             .get();
 
-        final batch = FirebaseFirestore.instance.batch();
+        final batch = MockFirestore.batch();
         for (var doc in snapshot.docs) {
           batch.update(doc.reference, {'isDefault': false});
         }
@@ -550,7 +554,7 @@ class _AddCardBottomSheetState extends State<_AddCardBottomSheet> {
         'expiryDate': _expiryController.text.trim(),
         'isDefault': _isDefault,
         'cardType': cardType,
-        'createdAt': FieldValue.serverTimestamp(),
+        'createdAt': DateTime.now(),
         'userId': widget.userId,
         'userName': UserSession.instance.name,
         'userPhone': UserSession.instance.phone,
@@ -722,7 +726,7 @@ class _AddCardBottomSheetState extends State<_AddCardBottomSheet> {
                     ),
                     Switch(
                       value: _isDefault,
-                      activeColor: const Color(0xFF0D6EFD),
+                      activeThumbColor: const Color(0xFF0D6EFD),
                       onChanged: (val) => setState(() => _isDefault = val),
                     ),
                   ],
@@ -863,9 +867,7 @@ class _CardExpiryFormatter extends TextInputFormatter {
 class _DashedRectPainter extends CustomPainter {
   final Color color;
 
-  _DashedRectPainter({
-    required this.color,
-  });
+  _DashedRectPainter({required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {

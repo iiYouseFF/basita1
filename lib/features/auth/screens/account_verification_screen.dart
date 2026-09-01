@@ -2,13 +2,14 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+// removed: firebase_auth
 import 'package:image_picker/image_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+// removed: supabase_flutter
 
 // استدعاء ملف الـ Session الخاص بك
 import 'package:basita1/core/session/user_session.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 class AccountVerificationScreen extends StatefulWidget {
   const AccountVerificationScreen({super.key});
@@ -53,7 +54,7 @@ class _AccountVerificationScreenState extends State<AccountVerificationScreen> {
     }
   }
 
-  // دالة رفع الصورة إلى Supabase
+  // دالة رفع الصورة إلى dynamic
   Future<String?> _uploadImageToSupabase(
     File imageFile,
     String docId,
@@ -64,7 +65,7 @@ class _AccountVerificationScreenState extends State<AccountVerificationScreen> {
           '${docId}_${side}_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final path = '$docId/$fileName'; // حفظها في مجلد باسم المعرف
 
-      await Supabase.instance.client.storage
+      await MockSupabase.storage
           .from('account_verification')
           .upload(path, imageFile);
 
@@ -78,7 +79,7 @@ class _AccountVerificationScreenState extends State<AccountVerificationScreen> {
   // دالة الإرسال وحفظ البيانات في مجموعة 'verified' المستقلة
   Future<void> _submitForReview() async {
     final session = UserSession.instance;
-    String? fbUid = FirebaseAuth.instance.currentUser?.uid;
+    String? fbUid = MockAuth.currentUser?.uid;
     String phone = session.phone.trim();
 
     // التحقق من أن المستخدم مسجل سواء بفايربيز أو بالجلسة المحلية
@@ -113,16 +114,15 @@ class _AccountVerificationScreenState extends State<AccountVerificationScreen> {
       String docId = fbUid ?? phone;
 
       if (fbUid == null) {
-        var query = await FirebaseFirestore.instance
-            .collection('users')
-            .where('phone', isEqualTo: phone)
-            .get();
+        var query = await MockFirestore.collection(
+          'users',
+        ).where('phone', isEqualTo: phone).get();
         if (query.docs.isNotEmpty) {
           docId = query.docs.first.id;
         }
       }
 
-      // 1. رفع الصور لـ Supabase أولاً
+      // 1. رفع الصور لـ dynamic أولاً
       String? frontImagePath = await _uploadImageToSupabase(
         _frontImage!,
         docId,
@@ -139,7 +139,7 @@ class _AccountVerificationScreenState extends State<AccountVerificationScreen> {
       }
 
       // 2. إنشاء مستند منظم بالكامل داخل مجموعة 'verified' مع ضبط الحالة إلى 'pending'
-      await FirebaseFirestore.instance.collection('verified').doc(docId).set({
+      await MockFirestore.collection('verified').doc(docId).set({
         'userId': docId,
         'verificationStatus': 'pending',
         'name': session.name.isNotEmpty ? session.name : 'بدون اسم',
@@ -149,13 +149,13 @@ class _AccountVerificationScreenState extends State<AccountVerificationScreen> {
         'governorate': session.governorate,
         'frontIdPath': frontImagePath,
         'backIdPath': backImagePath,
-        'submittedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+        'submittedAt': DateTime.now(),
+      }, MockSetOptions(merge: true));
 
       // 3. تحديث سريع لحالة المستخدم في مجموعة users
-      await FirebaseFirestore.instance.collection('users').doc(docId).set({
+      await MockFirestore.collection('users').doc(docId).set({
         'verificationStatus': 'pending',
-      }, SetOptions(merge: true));
+      }, MockSetOptions(merge: true));
     } catch (e) {
       debugPrint("خطأ في الإرسال: $e");
       ScaffoldMessenger.of(context).showSnackBar(
@@ -175,10 +175,10 @@ class _AccountVerificationScreenState extends State<AccountVerificationScreen> {
 
   // استخدام Query Stream ذكي للبحث عن بيانات التوثيق فورياً ولحظياً
   Stream<QuerySnapshot> get _verifiedQueryStream {
-    String? fbUid = FirebaseAuth.instance.currentUser?.uid;
+    String? fbUid = MockAuth.currentUser?.uid;
     String phone = UserSession.instance.phone.trim();
 
-    Query query = FirebaseFirestore.instance.collection('verified');
+    Query query = MockFirestore.collection('verified');
     if (fbUid != null && fbUid.isNotEmpty) {
       query = query.where('userId', isEqualTo: fbUid);
     } else if (phone.isNotEmpty) {
@@ -191,7 +191,7 @@ class _AccountVerificationScreenState extends State<AccountVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    String? fbUid = FirebaseAuth.instance.currentUser?.uid;
+    String? fbUid = MockAuth.currentUser?.uid;
     String phone = UserSession.instance.phone.trim();
     bool isLoggedIn = fbUid != null || phone.isNotEmpty;
 
@@ -276,7 +276,7 @@ class _AccountVerificationScreenState extends State<AccountVerificationScreen> {
                   width: 70,
                   height: 70,
                   decoration: BoxDecoration(
-                    color: brandBlue.withOpacity(0.1),
+                    color: brandBlue.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -309,7 +309,7 @@ class _AccountVerificationScreenState extends State<AccountVerificationScreen> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
@@ -434,7 +434,7 @@ class _AccountVerificationScreenState extends State<AccountVerificationScreen> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: brandBlue.withOpacity(0.1),
+                              color: brandBlue.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(
@@ -496,7 +496,7 @@ class _AccountVerificationScreenState extends State<AccountVerificationScreen> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -555,7 +555,7 @@ class _AccountVerificationScreenState extends State<AccountVerificationScreen> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.15),
+                    color: Colors.green.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(

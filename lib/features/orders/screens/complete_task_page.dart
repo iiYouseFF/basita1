@@ -2,15 +2,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+// removed: supabase_flutter
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:basita1/features/payment/screens/instapay_screen.dart';
 import 'package:basita1/core/repositories/chat_repository.dart';
 import 'package:basita1/core/repositories/appointment_repository.dart';
 import 'package:basita1/core/session/user_data_session.dart';
-import 'package:basita1/features/home/screens/home1.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 // ==========================================
 // نموذج بيانات الطلب الديناميكي الشامل
@@ -159,13 +159,10 @@ class _CompleteTaskPageState extends State<CompleteTaskPage> {
 
   Future<void> _saveDraft() async {
     try {
-      await FirebaseFirestore.instance
-          .collection('requests')
-          .doc(widget.request.id)
-          .update({
-            'draftNotes': _notesController.text,
-            'draftSavedAt': FieldValue.serverTimestamp(),
-          });
+      await MockFirestore.collection('requests').doc(widget.request.id).update({
+        'draftNotes': _notesController.text,
+        'draftSavedAt': DateTime.now(),
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -191,7 +188,7 @@ class _CompleteTaskPageState extends State<CompleteTaskPage> {
     List<String> uploadedImageUrls = [];
 
     try {
-      final supabase = Supabase.instance.client;
+      final supabase = MockSupabase;
 
       for (File img in _selectedImages) {
         final fileName =
@@ -205,16 +202,13 @@ class _CompleteTaskPageState extends State<CompleteTaskPage> {
         uploadedImageUrls.add(imageUrl);
       }
 
-      await FirebaseFirestore.instance
-          .collection('requests')
-          .doc(widget.request.id)
-          .update({
-            'afterTaskImages': uploadedImageUrls,
-            'technicianNotes': _notesController.text,
-            'status': 'task_finished_pending_invoice',
-          });
+      await MockFirestore.collection('requests').doc(widget.request.id).update({
+        'afterTaskImages': uploadedImageUrls,
+        'technicianNotes': _notesController.text,
+        'status': 'task_finished_pending_invoice',
+      });
 
-      // إتمام الموعد في قاعدة المواعيد (Supabase) وعرض موقع الفني والعميل
+      // إتمام الموعد في قاعدة المواعيد (dynamic) وعرض موقع الفني والعميل
       await _completeAppointmentWithLocations();
 
       setState(() {
@@ -350,7 +344,7 @@ class _CompleteTaskPageState extends State<CompleteTaskPage> {
             color: Colors.white,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 spreadRadius: 1,
                 blurRadius: 10,
                 offset: const Offset(0, -5),
@@ -1230,19 +1224,16 @@ class _FinalInvoiceScreenState extends State<FinalInvoiceScreen> {
       ];
       String selectedPayment = paymentMethods[_selectedPaymentMethodIndex];
 
-      await FirebaseFirestore.instance
-          .collection('requests')
-          .doc(widget.request.id)
-          .update({
-            'status': 'awaiting_payment',
-            'finalTotal': finalTotal,
-            'finalPrice': finalTotal,
-            'laborCost': widget.laborCost,
-            'materialsCost': widget.totalAmount - widget.laborCost,
-            'paymentMethod': selectedPayment,
-            'invoiceNumber': invoiceNumber,
-            'invoiceIssuedAt': FieldValue.serverTimestamp(),
-          });
+      await MockFirestore.collection('requests').doc(widget.request.id).update({
+        'status': 'awaiting_payment',
+        'finalTotal': finalTotal,
+        'finalPrice': finalTotal,
+        'laborCost': widget.laborCost,
+        'materialsCost': widget.totalAmount - widget.laborCost,
+        'paymentMethod': selectedPayment,
+        'invoiceNumber': invoiceNumber,
+        'invoiceIssuedAt': DateTime.now(),
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1682,7 +1673,7 @@ class _FinalInvoiceScreenState extends State<FinalInvoiceScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, -4),
           ),
@@ -1757,10 +1748,13 @@ class _TechnicianInvoiceIssuedScreenState
     extends State<TechnicianInvoiceIssuedScreen> {
   int _rating = 0;
   final TextEditingController _feedbackController = TextEditingController();
+  final TextEditingController _paymentCodeController =
+      TextEditingController(); // كنترولر لكود الدفع
 
   @override
   void dispose() {
     _feedbackController.dispose();
+    _paymentCodeController.dispose();
     super.dispose();
   }
 
@@ -1807,7 +1801,7 @@ class _TechnicianInvoiceIssuedScreenState
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: primaryBlue.withOpacity(0.15),
+                    color: primaryBlue.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Container(
@@ -1853,7 +1847,7 @@ class _TechnicianInvoiceIssuedScreenState
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
+                        color: Colors.black.withValues(alpha: 0.04),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -1943,7 +1937,7 @@ class _TechnicianInvoiceIssuedScreenState
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
+                        color: Colors.black.withValues(alpha: 0.04),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -2072,18 +2066,104 @@ class _TechnicianInvoiceIssuedScreenState
                         ),
                       ),
                       const SizedBox(height: 12),
-                      // زر الدفع لمحفظة (تم التعديل للانتقال المباشر للصفحة الرئيسية دون إظهار نافذة قيم تجربتك)
+                      // زر تأكيد الدفع
                       SizedBox(
                         width: double.infinity,
                         height: 52,
                         child: OutlinedButton(
                           onPressed: () {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const MainTechnicianScreen(),
-                              ),
+                            // إظهار نافذة إدخال كود الدفع (الـ Dialog)
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return Directionality(
+                                  textDirection: TextDirection.rtl,
+                                  child: Dialog(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(24),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(24.0),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            "قيّم تجربتك مع العميل",
+                                            style: GoogleFonts.cairo(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: textDark,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 24),
+                                          TextField(
+                                            controller: _paymentCodeController,
+                                            style: GoogleFonts.cairo(
+                                              fontSize: 14,
+                                            ),
+                                            decoration: InputDecoration(
+                                              hintText: "ادخل كود الدفع",
+                                              hintStyle: GoogleFonts.cairo(
+                                                color: const Color(0xFFA1A1AA),
+                                                fontSize: 14,
+                                              ),
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 16,
+                                                    vertical: 16,
+                                                  ),
+                                              enabledBorder: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                borderSide: const BorderSide(
+                                                  color: Color(0xFFE4E4E7),
+                                                ),
+                                              ),
+                                              focusedBorder: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                borderSide: const BorderSide(
+                                                  color: primaryBlue,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 32),
+                                          SizedBox(
+                                            width: double.infinity,
+                                            height: 52,
+                                            child: ElevatedButton(
+                                              onPressed: () {
+                                                // العودة للصفحة الرئيسية عند الضغط على تأكيد من داخل النافذة
+                                                Navigator.popUntil(
+                                                  context,
+                                                  (route) => route.isFirst,
+                                                );
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: primaryBlue,
+                                                elevation: 0,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                              ),
+                                              child: Text(
+                                                "تأكيد",
+                                                style: GoogleFonts.cairo(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
                             );
                           },
                           style: OutlinedButton.styleFrom(
@@ -2096,7 +2176,7 @@ class _TechnicianInvoiceIssuedScreenState
                             ),
                           ),
                           child: Text(
-                            "الدفع لمحفظة",
+                            "تأكيد الدفع",
                             style: GoogleFonts.cairo(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,

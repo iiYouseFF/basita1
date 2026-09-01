@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+// removed: firebase_auth
 import 'package:basita1/features/home/screens/home1.dart';
 import 'package:basita1/features/ai_assistant/screens/ai1_screen.dart';
 import 'package:basita1/features/orders/screens/sale_screen.dart';
@@ -9,7 +9,7 @@ import 'package:basita1/features/profile/screens/profile2.dart';
 import 'package:basita1/features/orders/screens/complete_task_page.dart';
 import 'package:basita1/core/session/user_data_session.dart';
 import 'package:basita1/core/services/order_accept_service.dart';
-import 'package:basita1/features/booking/screens/appointments_screen.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 // ==========================================
 // الصفحة الرئيسية للطلبات (RequestsPage)
@@ -120,10 +120,9 @@ class _RequestsPageState extends State<RequestsPage> {
               _buildTabs(),
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('requests')
-                      .orderBy('createdAt', descending: true)
-                      .snapshots(),
+                  stream: MockFirestore.collection(
+                    'requests',
+                  ).orderBy('createdAt', descending: true).snapshots(),
                   builder: (context, snapshot) {
                     List<RequestModel> combinedList = List.from(
                       _localRequestsList,
@@ -294,8 +293,7 @@ class _RequestsPageState extends State<RequestsPage> {
               Text(
                 UserDataSession.fullName.isNotEmpty
                     ? UserDataSession.fullName
-                    : (FirebaseAuth.instance.currentUser?.displayName ??
-                          'بسيطة | الفني'),
+                    : (MockAuth.currentUser?.displayName ?? 'بسيطة | الفني'),
                 style: GoogleFonts.cairo(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -411,7 +409,7 @@ class _RequestsPageState extends State<RequestsPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -576,7 +574,7 @@ class _RequestsPageState extends State<RequestsPage> {
                       debugPrint("Error accepting request: $e");
                     }
                     if (context.mounted) {
-                      Navigator.pushReplacement(
+                      Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) =>
@@ -663,7 +661,7 @@ class _RequestsPageState extends State<RequestsPage> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -681,7 +679,7 @@ class _RequestsPageState extends State<RequestsPage> {
             Icons.home_filled,
             isActive: false,
             onTap: () {
-              Navigator.pushReplacement(
+              Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const MainTechnicianScreen(),
@@ -700,7 +698,7 @@ class _RequestsPageState extends State<RequestsPage> {
             Icons.chat_bubble_outline,
             isActive: false,
             onTap: () {
-              Navigator.pushReplacement(
+              Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const SmartAssistantScreen(),
@@ -713,11 +711,9 @@ class _RequestsPageState extends State<RequestsPage> {
             Icons.calendar_today_outlined,
             isActive: false,
             onTap: () {
-              Navigator.pushReplacement(
+              Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const AppointmentsScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const BasiytaApp()),
               );
             },
           ),
@@ -726,7 +722,7 @@ class _RequestsPageState extends State<RequestsPage> {
             Icons.person_outline,
             isActive: false,
             onTap: () {
-              Navigator.pushReplacement(
+              Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const AccountScreen()),
               );
@@ -752,7 +748,7 @@ class _RequestsPageState extends State<RequestsPage> {
         ),
         decoration: isActive
             ? BoxDecoration(
-                color: const Color(0xFF82A9FF).withOpacity(0.8),
+                color: const Color(0xFF82A9FF).withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(20),
               )
             : null,
@@ -1025,7 +1021,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 8,
                   offset: const Offset(0, 3),
                 ),
@@ -1295,7 +1291,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   errorBuilder: (_, __, ___) =>
                       Container(color: Colors.grey.shade300),
                 ),
-                Container(color: Colors.black.withOpacity(0.3)),
+                Container(color: Colors.black.withValues(alpha: 0.3)),
                 Center(
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1369,139 +1365,106 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  // ============== التعديل الديناميكي هنا في الشريط السفلي ==============
   Widget _buildStickyBottomBar(BuildContext context) {
-    return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('requests')
-          .doc(widget.request.id)
-          .snapshots(),
-      builder: (context, snapshot) {
-        // نضع السعر الأساسي في المتغير عشان لو مفيش تحديثات يعرضه
-        String displayPrice = widget.request.price;
-
-        // التحقق من وجود بيانات جديدة للسعر (لو العميل قبل أو عدل السعر)
-        if (snapshot.hasData && snapshot.data!.exists) {
-          final data = snapshot.data!.data() as Map<String, dynamic>?;
-          if (data != null) {
-            if (data['acceptedPrice'] != null &&
-                data['acceptedPrice'].toString().isNotEmpty) {
-              displayPrice = data['acceptedPrice'].toString();
-            } else if (data['finalPrice'] != null &&
-                data['finalPrice'].toString().isNotEmpty) {
-              displayPrice = data['finalPrice'].toString();
-            } else if (data['price'] != null &&
-                data['price'].toString().isNotEmpty) {
-              displayPrice = data['price'].toString();
-            } else if (data['budget'] != null &&
-                data['budget'].toString().isNotEmpty) {
-              displayPrice = '${data['budget']} ج.م';
-            }
-          }
-        }
-
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, -4),
-              ),
-            ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -4),
           ),
-          child: SafeArea(
-            child: Row(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.red),
+        ],
+      ),
+      child: SafeArea(
+        child: Row(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: Colors.red),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close, color: Colors.red),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 2,
+              child: ElevatedButton(
+                onPressed: () async {
+                  try {
+                    await OrderAcceptService.acceptRequest(
+                      requestId: widget.request.id,
+                      clientPhone: widget.request.clientPhone,
+                      serviceType: widget.request.serviceType,
+                      serviceName: widget.request.name,
+                      clientAddress: widget.request.location,
+                      requestPrice: widget.request.price,
+                    );
+                  } catch (e) {
+                    debugPrint("Error accepting request: $e");
+                  }
+                  if (context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            TaskDetailsPage(request: widget.request),
+                      ),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE0E7FF),
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close, color: Colors.red),
+                ),
+                child: Text(
+                  "قبول (${widget.request.price})",
+                  style: const TextStyle(
+                    color: primaryBlue,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      try {
-                        await OrderAcceptService.acceptRequest(
-                          requestId: widget.request.id,
-                          clientPhone: widget.request.clientPhone,
-                          serviceType: widget.request.serviceType,
-                          serviceName: widget.request.name,
-                          clientAddress: widget.request.location,
-                          requestPrice: displayPrice, // تمرير السعر الديناميكي
-                        );
-                      } catch (e) {
-                        debugPrint("Error accepting request: $e");
-                      }
-                      if (context.mounted) {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                TaskDetailsPage(request: widget.request),
-                          ),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE0E7FF),
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: Text(
-                      "قبول ($displayPrice)", // قراءة السعر هنا ديناميكياً
-                      style: const TextStyle(
-                        color: primaryBlue,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton(
-                    onPressed: () => _showOfferBottomSheet(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryBlue,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: const Text(
-                      "تقديم عرض",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        );
-      },
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 2,
+              child: ElevatedButton(
+                onPressed: () => _showOfferBottomSheet(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryBlue,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text(
+                  "تقديم عرض",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
-  // =====================================================================
 
   void _showOfferBottomSheet(BuildContext context) {
     bool provideMaterials = false;
@@ -1659,56 +1622,47 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                                   try {
                                     final uid = UserDataSession.phone.isNotEmpty
                                         ? UserDataSession.phone
-                                        : (FirebaseAuth
-                                                  .instance
-                                                  .currentUser
-                                                  ?.uid ??
+                                        : (MockFirestore.currentUser?.uid ??
                                               'unknown_uid');
                                     final techName =
                                         UserDataSession.fullName.isNotEmpty
                                         ? UserDataSession.fullName
-                                        : (FirebaseAuth
-                                                  .instance
+                                        : (MockFirestore
                                                   .currentUser
                                                   ?.displayName ??
                                               'بسيطة | الفني');
 
-                                    await FirebaseFirestore.instance
-                                        .collection('offers')
-                                        .add({
-                                          'requestId': widget.request.id,
-                                          'technicianId': uid,
-                                          'technicianName': techName,
-                                          'price': _priceController.text,
-                                          'duration': _durationController.text,
-                                          'arrivalTime':
-                                              _arrivalController.text,
-                                          'warranty': _warrantyController.text,
-                                          'message': _messageController.text,
-                                          'provideMaterials': provideMaterials,
-                                          'priceIncludesMaterials':
-                                              priceIncludesMaterials,
-                                          'rating': 4.9,
-                                          'reviewsCount': 15,
-                                          'experienceYears': 4,
-                                          'isVerified': true,
-                                          'imagePath':
-                                              'assets/Container (8).png',
-                                          'status': 'pending',
-                                          'createdAt':
-                                              FieldValue.serverTimestamp(),
-                                        });
+                                    await MockFirestore.collection(
+                                      'offers',
+                                    ).add({
+                                      'requestId': widget.request.id,
+                                      'technicianId': uid,
+                                      'technicianName': techName,
+                                      'price': _priceController.text,
+                                      'duration': _durationController.text,
+                                      'arrivalTime': _arrivalController.text,
+                                      'warranty': _warrantyController.text,
+                                      'message': _messageController.text,
+                                      'provideMaterials': provideMaterials,
+                                      'priceIncludesMaterials':
+                                          priceIncludesMaterials,
+                                      'rating': 4.9,
+                                      'reviewsCount': 15,
+                                      'experienceYears': 4,
+                                      'isVerified': true,
+                                      'imagePath': 'assets/Container (8).png',
+                                      'status': 'pending',
+                                      'createdAt': DateTime.now(),
+                                    });
 
-                                    await FirebaseFirestore.instance
-                                        .collection('requests')
-                                        .doc(widget.request.id)
-                                        .set({
-                                          'hasOffers': true,
-                                          'status': 'offer_submitted',
-                                          'clientAccepted': false,
-                                          'lastOfferTime':
-                                              FieldValue.serverTimestamp(),
-                                        }, SetOptions(merge: true));
+                                    await MockFirestore.collection(
+                                      'requests',
+                                    ).doc(widget.request.id).set({
+                                      'hasOffers': true,
+                                      'status': 'offer_submitted',
+                                      'clientAccepted': false,
+                                      'lastOfferTime': DateTime.now(),
+                                    }, MockSetOptions(merge: true));
 
                                     setModalState(() {
                                       isSubmitting = false;
@@ -1883,10 +1837,10 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
     });
 
     try {
-      await FirebaseFirestore.instance
-          .collection('requests')
-          .doc(widget.request.id)
-          .update({'workStarted': true, 'status': 'in_progress'});
+      await MockFirestore.collection('requests').doc(widget.request.id).update({
+        'workStarted': true,
+        'status': 'in_progress',
+      });
 
       setState(() {
         _isLoadingWorkStart = false;
@@ -1929,10 +1883,9 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
         backgroundColor: const Color(0xFFF8F9FA),
         appBar: _buildAppBar(),
         body: StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('requests')
-              .doc(widget.request.id)
-              .snapshots(),
+          stream: MockFirestore.collection(
+            'requests',
+          ).doc(widget.request.id).snapshots(),
           builder: (context, snapshot) {
             bool isWorkStarted = false;
             bool isClientAccepted = false;
@@ -2110,8 +2063,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
       title: Text(
         UserDataSession.fullName.isNotEmpty
             ? UserDataSession.fullName
-            : (FirebaseAuth.instance.currentUser?.displayName ??
-                  'بسيطة | الفني'),
+            : (MockAuth.currentUser?.displayName ?? 'بسيطة | الفني'),
         style: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
@@ -2157,7 +2109,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -2221,7 +2173,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
                     ? NetworkImage(widget.request.imagePath) as ImageProvider
                     : AssetImage(widget.request.imagePath),
                 onBackgroundImageError: (_, __) {},
-                backgroundColor: const Color(0xFF82A9FF).withOpacity(0.5),
+                backgroundColor: const Color(0xFF82A9FF).withValues(alpha: 0.5),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -2435,7 +2387,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -2473,7 +2425,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
               Icons.chat_bubble_outline,
               isActive: false,
               onTap: () {
-                Navigator.pushReplacement(
+                Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const SmartAssistantScreen(),
@@ -2482,15 +2434,13 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
               },
             ),
             _buildNavItem(
-              "المواعيد",
-              Icons.calendar_today_outlined,
+              "المحفظة",
+              Icons.account_balance_wallet_outlined,
               isActive: false,
               onTap: () {
-                Navigator.pushReplacement(
+                Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const AppointmentsScreen(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const BasiytaApp()),
                 );
               },
             ),
@@ -2499,7 +2449,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
               Icons.person_outline,
               isActive: false,
               onTap: () {
-                Navigator.pushReplacement(
+                Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const AccountScreen(),

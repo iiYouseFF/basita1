@@ -1,7 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:basita1/core/network/mock_backend.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
 
 class ElectricalBookingService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final dynamic _firestore = MockFirestore;
 
   // دالة حفظ البيانات في Firebase
   Future<void> saveBookingData({
@@ -20,7 +21,7 @@ class ElectricalBookingService {
         'booking_date': bookingDate,
         'booking_time': bookingTime,
         'notes': notes,
-        'created_at': FieldValue.serverTimestamp(),
+        'created_at': DateTime.now(),
       });
     } catch (e) {
       rethrow;

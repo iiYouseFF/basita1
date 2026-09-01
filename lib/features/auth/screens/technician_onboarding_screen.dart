@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+// removed: supabase_flutter
 import 'package:path/path.dart' as p;
 import 'package:geolocator/geolocator.dart'; // 👈 استيراد مكتبة الموقع
 import 'package:geocoding/geocoding.dart'; // 👈 استيراد مكتبة تحويل الإحداثيات لعنوان
@@ -11,6 +11,7 @@ import 'package:geocoding/geocoding.dart'; // 👈 استيراد مكتبة ت�
 import 'package:basita1/core/session/user_data_session.dart';
 import 'package:basita1/features/auth/screens/login_screen1.dart';
 import 'package:basita1/features/auth/screens/id_verification_screen1.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 class TechnicianOnboardingScreen extends StatefulWidget {
   const TechnicianOnboardingScreen({super.key});
@@ -223,25 +224,21 @@ class _TechnicianOnboardingScreenState
           '0020$cleanPhone',
         ];
 
-        var query1 = await FirebaseFirestore.instance
-            .collection('technicians')
-            .where('phoneNumber', whereIn: possibleFormats)
-            .get();
+        var query1 = await MockFirestore.collection(
+          'technicians',
+        ).where('phoneNumber', whereIn: possibleFormats).get();
 
-        var query2 = await FirebaseFirestore.instance
-            .collection('technicians')
-            .where('phone', whereIn: possibleFormats)
-            .get();
+        var query2 = await MockFirestore.collection(
+          'technicians',
+        ).where('phone', whereIn: possibleFormats).get();
 
-        var docByPhone = await FirebaseFirestore.instance
-            .collection('technicians')
+        var docByPhone = await MockFirestore.collection('technicians')
             .doc(standardizedPhone) // نبحث بالرقم الموحد
             .get();
 
-        var docByPhoneWithCode = await FirebaseFirestore.instance
-            .collection('technicians')
-            .doc('+20$cleanPhone')
-            .get();
+        var docByPhoneWithCode = await MockFirestore.collection(
+          'technicians',
+        ).doc('+20$cleanPhone').get();
 
         if (query1.docs.isNotEmpty ||
             query2.docs.isNotEmpty ||
@@ -272,7 +269,7 @@ class _TechnicianOnboardingScreenState
             final fileName =
                 '${DateTime.now().millisecondsSinceEpoch}_tech_$standardizedPhone$fileExtension';
 
-            final supabase = Supabase.instance.client;
+            final supabase = MockSupabase;
 
             await supabase.storage
                 .from('user_profiles')
@@ -289,7 +286,7 @@ class _TechnicianOnboardingScreenState
                 .from('user_profiles')
                 .getPublicUrl(fileName);
           } catch (e) {
-            throw Exception('فشل رفع صورة الفني إلى Supabase: $e');
+            throw Exception('فشل رفع صورة الفني إلى dynamic: $e');
           }
         }
 
@@ -527,7 +524,7 @@ class _TechnicianOnboardingScreenState
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -598,7 +595,7 @@ class _TechnicianOnboardingScreenState
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -771,8 +768,9 @@ class _TechnicianOnboardingScreenState
             style: const TextStyle(fontFamily: 'Cairo', fontSize: 14),
             decoration: _buildInputDecoration("ادخل المحافظة"),
             validator: (value) {
-              if (value == null || value.trim().isEmpty)
+              if (value == null || value.trim().isEmpty) {
                 return 'يرجى إدخال المحافظة';
+              }
               return null;
             },
           ),
@@ -785,8 +783,9 @@ class _TechnicianOnboardingScreenState
             style: const TextStyle(fontFamily: 'Cairo', fontSize: 14),
             decoration: _buildInputDecoration("ادخل المنطقة"),
             validator: (value) {
-              if (value == null || value.trim().isEmpty)
+              if (value == null || value.trim().isEmpty) {
                 return 'يرجى إدخال المنطقة';
+              }
               return null;
             },
           ),
@@ -842,7 +841,7 @@ class _TechnicianOnboardingScreenState
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -3),
           ),

@@ -7,10 +7,15 @@ class DynamicNegotiationScreen extends StatefulWidget {
   final OfferModel offerData;
   final String requestId;
 
-  const DynamicNegotiationScreen({super.key, required this.offerData, required this.requestId});
+  const DynamicNegotiationScreen({
+    super.key,
+    required this.offerData,
+    required this.requestId,
+  });
 
   @override
-  State<DynamicNegotiationScreen> createState() => _DynamicNegotiationScreenState();
+  State<DynamicNegotiationScreen> createState() =>
+      _DynamicNegotiationScreenState();
 }
 
 class _DynamicNegotiationScreenState extends State<DynamicNegotiationScreen> {
@@ -18,15 +23,24 @@ class _DynamicNegotiationScreenState extends State<DynamicNegotiationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("تفاوض مع ${widget.offerData.name}", style: GoogleFonts.cairo()),
+        title: Text(
+          "تفاوض مع ${widget.offerData.name}",
+          style: GoogleFonts.cairo(),
+        ),
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // تقدر تحط الديزاين بتاعك هنا وتستخدم الداتا كده:
-            Text("السعر المقترح: ${widget.offerData.price} ج.م", style: GoogleFonts.cairo(fontSize: 20)),
-            Text("خبرة: ${widget.offerData.experienceYears} سنوات", style: GoogleFonts.cairo()),
+            Text(
+              "السعر المقترح: ${widget.offerData.price} ج.م",
+              style: GoogleFonts.cairo(fontSize: 20),
+            ),
+            Text(
+              "خبرة: ${widget.offerData.experienceYears} سنوات",
+              style: GoogleFonts.cairo(),
+            ),
           ],
         ),
       ),

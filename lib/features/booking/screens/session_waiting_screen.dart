@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:basita1/features/booking/screens/consultation_ready_screen.dart';
 
 class SessionWaitingScreen extends StatefulWidget {
-  const SessionWaitingScreen({Key? key}) : super(key: key);
+  const SessionWaitingScreen({super.key});
 
   @override
   State<SessionWaitingScreen> createState() => _SessionWaitingScreenState();
@@ -372,7 +372,7 @@ class _SessionWaitingScreenState extends State<SessionWaitingScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0XFFE088).withOpacity(0.5), // لون أصفر خفيف
+        color: const Color(0X00ffe088).withValues(alpha: 0.5), // لون أصفر خفيف
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -402,7 +402,7 @@ class _SessionWaitingScreenState extends State<SessionWaitingScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, -2),

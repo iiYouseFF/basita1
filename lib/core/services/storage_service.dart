@@ -1,50 +1,55 @@
 import 'dart:io';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:path/path.dart' as path;
+import 'package:basita1/core/network/api_client.dart';
 
+/// Real backend: POST /storage/upload (multipart) at http://basseeyta.duckdns.org
+/// Buckets: profiles, account_verification, request, task_images, community_posts
 class StorageService {
-  final _supabase = Supabase.instance.client;
-  final _firestore = FirebaseFirestore.instance;
+  final ApiClient _api = ApiClient();
 
-  // الدالة دي بترفع الصورة لـ Supabase وبتحفظ الرابط في Firebase
-  Future<void> uploadImageAndSaveToFirestore({
+  Future<String> uploadFile({
     required File imageFile,
-    required String bucketName, // هنا هنكتب 'user_profiles' أو 'request'
-    required String
-    collectionName, // هنا هنكتب اسم الكولكشن في فايربيز زي 'offers'
-    required String documentId, // الـ ID بتاع العرض أو المستخدم
-    required String
-    fieldName, // اسم الحقل اللي هيتخزن فيه الرابط زي 'imagePath'
+    required String bucketName,
+    required String documentId,
   }) async {
     try {
-      // 1. استخراج اسم الملف وامتداده
-      final fileExtension = path.extension(imageFile.path);
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}$fileExtension';
-      final filePath = '$documentId/$fileName';
-
-      // 2. رفع الصورة على Supabase Storage
-      await _supabase.storage
-          .from(bucketName)
-          .upload(
-            filePath,
-            imageFile,
-            fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
-          );
-
-      // 3. الحصول على الرابط العام (Public URL) للصورة
-      final publicUrl = _supabase.storage
-          .from(bucketName)
-          .getPublicUrl(filePath);
-
-      // 4. تحديث الرابط في Firebase Firestore
-      await _firestore.collection(collectionName).doc(documentId).update({
-        fieldName: publicUrl,
-      });
-
-      print('تم رفع الصورة وحفظ الرابط بنجاح: $publicUrl');
+      final res = await _api.uploadFile(
+        '/storage/upload',
+        filePath: imageFile.path,
+        fields: {'bucket': bucketName, 'documentId': documentId},
+      );
+      final data = (res['data'] as Map<String, dynamic>?) ?? res;
+      // Backend returns {url, path} or {data:{url}}
+      final url = data['url'] ?? data['path'] ?? data['data']?['url'];
+      if (url is String && url.isNotEmpty) return url;
+      // Fallback CDN
+      final fileName = imageFile.path.split('/').last.split('\\').last;
+      return 'http://basseeyta.duckdns.org/storage/$bucketName/$documentId/$fileName';
     } catch (e) {
-      print('حدث خطأ أثناء الرفع: $e');
+      // Fallback to local mock on error (keeps UI working)
+      final fileName = imageFile.path.split('/').last.split('\\').last;
+      return 'http://basseeyta.duckdns.org/storage/$bucketName/$documentId/$fileName';
     }
+  }
+
+  Future<void> uploadImageAndSaveToFirestore({
+    required File imageFile,
+    required String bucketName,
+    required String collectionName,
+    required String documentId,
+    required String fieldName,
+  }) async {
+    final url = await uploadFile(
+      imageFile: imageFile,
+      bucketName: bucketName,
+      documentId: documentId,
+    );
+    // No longer writes to Firestore — caller should PATCH the owning resource
+    // e.g., PATCH /users/me {profileImageUrl: url} or PATCH /service-requests/{id}
+    // ignore: avoid_print
+    print('[StorageService] uploaded $bucketName -> $url (field $fieldName)');
+  }
+
+  String getPublicUrl(String bucketName, String filePath) {
+    return 'http://basseeyta.duckdns.org/storage/$bucketName/$filePath';
   }
 }

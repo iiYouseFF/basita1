@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
+import 'package:basita1/core/repositories/instapay_repository.dart';
+import 'package:basita1/core/repositories/payment_log_repository.dart';
 import 'package:basita1/core/session/user_session.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 class InstaPayScreen extends StatefulWidget {
   final double amount;
@@ -30,6 +33,8 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
   final Color textGrey = const Color(0xFF6B7280);
   final TextEditingController _instapayCodeController = TextEditingController();
   final TextEditingController _verificationController = TextEditingController();
+  final InstaPayRepository _instapayRepo = InstaPayRepository();
+  final PaymentLogRepository _paymentLogRepo = PaymentLogRepository();
 
   bool _isProcessing = false;
   String? _transactionId;
@@ -46,31 +51,17 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
     setState(() => _isProcessing = true);
     try {
       final userId = UserSession.instance.phone;
-      final DateTime now = DateTime.now();
-      final String dateStr =
-          "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
-
-      // حفظ المعاملة مباشرة في مجموعة transactions في Firebase Firestore بنفس الهيكل المطلوب
-      final docRef = await FirebaseFirestore.instance
-          .collection('transactions')
-          .add({
-            'amount': widget.amount,
-            'createdAt': FieldValue.serverTimestamp(),
-            'dateStr': dateStr,
-            'isPositive': true,
-            'paymentMethod': 'instapay',
-            'requestId': widget.requestId,
-            'serviceName': widget.serviceName,
-            'technicianId': widget.technicianId,
-            'type': 'income',
-            'senderId': userId,
-            'instapayCode': _instapayCodeController.text.trim().isEmpty
-                ? null
-                : _instapayCodeController.text.trim(),
-          });
-
+      final transaction = await _instapayRepo.createTransaction(
+        requestId: widget.requestId,
+        senderId: userId,
+        receiverId: widget.technicianId,
+        amount: widget.amount,
+        instapayCode: _instapayCodeController.text.trim().isEmpty
+            ? null
+            : _instapayCodeController.text.trim(),
+      );
       setState(() {
-        _transactionId = docRef.id;
+        _transactionId = transaction.id;
         _codeGenerated = true;
         _isProcessing = false;
       });
@@ -95,14 +86,11 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
       }
       if (!mounted || _transactionId == null) return;
 
-      final Uri uri = Uri.parse(
-        'https://ipn.eg/S/shamsnagy222gmail.co/instapay/4cWVQp',
-      );
+      final Uri uri = InstaPayRepository.kInstaPayAppLink;
       final bool launched = await launchUrl(
         uri,
         mode: LaunchMode.externalApplication,
       );
-
       if (mounted) setState(() => _isProcessing = false);
       if (!mounted) return;
 
@@ -117,15 +105,12 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
           ),
         );
       } else {
-        final bool openedInBrowser = await launchUrl(
-          uri,
-          mode: LaunchMode.platformDefault,
-        );
+        final bool openedInBrowser = await launchUrl(uri);
         if (!openedInBrowser && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'تعذر فتح الرابط، تأكد من تثبيت تطبيق InstaPay',
+                'تعذر فتح تطبيق InstaPay، تأكد من تثبيته من المتجر',
                 style: GoogleFonts.cairo(),
               ),
               backgroundColor: Colors.orange,
@@ -159,24 +144,38 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
 
     setState(() => _isProcessing = true);
     try {
-      if (_transactionId != null) {
-        await FirebaseFirestore.instance
-            .collection('transactions')
-            .doc(_transactionId)
-            .update({
-              'verificationCode': _verificationController.text.trim(),
-              'verified': true,
-            });
-      }
+      final verified = await _instapayRepo.verifyPayment(
+        transactionId: _transactionId!,
+        code: _verificationController.text.trim(),
+      );
 
-      await FirebaseFirestore.instance
-          .collection('requests')
-          .doc(widget.requestId)
-          .update({'status': 'completed', 'paymentMethod': 'instapay'});
+      if (verified) {
+        await _paymentLogRepo.logPayment(
+          userId: UserSession.instance.phone,
+          amount: widget.amount,
+          paymentMethod: 'instapay',
+          requestId: widget.requestId,
+          technicianId: widget.technicianId,
+        );
 
-      if (mounted) {
+        await MockFirestore.collection('requests').doc(widget.requestId).update(
+          {'status': 'completed', 'paymentMethod': 'instapay'},
+        );
+
+        if (mounted) {
+          setState(() => _isProcessing = false);
+          _showSuccessDialog();
+        }
+      } else {
         setState(() => _isProcessing = false);
-        _showSuccessDialog();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('كود التحقق غير صحيح', style: GoogleFonts.cairo()),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } catch (e) {
       setState(() => _isProcessing = false);
@@ -297,7 +296,7 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
+                      color: Colors.black.withValues(alpha: 0.04),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -308,7 +307,7 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: primaryBlue.withOpacity(0.1),
+                        color: primaryBlue.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -374,7 +373,7 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'بالضغط على زر الدفع سيتم فتح تطبيق InstaPay لإتمام التحويل. بعد إتمام الدفع فعليًا داخل التطبيق، أكّد العملية هنا لإنهاء الطلب.',
+                          'بالضغط على زر الدفع سيتم فتح تطبيق InstaPay لإتمام التحويل للفني. بعد إتمام الدفع فعليًا داخل التطبيق، أكّد العملية هنا لإنهاء الطلب.',
                           style: GoogleFonts.cairo(
                             fontSize: 12,
                             color: textDark,
@@ -430,7 +429,7 @@ class _InstaPayScreenState extends State<InstaPayScreen> {
                     color: const Color(0xFFECFDF5),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: const Color(0xFF10B981).withOpacity(0.3),
+                      color: const Color(0xFF10B981).withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(

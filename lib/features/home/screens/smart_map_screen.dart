@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// removed: cloud_firestore - see docs/backend-prd.html
 import 'package:geocoding/geocoding.dart';
 import 'package:basita1/core/services/order_accept_service.dart';
+import 'package:basita1/core/network/mock_backend.dart';
 
 /// طلب وارد يتم جلب البيانات منه مباشرة من Firestore.
 class _MapOrder {
@@ -69,8 +70,10 @@ class _TechnicianMapScreenState extends State<SmartMapScreen> {
       final locations = await locationFromAddress(order.location);
       if (locations.isNotEmpty && mounted) {
         setState(() {
-          _orderCoordinates[order.id] =
-              LatLng(locations.first.latitude, locations.first.longitude);
+          _orderCoordinates[order.id] = LatLng(
+            locations.first.latitude,
+            locations.first.longitude,
+          );
         });
       }
     } catch (e) {
@@ -81,9 +84,7 @@ class _TechnicianMapScreenState extends State<SmartMapScreen> {
   }
 
   void _moveCameraTo(LatLng position) {
-    _mapController?.animateCamera(
-      CameraUpdate.newLatLngZoom(position, 14),
-    );
+    _mapController?.animateCamera(CameraUpdate.newLatLngZoom(position, 14));
   }
 
   // ------------------------------------------------------------
@@ -149,9 +150,7 @@ class _TechnicianMapScreenState extends State<SmartMapScreen> {
                 ),
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(24),
-                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 child: SingleChildScrollView(
                   child: Column(
@@ -284,12 +283,8 @@ class _TechnicianMapScreenState extends State<SmartMapScreen> {
                                       ),
                                     );
                                   } catch (e) {
-                                    debugPrint(
-                                      'Error submitting offer: $e',
-                                    );
-                                    setModalState(
-                                      () => isSubmitting = false,
-                                    );
+                                    debugPrint('Error submitting offer: $e');
+                                    setModalState(() => isSubmitting = false);
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                         content: Text(
@@ -357,9 +352,7 @@ class _TechnicianMapScreenState extends State<SmartMapScreen> {
               const SizedBox(height: 12),
               _buildMapSection(),
               const SizedBox(height: 8),
-              Expanded(
-                child: _buildOrdersStream(),
-              ),
+              Expanded(child: _buildOrdersStream()),
             ],
           ),
         ),
@@ -380,7 +373,7 @@ class _TechnicianMapScreenState extends State<SmartMapScreen> {
               borderRadius: BorderRadius.circular(30),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -417,7 +410,7 @@ class _TechnicianMapScreenState extends State<SmartMapScreen> {
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -498,9 +491,7 @@ class _TechnicianMapScreenState extends State<SmartMapScreen> {
           onTap: () => _moveCameraTo(order),
         ),
         onTap: () => _moveCameraTo(order),
-        icon: BitmapDescriptor.defaultMarkerWithHue(
-          BitmapDescriptor.hueAzure,
-        ),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
       );
     }).toSet();
 
@@ -580,8 +571,7 @@ class _TechnicianMapScreenState extends State<SmartMapScreen> {
   // ------------------------------------------------------------
   Widget _buildOrdersStream() {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('requests')
+      stream: MockFirestore.collection('requests')
           .where('status', isEqualTo: 'pending')
           .orderBy('createdAt', descending: true)
           .snapshots(),
@@ -593,9 +583,7 @@ class _TechnicianMapScreenState extends State<SmartMapScreen> {
           );
         }
         if (!snapshot.hasData) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return const Center(child: CircularProgressIndicator());
         }
 
         final orders = snapshot.data!.docs.map((doc) {
@@ -604,17 +592,14 @@ class _TechnicianMapScreenState extends State<SmartMapScreen> {
           String locationStr = 'الإسكندرية';
           if (data['location'] != null) {
             locationStr = data['location'].toString();
-          } else if (data['region'] != null &&
-              data['governorate'] != null) {
-            locationStr =
-                '${data['governorate']}، ${data['region']}';
+          } else if (data['region'] != null && data['governorate'] != null) {
+            locationStr = '${data['governorate']}، ${data['region']}';
           } else if (data['region'] != null) {
             locationStr = data['region'].toString();
           }
 
           String priceStr = 'غير محدد';
-          if (data['price'] != null &&
-              data['price'].toString().isNotEmpty) {
+          if (data['price'] != null && data['price'].toString().isNotEmpty) {
             priceStr = data['price'].toString();
           } else if (data['budget'] != null &&
               data['budget'].toString().isNotEmpty) {
@@ -623,19 +608,19 @@ class _TechnicianMapScreenState extends State<SmartMapScreen> {
 
           return _MapOrder(
             id: doc.id,
-            name: (data['name'] ??
-                    data['userName'] ??
-                    data['customerName'] ??
-                    'مستخدم جديد')
-                .toString(),
+            name:
+                (data['name'] ??
+                        data['userName'] ??
+                        data['customerName'] ??
+                        'مستخدم جديد')
+                    .toString(),
             serviceType: (data['title'] ?? 'خدمة صيانة').toString(),
             price: priceStr,
             location: locationStr,
             description: (data['description'] ?? 'لا يوجد وصف متاح').toString(),
-            clientPhone: (data['phone'] ??
-                    data['userPhone'] ??
-                    '+20 1000000000')
-                .toString(),
+            clientPhone:
+                (data['phone'] ?? data['userPhone'] ?? '+20 1000000000')
+                    .toString(),
           );
         }).toList();
 
@@ -697,7 +682,7 @@ class _TechnicianMapScreenState extends State<SmartMapScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -711,7 +696,7 @@ class _TechnicianMapScreenState extends State<SmartMapScreen> {
             children: [
               CircleAvatar(
                 radius: 22,
-                backgroundColor: primaryBlue.withOpacity(0.1),
+                backgroundColor: primaryBlue.withValues(alpha: 0.1),
                 child: const Icon(
                   Icons.person_outline,
                   color: Color(0xFF1E75EB),
@@ -789,9 +774,7 @@ class _TechnicianMapScreenState extends State<SmartMapScreen> {
               Expanded(
                 flex: 2,
                 child: ElevatedButton(
-                  onPressed: isAccepting
-                      ? null
-                      : () => _acceptOrder(order),
+                  onPressed: isAccepting ? null : () => _acceptOrder(order),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryBlue,
                     elevation: 0,
