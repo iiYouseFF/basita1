@@ -152,7 +152,7 @@ class _AccountScreenState extends State<AccountScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const CommunityScreenPerfect(),
+                        builder: (context) => const ComingSoonScreen1(),
                       ),
                     );
                   },
